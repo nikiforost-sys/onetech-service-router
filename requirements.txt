@@ -5,3 +5,4 @@ pypdf
 extract-msg
 openai
 anthropic
+groq
