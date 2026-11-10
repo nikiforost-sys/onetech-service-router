@@ -2,13 +2,43 @@ import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
+import pypdf
+import email
+from email import policy
+import extract_msg
 
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("Εισαγωγή RFQ πελάτη για έλεγχο πληρότητας και εντοπισμό εγκεκριμένου τεχνικού σταθμού.")
+st.markdown("Automated RFQ completeness audit and approved service station matching.")
 
-# 1. Σύνδεση με το Google Sheet μέσω ID
+# Helper function to extract text from various file formats
+def extract_text_from_file(uploaded_file):
+    text = ""
+    file_name = uploaded_file.name.lower()
+    
+    try:
+        if file_name.endswith(".pdf"):
+            reader = pypdf.PdfReader(uploaded_file)
+            for page in reader.pages:
+                text += page.extract_text() or ""
+        elif file_name.endswith(".eml"):
+            msg = email.message_from_bytes(uploaded_file.read(), policy=policy.default)
+            text += f"Subject: {msg.get('subject', '')}\n"
+            body = msg.get_body(preferencelist=('plain', 'html'))
+            if body:
+                text += body.get_content()
+        elif file_name.endswith(".msg"):
+            msg = extract_msg.Message(uploaded_file)
+            text += f"Subject: {msg.subject}\n{msg.body}"
+        elif file_name.endswith(".txt"):
+            text = uploaded_file.read().decode("utf-8", errors="ignore")
+    except Exception as e:
+        st.error(f"Error parsing {uploaded_file.name}: {e}")
+        
+    return text
+
+# 1. Connect to Google Sheets via Secrets
 @st.cache_data(ttl=300)
 def load_directory():
     scopes = [
@@ -19,7 +49,7 @@ def load_directory():
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(creds)
     
-    # Χρήση του ID του Google Sheet για απόλυτη ακρίβεια
+    # Target Google Sheet ID
     sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
     sheet = client.open_by_key(sheet_id).sheet1
     data = sheet.get_all_records()
@@ -27,41 +57,66 @@ def load_directory():
 
 try:
     df = load_directory()
-    st.sidebar.success(f"Επιτυχής σύνδεση! Φορτώθηκαν {len(df)} εγγραφές σταθμών.")
+    st.sidebar.success(f"Connected to Directory. Loaded {len(df)} stations.")
 except Exception as e:
-    st.sidebar.error(f"Σφάλμα σύνδεσης: {e}")
+    st.sidebar.error(f"Connection error: {e}")
     df = pd.DataFrame()
 
-# 2. Πλαίσιο εισαγωγής RFQ
-rfq_text = st.text_area("Επικολλήστε το RFQ του πελάτη παρακάτω:", height=200, placeholder="Customer inquiry text, vessel name, port, equipment details...")
+# 2. Input Section: Text Area and File Upload
+st.subheader("1. Ingestion")
+col1, col2 = st.columns([1, 1])
 
-if st.button("Ανάλυση RFQ & Εύρεση Σταθμού"):
-    if not rfq_text.strip():
-        st.warning("Παρακαλώ εισάγετε κείμενο RFQ για έλεγχο.")
+with col1:
+    rfq_pasted_text = st.text_area(
+        "Paste RFQ text / email body here:",
+        height=180,
+        placeholder="Vessel name, port, equipment maker/model, defect description..."
+    )
+
+with col2:
+    uploaded_files = st.file_uploader(
+        "Upload customer files (PDF, EML, MSG, TXT):",
+        type=["pdf", "eml", "msg", "txt"],
+        accept_multiple_files=True
+    )
+
+# Combine inputs
+combined_text = rfq_pasted_text + "\n"
+if uploaded_files:
+    for f in uploaded_files:
+        combined_text += f"\n--- Content from {f.name} ---\n"
+        combined_text += extract_text_from_file(f)
+
+if st.button("Process RFQ & Find Service Stations", type="primary"):
+    if not combined_text.strip():
+        st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        text_lower = rfq_text.lower()
+        text_lower = combined_text.lower()
         
-        # Έλεγχος πληρότητας στοιχείων
+        # 3. Completeness Audit
         missing_items = []
-        if not any(k in text_lower for k in ["eta", "etd", "arrival", "departure", "date"]):
-            missing_items.append("Ημερομηνία άφιξης / αναχώρησης (ETA / ETD)")
-        if not any(k in text_lower for k in ["agent", "agency", "husbandry", "contact"]):
-            missing_items.append("Στοιχεία τοπικού πράκτορα (Agent details)")
-        if not any(k in text_lower for k in ["maker", "model", "type", "s/n", "serial", "jrc", "furuno", "sperry", "yokogawa", "anschutz"]):
-            missing_items.append("Μοντέλο, κατασκευαστής ή σειριακός αριθμός συσκευής")
-        if not any(k in text_lower for k in ["fault", "alarm", "defect", "error", "issue", "apt", "annual", "survey", "problem"]):
-            missing_items.append("Περιγραφή βλάβης, κωδικοί συναγερμού ή σκοπός επιθεώρησης (π.χ. APT)")
+        if not any(k in text_lower for k in ["eta", "etd", "arrival", "departure", "calling", "date"]):
+            missing_items.append("Vessel Schedule (ETA / ETD / Date of Attendance)")
+        if not any(k in text_lower for k in ["agent", "agency", "husbandry", "pic", "contact"]):
+            missing_items.append("Local Port Agent details")
+        if not any(k in text_lower for k in ["maker", "model", "type", "s/n", "serial", "jrc", "furuno", "sperry", "yokogawa", "anschutz", "tokyo keiki", "danelec", "macgregor"]):
+            missing_items.append("Equipment Maker, Model, or Serial Number")
+        if not any(k in text_lower for k in ["alarm", "fault", "defect", "error", "malfunction", "survey", "apt", "annual", "issue", "problem"]):
+            missing_items.append("Fault Description / Alarm Codes / Scope of Attendance")
 
-        st.markdown("### 1. Έλεγχος Στοιχείων RFQ")
+        st.markdown("---")
+        st.subheader("2. RFQ Completeness Audit")
+        
         if missing_items:
-            st.error("Ελλιπή στοιχεία στο αίτημα. Ενημερώστε τον πελάτη για τα εξής:")
+            st.error("Missing critical operational data. Revert to client requesting:")
             for item in missing_items:
                 st.write(f"- **{item}**")
         else:
-            st.success("Το αίτημα περιέχει όλες τις απαραίτητες τεχνικές πληροφορίες.")
+            st.success("All operational essentials detected in the customer inquiry.")
 
+        # 4. Station Matching from Google Sheet Directory
         st.markdown("---")
-        st.markdown("### 2. Προτεινόμενοι Σταθμοί Εξυπηρέτησης")
+        st.subheader("3. Recommended Service Stations")
 
         if not df.empty:
             matched_indices = []
@@ -69,14 +124,5 @@ if st.button("Ανάλυση RFQ & Εύρεση Σταθμού"):
                 port_val = str(row.get("Port", "")).strip().lower()
                 country_val = str(row.get("Country", "")).strip().lower()
                 
-                if (port_val and port_val in text_lower) or (country_val and country_val in text_lower):
-                    matched_indices.append(idx)
-
-            if matched_indices:
-                results_df = df.loc[matched_indices]
-                st.dataframe(results_df, use_container_width=True)
-            else:
-                st.info("Δεν εντοπίστηκε αυτόματα συγκεκριμένο λιμάνι ή χώρα στο RFQ. Δείτε παρακάτω ολόκληρο τον κατάλογο:")
-                st.dataframe(df, use_container_width=True)
-        else:
-            st.warning("Δεν υπάρχουν διαθέσιμα δεδομένα σταθμών.")
+                # Match port or country mentioned in the text
+                if (port_val and len(port_val) > 2 and port_val in text_lower) or \
