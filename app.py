@@ -118,7 +118,7 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
 """
     try:
         response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3.8-flash",
             contents=prompt,
         )
         raw_text = response.text.strip()
@@ -219,19 +219,4 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
                         final_df = country_match[country_match["Approved Makers"].apply(maker_filter)]
                         
                         if not final_df.empty:
-                            st.success(f"Matched stations in {target_country.upper()} for: {', '.join([m.upper() for m in target_makers])}")
-                            st.dataframe(final_df, use_container_width=True)
-                        else:
-                            st.warning(f"Stations found in {target_country.upper()}, but none with explicit approval for {', '.join([m.upper() for m in target_makers])}. Showing all stations in country:")
-                            st.dataframe(country_match, use_container_width=True)
-                    else:
-                        st.info(f"Showing all stations in {target_country.upper()} (No specific maker detected):")
-                        st.dataframe(country_match, use_container_width=True)
-                else:
-                    st.warning(f"No service stations found in directory for country: {target_country.upper()}. Showing full directory:")
-                    st.dataframe(df, use_container_width=True)
-            else:
-                st.warning("Directory is empty or inaccessible.")
-
-            with st.expander("Show Extracted Raw Text"):
-                st.text(combined_text)
+                            st.success(f"Matched stations in {target_country.upper()} for: {', '.join([m.upper() for m in target_makers])
