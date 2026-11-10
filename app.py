@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from google import genai
+import openai
+import anthropic
 import pypdf
 import io
 import re
@@ -13,14 +15,18 @@ import time
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("Automated RFQ semantic audit and approved service station matching.")
+st.markdown("Automated RFQ semantic audit and approved service station matching (Multi-AI Fallback Engine).")
 
-api_key = st.secrets.get("GEMINI_API_KEY")
-if not api_key:
-    st.error("Missing GEMINI_API_KEY in Streamlit Secrets. Please check your app settings.")
+# API Keys setup
+gemini_api_key = st.secrets.get("GEMINI_API_KEY")
+openai_api_key = st.secrets.get("OPENAI_API_KEY")
+anthropic_api_key = st.secrets.get("ANTHROPIC_API_KEY")
+
+if not gemini_api_key:
+    st.error("Missing GEMINI_API_KEY in Streamlit Secrets.")
     st.stop()
 
-client = genai.Client(api_key=api_key)
+client_gemini = genai.Client(api_key=gemini_api_key)
 
 PORT_TO_COUNTRY = {
     "tutunciftlik": "TURKEY", "tüpraş": "TURKEY", "tupras": "TURKEY",
@@ -91,7 +97,7 @@ def extract_text_from_file(uploaded_file):
         st.error(f"Error parsing {uploaded_file.name}: {e}")
     return extracted_text[:6000]
 
-def analyze_rfq_with_llm(full_text):
+def analyze_rfq_with_multi_ai(full_text):
     prompt = f"""
 You are an expert technical coordinator in maritime navigation and communication equipment supply.
 Parse the following commercial RFQ / technical inquiry and extract all operational facts into JSON.
@@ -117,27 +123,61 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
   "missing_critical_data": ["List of missing essentials among: Schedule/ETA, Port Agent details, Maker/Model, Scope of attendance"]
 }}
 """
-    models_to_try = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
-    for model_name in models_to_try:
-        for attempt in range(3):
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                )
-                raw_text = response.text.strip()
-                if raw_text.startswith("```json"):
-                    raw_text = raw_text[7:]
-                elif raw_text.startswith("```"):
-                    raw_text = raw_text[3:]
-                if raw_text.endswith("```"):
-                    raw_text = raw_text[:-3]
-                return json.loads(raw_text.strip())
-            except Exception as e:
-                time.sleep((attempt + 1) * 2)
-    
-    st.error("Server is busy. Please wait 10 seconds and click the button again.")
+
+    # 1. Προσπάθεια με Gemini Flash
+    try:
+        response = client_gemini.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+        raw_text = response.text.strip()
+        return json.loads(clean_json(raw_text))
+    except Exception:
+        pass
+
+    # 2. Εφεδρική προσπάθεια με Gemini Pro
+    try:
+        response = client_gemini.models.generate_content(model="gemini-1.5-pro", contents=prompt)
+        raw_text = response.text.strip()
+        return json.loads(clean_json(raw_text))
+    except Exception:
+        pass
+
+    # 3. Εφεδρική προσπάθεια με OpenAI (αν υπάρχει κλειδί)
+    if openai_api_key:
+        try:
+            client_openai = openai.OpenAI(api_key=openai_api_key)
+            response = client_openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            raw_text = response.choices[0].message.content.strip()
+            return json.loads(clean_json(raw_text))
+        except Exception:
+            pass
+
+    # 4. Εφεδρική προσπάθεια με Anthropic Claude (αν υπάρχει κλειδί)
+    if anthropic_api_key:
+        try:
+            client_anthropic = anthropic.Anthropic(api_key=anthropic_api_key)
+            response = client_anthropic.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=1000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            raw_text = response.content[0].text.strip()
+            return json.loads(clean_json(raw_text))
+        except Exception:
+            pass
+
+    st.error("Όλα τα συστήματα AI είναι προσωρινά φορτωμένα. Παρακαλώ δοκιμάστε ξανά σε λίγο.")
     return {}
+
+def clean_json(text):
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
 
 @st.cache_data
 def load_directory():
@@ -177,8 +217,8 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Analyzing inquiry semantics with Gemini..."):
-            parsed = analyze_rfq_with_llm(combined_text)
+        with st.spinner("Analyzing inquiry semantics with Multi-AI Engine..."):
+            parsed = analyze_rfq_with_multi_ai(combined_text)
 
         if parsed:
             st.markdown("---")
