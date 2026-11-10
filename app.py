@@ -46,6 +46,7 @@ TEXT_MODELS = [
     "openai/gpt-oss-120b",
     "llama-3.1-8b-instant",
 ]
+
 VISION_MODELS = [
     "llama-3.2-11b-vision-preview",
     "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -53,15 +54,32 @@ VISION_MODELS = [
 ]
 
 PORT_TO_COUNTRY = {
+    # --- ROMANIA, BULGARIA, BLACK SEA ---
+    "constanta": "ROMANIA", "constantza": "ROMANIA", "mangalia": "ROMANIA",
+    "midia": "ROMANIA", "galati": "ROMANIA", "braila": "ROMANIA",
+    "tulcea": "ROMANIA", "sulina": "ROMANIA",
+    "varna": "BULGARIA", "burgas": "BULGARIA", "bourgas": "BULGARIA",
+    "odessa": "UKRAINE", "chornomorsk": "UKRAINE", "pivdennyi": "UKRAINE",
+    "yuzhny": "UKRAINE", "mykolaiv": "UKRAINE", "izmail": "UKRAINE",
+    "poti": "GEORGIA", "batumi": "GEORGIA",
+    "novorossiysk": "RUSSIA", "tuapse": "RUSSIA", "kavkaz": "RUSSIA",
+    "taman": "RUSSIA", "st petersburg": "RUSSIA", "ust-luga": "RUSSIA",
+    "primorsk": "RUSSIA", "murmansk": "RUSSIA", "vladivostok": "RUSSIA",
+    "nakhodka": "RUSSIA",
+
     # --- THAILAND ---
     "kohsichang": "THAILAND", "sichang": "THAILAND", "bangkok": "THAILAND",
     "laem chabang": "THAILAND", "map ta phut": "THAILAND", "songkhla": "THAILAND",
+    "sriracha": "THAILAND", "phuket": "THAILAND",
+
     # --- BRAZIL ---
     "sao francisco do sul": "BRAZIL", "santos": "BRAZIL", "paranagua": "BRAZIL",
     "rio grande": "BRAZIL", "itajai": "BRAZIL", "imbituba": "BRAZIL",
     "tubarao": "BRAZIL", "vitoria": "BRAZIL", "suape": "BRAZIL",
     "rio de janeiro": "BRAZIL", "salvador": "BRAZIL", "manaus": "BRAZIL",
     "paranaagua": "BRAZIL", "pecem": "BRAZIL", "fortaleza": "BRAZIL",
+    "itaqui": "BRAZIL", "belem": "BRAZIL", "macapa": "BRAZIL", "acú": "BRAZIL",
+
     # --- TURKEY ---
     "tutunciftlik": "TURKEY", "tüpraş": "TURKEY", "tupras": "TURKEY",
     "izmit": "TURKEY", "yalova": "TURKEY", "tuzla": "TURKEY",
@@ -70,116 +88,324 @@ PORT_TO_COUNTRY = {
     "ambarli": "TURKEY", "gemlik": "TURKEY", "bandirma": "TURKEY",
     "samsun": "TURKEY", "trabzon": "TURKEY", "eregli": "TURKEY",
     "tekirdag": "TURKEY", "zeytinburnu": "TURKEY", "haydarpasa": "TURKEY",
-    # --- GREECE ---
+    "diliskelesi": "TURKEY", "ceyhan": "TURKEY", "antalya": "TURKEY",
+    "izmir": "TURKEY", "gulluk": "TURKEY", "derince": "TURKEY",
+
+    # --- GREECE, CYPRUS & MALTA ---
     "piraeus": "GREECE", "thessaloniki": "GREECE", "eleusis": "GREECE",
     "perama": "GREECE", "agios theodoroi": "GREECE", "corinth": "GREECE",
     "patras": "GREECE", "volos": "GREECE", "heraklion": "GREECE",
     "syros": "GREECE", "rhodes": "GREECE", "lavrio": "GREECE",
     "megara": "GREECE", "astakos": "GREECE", "kavala": "GREECE",
-    # --- NETHERLANDS, BELGIUM & GERMANY ---
+    "chalkis": "GREECE", "alexandroupolis": "GREECE", "kalamata": "GREECE",
+    "limassol": "CYPRUS", "larnaca": "CYPRUS", "vassiliko": "CYPRUS",
+    "valletta": "MALTA", "marsaxlokk": "MALTA",
+
+    # --- NETHERLANDS, BELGIUM, GERMANY, UK & NORTHERN EUROPE ---
     "rotterdam": "NETHERLANDS", "amsterdam": "NETHERLANDS", "vlissingen": "NETHERLANDS",
     "terneuzen": "NETHERLANDS", "ijmuiden": "NETHERLANDS", "moerdijk": "NETHERLANDS",
+    "delfzijl": "NETHERLANDS", "eemshaven": "NETHERLANDS",
     "antwerp": "BELGIUM", "zeebrugge": "BELGIUM", "ghent": "BELGIUM",
     "ostend": "BELGIUM", "brussels": "BELGIUM",
     "hamburg": "GERMANY", "bremen": "GERMANY", "bremerhaven": "GERMANY",
     "wilhelmshaven": "GERMANY", "rostock": "GERMANY", "kiel": "GERMANY",
+    "lubeck": "GERMANY", "emden": "GERMANY", "brunsbuttel": "GERMANY",
+    "felixstowe": "UK", "southampton": "UK", "london": "UK",
+    "liverpool": "UK", "immingham": "UK", "teesside": "UK",
+    "milford haven": "UK", "grangemouth": "UK", "belfast": "UK",
+    "aberdovey": "UK", "aberdeen": "UK", "hull": "UK", "dover": "UK",
+    "dublin": "IRELAND", "cork": "IRELAND", "shannon": "IRELAND",
+    "gdansk": "POLAND", "gdynia": "POLAND", "szczecin": "POLAND", "swinoujscie": "POLAND",
+    "copenhagen": "DENMARK", "aarhus": "DENMARK", "esbjerg": "DENMARK",
+    "skagen": "DENMARK", "fredericia": "DENMARK", "odense": "DENMARK",
+    "gothenburg": "SWEDEN", "stockholm": "SWEDEN", "malmo": "SWEDEN",
+    "helsingborg": "SWEDEN", "trelleborg": "SWEDEN",
+    "oslo": "NORWAY", "bergen": "NORWAY", "stavanger": "NORWAY",
+    "narvik": "NORWAY", "tromso": "NORWAY", "kristiansand": "NORWAY",
+    "helsinki": "FINLAND", "kotka": "FINLAND", "turku": "FINLAND", "rauma": "FINLAND",
+    "tallinn": "ESTONIA", "muuga": "ESTONIA",
+    "riga": "LATVIA", "ventspils": "LATVIA", "liepaja": "LATVIA",
+    "klaipeda": "LITHUANIA",
+
     # --- SPAIN, GIBRALTAR & PORTUGAL ---
     "algeciras": "SPAIN", "valencia": "SPAIN", "barcelona": "SPAIN",
     "las palmas": "SPAIN", "bilbao": "SPAIN", "cartagena": "SPAIN",
     "huelva": "SPAIN", "tarragona": "SPAIN", "malaga": "SPAIN",
     "vigo": "SPAIN", "cadiz": "SPAIN", "castellon": "SPAIN",
+    "tenerife": "SPAIN", "gijon": "SPAIN", "santander": "SPAIN",
+    "ferrol": "SPAIN", "almeria": "SPAIN", "sagunto": "SPAIN",
     "gibraltar": "GIBRALTAR",
-    "lisbon": "PORTUGAL", "sines": "PORTUGAL", "leixoes": "PORTUGAL", "setubal": "PORTUGAL",
-    # --- ITALY & FRANCE ---
+    "lisbon": "PORTUGAL", "sines": "PORTUGAL", "leixoes": "PORTUGAL",
+    "setubal": "PORTUGAL", "aveiro": "PORTUGAL", "funchal": "PORTUGAL",
+
+    # --- ITALY, FRANCE & ADRIATIC ---
     "genoa": "ITALY", "augusta": "ITALY", "trieste": "ITALY",
     "venice": "ITALY", "ravenna": "ITALY", "livorno": "ITALY",
     "naples": "ITALY", "cagliari": "ITALY", "gioia tauro": "ITALY",
     "taranto": "ITALY", "savona": "ITALY", "la spezia": "ITALY",
-    "marseilles": "FRANCE", "le havre": "FRANCE", "dunkirk": "FRANCE",
-    "fayard": "FRANCE", "bordeaux": "FRANCE", "st nazaire": "FRANCE",
+    "civitavecchia": "ITALY", "bari": "ITALY", "brindisi": "ITALY",
+    "ancona": "ITALY", "palermo": "ITALY", "messina": "ITALY", "milazzo": "ITALY",
+    "marseilles": "FRANCE", "marseille": "FRANCE", "fos": "FRANCE",
+    "le havre": "FRANCE", "dunkirk": "FRANCE", "fayard": "FRANCE",
+    "bordeaux": "FRANCE", "st nazaire": "FRANCE", "nantes": "FRANCE",
+    "rouen": "FRANCE", "brest": "FRANCE", "la pallice": "FRANCE", "sete": "FRANCE",
+    "koper": "SLOVENIA",
+    "rijeka": "CROATIA", "split": "CROATIA", "ploce": "CROATIA", "zadar": "CROATIA",
+    "bar": "MONTENEGRO", "durres": "ALBANIA",
+
     # --- MIDDLE EAST & UAE ---
     "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE",
     "khor fakkan": "UAE", "abu dhabi": "UAE", "sharjah": "UAE",
-    "ras al khaimah": "UAE", "hamriyah": "UAE",
-    "sohar": "OMAN", "salalah": "OMAN", "muscat": "OMAN",
+    "ras al khaimah": "UAE", "hamriyah": "UAE", "ruwais": "UAE",
+    "sohar": "OMAN", "salalah": "OMAN", "muscat": "OMAN", "duqm": "OMAN",
     "dammam": "SAUDI ARABIA", "jeddah": "SAUDI ARABIA", "jubail": "SAUDI ARABIA",
-    "yanbu": "SAUDI ARABIA", "ras tanura": "SAUDI ARABIA",
-    "doha": "QATAR", "ras laffan": "QATAR", "umesaid": "QATAR",
-    "bahrain": "BAHRAIN", "mina sulman": "BAHRAIN",
-    "kuwait": "KUWAIT", "shuwaikh": "KUWAIT", "shuaiba": "KUWAIT",
-    "bandar abbas": "IRAN", "khark island": "IRAN",
-    "basrah": "IRAQ", "um qasr": "IRAQ",
-    # --- NORTH & WEST AFRICA ---
-    "casablanca": "MOROCCO", "tangier": "MOROCCO", "agadir": "MOROCCO",
-    "jorf lasfar": "MOROCCO", "nador": "MOROCCO", "mohammedia": "MOROCCO",
-    "algiers": "ALGERIA", "oran": "ALGERIA", "annaba": "ALGERIA", "arzew": "ALGERIA",
-    "alexandria": "EGYPT", "port said": "EGYPT", "suez": "EGYPT", "damietta": "EGYPT",
-    "cairo": "EGYPT", "safaga": "EGYPT",
-    "tunis": "TUNISIA", "sfax": "TUNISIA", "bizerte": "TUNISIA", "la goulette": "TUNISIA",
+    "yanbu": "SAUDI ARABIA", "ras tanura": "SAUDI ARABIA", "jizan": "SAUDI ARABIA",
+    "doha": "QATAR", "ras laffan": "QATAR", "umesaid": "QATAR", "mesaieed": "QATAR", "hamad": "QATAR",
+    "bahrain": "BAHRAIN", "mina sulman": "BAHRAIN", "khalifa bin salman": "BAHRAIN",
+    "kuwait": "KUWAIT", "shuwaikh": "KUWAIT", "shuaiba": "KUWAIT", "mina al ahmadi": "KUWAIT",
+    "bandar abbas": "IRAN", "khark island": "IRAN", "assaluyeh": "IRAN", "bandar imam khomeini": "IRAN",
+    "basrah": "IRAQ", "um qasr": "IRAQ", "khor al zubair": "IRAQ",
+    "aqaba": "JORDAN",
+    "haifa": "ISRAEL", "ashdod": "ISRAEL", "ashkelon": "ISRAEL",
+    "beirut": "LEBANON",
+    "latakia": "SYRIA", "tartous": "SYRIA",
+    "aden": "YEMEN", "hodeidah": "YEMEN",
+
+    # --- AFRICA (NORTH, WEST, EAST, SOUTH) ---
+    "casablanca": "MOROCCO", "tangier": "MOROCCO", "tanger med": "MOROCCO",
+    "agadir": "MOROCCO", "jorf lasfar": "MOROCCO", "nador": "MOROCCO",
+    "mohammedia": "MOROCCO", "safi": "MOROCCO",
+    "algiers": "ALGERIA", "oran": "ALGERIA", "annaba": "ALGERIA",
+    "arzew": "ALGERIA", "bejaia": "ALGERIA", "skikda": "ALGERIA",
+    "alexandria": "EGYPT", "port said": "EGYPT", "suez": "EGYPT",
+    "damietta": "EGYPT", "cairo": "EGYPT", "safaga": "EGYPT",
+    "sokhna": "EGYPT", "ain sokhna": "EGYPT", "dekheila": "EGYPT",
+    "tunis": "TUNISIA", "sfax": "TUNISIA", "bizerte": "TUNISIA",
+    "la goulette": "TUNISIA", "rades": "TUNISIA", "gabes": "TUNISIA",
     "tripoli": "LIBYA", "benghazi": "LIBYA", "misurata": "LIBYA", "tobruk": "LIBYA",
-    "lagos": "NIGERIA", "port harcourt": "NIGERIA", "onne": "NIGERIA",
-    "dakar": "SENEGAL", "abidjan": "IVORY COAST", "accra": "GHANA", "tema": "GHANA",
+    "lagos": "NIGERIA", "apapa": "NIGERIA", "tin can": "NIGERIA",
+    "port harcourt": "NIGERIA", "onne": "NIGERIA", "lekki": "NIGERIA",
+    "dakar": "SENEGAL",
+    "abidjan": "IVORY COAST", "san pedro": "IVORY COAST",
+    "accra": "GHANA", "tema": "GHANA", "takoradi": "GHANA",
+    "lome": "TOGO", "cotonou": "BENIN", "douala": "CAMEROON", "kribi": "CAMEROON",
+    "libreville": "GABON", "port gentil": "GABON",
+    "pointe noire": "CONGO", "matadi": "DR CONGO",
+    "luanda": "ANGOLA", "lobito": "ANGOLA", "cabinda": "ANGOLA",
+    "walvis bay": "NAMIBIA",
+    "durban": "SOUTH AFRICA", "cape town": "SOUTH AFRICA", "richards bay": "SOUTH AFRICA",
+    "port elizabeth": "SOUTH AFRICA", "ngqura": "SOUTH AFRICA", "saldanha": "SOUTH AFRICA",
+    "maputo": "MOZAMBIQUE", "beira": "MOZAMBIQUE", "nacala": "MOZAMBIQUE",
+    "dar es salaam": "TANZANIA", "mombasa": "KENYA",
+    "djibouti": "DJIBOUTI", "port sudan": "SUDAN",
+    "port louis": "MAURITIUS", "toamasina": "MADAGASCAR",
+    "conakry": "GUINEA", "freetown": "SIERRA LEONE", "monrovia": "LIBERIA",
+    "nouakchott": "MAURITANIA", "nouadhibou": "MAURITANIA",
+
     # --- ASIA & FAR EAST ---
     "singapore": "SINGAPORE",
     "shanghai": "CHINA", "ningbo": "CHINA", "shenzhen": "CHINA",
     "guangzhou": "CHINA", "qingdao": "CHINA", "tianjin": "CHINA",
     "hong kong": "CHINA", "dalian": "CHINA", "xiamen": "CHINA",
-    "rizhao": "CHINA", "yingkou": "CHINA",
+    "rizhao": "CHINA", "yingkou": "CHINA", "zhoushan": "CHINA",
+    "nantong": "CHINA", "jiangyin": "CHINA", "caofeidian": "CHINA",
+    "qinhuangdao": "CHINA", "tangshan": "CHINA", "yantai": "CHINA",
+    "fangcheng": "CHINA", "zhanjiang": "CHINA", "shekou": "CHINA", "yantian": "CHINA",
+    "kaohsiung": "TAIWAN", "keelung": "TAIWAN", "taichung": "TAIWAN", "taipei": "TAIWAN",
     "busan": "SOUTH KOREA", "ulsan": "SOUTH KOREA", "incheon": "SOUTH KOREA",
     "yeosu": "SOUTH KOREA", "pohang": "SOUTH KOREA", "daesan": "SOUTH KOREA",
+    "pyeongtaek": "SOUTH KOREA", "gwangyang": "SOUTH KOREA", "mokpo": "SOUTH KOREA",
     "tokyo": "JAPAN", "yokohama": "JAPAN", "nagoya": "JAPAN",
     "osaka": "JAPAN", "kobe": "JAPAN", "chiba": "JAPAN", "kitakyushu": "JAPAN",
-    "port kelang": "MALAYSIA", "penang": "MALAYSIA", "pasir gudang": "MALAYSIA",
-    "tanjung pelepas": "MALAYSIA", "miri": "MALAYSIA", "bintulu": "MALAYSIA",
+    "kawasaki": "JAPAN", "mizushima": "JAPAN", "hakata": "JAPAN", "shimizu": "JAPAN",
+    "port kelang": "MALAYSIA", "port klang": "MALAYSIA", "penang": "MALAYSIA",
+    "pasir gudang": "MALAYSIA", "tanjung pelepas": "MALAYSIA",
+    "miri": "MALAYSIA", "bintulu": "MALAYSIA", "kemaman": "MALAYSIA",
+    "kuantan": "MALAYSIA", "labuan": "MALAYSIA", "kota kinabalu": "MALAYSIA",
     "jakarta": "INDONESIA", "surabaya": "INDONESIA", "belawan": "INDONESIA",
     "batam": "INDONESIA", "balikpapan": "INDONESIA", "semarang": "INDONESIA",
+    "cigading": "INDONESIA", "merak": "INDONESIA", "dumai": "INDONESIA", "makassar": "INDONESIA",
     "manila": "PHILIPPINES", "cebu": "PHILIPPINES", "subic bay": "PHILIPPINES",
+    "batangas": "PHILIPPINES", "davao": "PHILIPPINES", "cagayan de oro": "PHILIPPINES",
     "ho chi minh": "VIETNAM", "haiphong": "VIETNAM", "danang": "VIETNAM",
+    "cai mep": "VIETNAM", "vung tau": "VIETNAM", "quy nhon": "VIETNAM", "cam pha": "VIETNAM",
+    "sihanoukville": "CAMBODIA", "yangon": "MYANMAR", "muara": "BRUNEI",
     "mumbai": "INDIA", "chennai": "INDIA", "kolkata": "INDIA",
     "cochin": "INDIA", "visakhapatnam": "INDIA", "mormugao": "INDIA",
     "kandla": "INDIA", "mundra": "INDIA", "nhava sheva": "INDIA",
-    "colombo": "SRI LANKA", "galle": "SRI LANKA", "trincomalee": "SRI LANKA",
-    "karachi": "PAKISTAN", "port qasim": "PAKISTAN",
-    "chittagong": "BANGLADESH", "mongla": "BANGLADESH",
+    "tuticorin": "INDIA", "haldia": "INDIA", "paradip": "INDIA",
+    "new mangalore": "INDIA", "pipavav": "INDIA", "hazira": "INDIA", "kakinada": "INDIA",
+    "colombo": "SRI LANKA", "galle": "SRI LANKA", "trincomalee": "SRI LANKA", "hambantota": "SRI LANKA",
+    "karachi": "PAKISTAN", "port qasim": "PAKISTAN", "gwadar": "PAKISTAN",
+    "chittagong": "BANGLADESH", "mongla": "BANGLADESH", "payra": "BANGLADESH",
+
     # --- AMERICAS & CARIBBEAN ---
     "houston": "USA", "new orleans": "USA", "new york": "USA",
     "los angeles": "USA", "long beach": "USA", "savannah": "USA",
     "miami": "USA", "baltimore": "USA", "seattle": "USA",
     "philadelphia": "USA", "charleston": "USA", "port arthur": "USA",
     "galveston": "USA", "corpus christi": "USA", "baton rouge": "USA",
+    "norfolk": "USA", "mobile": "USA", "tampa": "USA", "jacksonville": "USA",
+    "oakland": "USA", "portland": "USA", "tacoma": "USA", "beaumont": "USA",
+    "lake charles": "USA", "freeport tx": "USA", "boston": "USA",
     "vancouver": "CANADA", "montreal": "CANADA", "halifax": "CANADA",
     "quebec": "CANADA", "prince rupert": "CANADA", "toronto": "CANADA",
+    "saint john": "CANADA", "sept-iles": "CANADA", "hamilton": "CANADA",
+    "veracruz": "MEXICO", "altamira": "MEXICO", "lazaro cardenas": "MEXICO",
+    "tampico": "MEXICO", "coatzacoalcos": "MEXICO", "progreso": "MEXICO",
     "panama": "PANAMA", "balboa": "PANAMA", "cristobal": "PANAMA",
     "colon": "PANAMA", "manzanillo": "PANAMA",
     "buenos aires": "ARGENTINA", "rosario": "ARGENTINA", "bahia blanca": "ARGENTINA",
-    "la plata": "ARGENTINA", "san lorenzo": "ARGENTINA",
+    "la plata": "ARGENTINA", "san lorenzo": "ARGENTINA", "san nicolas": "ARGENTINA",
+    "campana": "ARGENTINA", "zarate": "ARGENTINA", "necochea": "ARGENTINA",
+    "montevideo": "URUGUAY", "nueva palmira": "URUGUAY",
     "valparaiso": "CHILE", "san antonio": "CHILE", "antofagasta": "CHILE",
     "concepcion": "CHILE", "iquique": "CHILE", "talcahuano": "CHILE",
-    "callao": "PERU", "paita": "PERU", "marcona": "PERU",
-    "cartagena": "COLOMBIA", "barranquilla": "COLOMBIA", "santa marta": "COLOMBIA",
-    "puerto cabello": "VENEZUELA", "maracaibo": "VENEZUELA",
+    "mejillones": "CHILE", "lirquen": "CHILE", "san vicente": "CHILE",
+    "callao": "PERU", "paita": "PERU", "marcona": "PERU", "matarani": "PERU", "salaverry": "PERU",
+    "guayaquil": "ECUADOR", "esmeraldas": "ECUADOR", "manta": "ECUADOR",
+    "barranquilla": "COLOMBIA", "santa marta": "COLOMBIA", "buenaventura": "COLOMBIA",
+    "puerto cabello": "VENEZUELA", "maracaibo": "VENEZUELA", "la guaira": "VENEZUELA", "jose": "VENEZUELA",
+    "georgetown": "GUYANA", "paramaribo": "SURINAME",
+    "point lisas": "TRINIDAD AND TOBAGO", "port of spain": "TRINIDAD AND TOBAGO",
+    "kingston": "JAMAICA", "caucedo": "DOMINICAN REPUBLIC", "santo domingo": "DOMINICAN REPUBLIC",
+    "freeport": "BAHAMAS", "san juan": "PUERTO RICO", "havana": "CUBA",
+
     # --- AUSTRALIA & OCEANIA ---
     "sydney": "AUSTRALIA", "melbourne": "AUSTRALIA", "brisbane": "AUSTRALIA",
     "fremantle": "AUSTRALIA", "newcastle": "AUSTRALIA", "port hedland": "AUSTRALIA",
-    "adelaide": "AUSTRALIA", "darwin": "AUSTRALIA",
-    "auckland": "NEW ZEALAND", "wellington": "NEW ZEALAND", "lyttelton": "NEW ZEALAND"
+    "adelaide": "AUSTRALIA", "darwin": "AUSTRALIA", "gladstone": "AUSTRALIA",
+    "dampier": "AUSTRALIA", "port kembla": "AUSTRALIA", "geelong": "AUSTRALIA",
+    "townsville": "AUSTRALIA", "hay point": "AUSTRALIA", "mackay": "AUSTRALIA",
+    "auckland": "NEW ZEALAND", "wellington": "NEW ZEALAND", "lyttelton": "NEW ZEALAND",
+    "tauranga": "NEW ZEALAND", "napier": "NEW ZEALAND",
 }
 
+# Comprehensive maritime neighboring/regional fallback map for all countries
 NEIGHBORING_COUNTRIES = {
-    "brazil": ["argentina", "uruguay", "panama"],
-    "turkey": ["greece", "bulgaria", "cyprus", "italy"],
-    "greece": ["turkey", "cyprus", "italy", "malta"],
-    "netherlands": ["belgium", "germany", "france", "uk"],
+    # --- EUROPE & BLACK SEA / MEDITERRANEAN ---
+    "romania": ["bulgaria", "turkey", "greece", "ukraine", "cyprus", "italy"],
+    "bulgaria": ["romania", "turkey", "greece", "cyprus", "italy"],
+    "ukraine": ["romania", "bulgaria", "turkey", "greece", "poland"],
+    "georgia": ["turkey", "romania", "bulgaria", "greece"],
+    "russia": ["turkey", "finland", "estonia", "latvia", "lithuania", "poland", "china", "south korea"],
+    "turkey": ["greece", "bulgaria", "romania", "cyprus", "italy", "egypt"],
+    "greece": ["turkey", "cyprus", "italy", "malta", "bulgaria", "romania", "egypt"],
+    "cyprus": ["greece", "turkey", "egypt", "israel", "lebanon", "italy", "malta"],
+    "malta": ["italy", "greece", "tunisia", "spain", "france", "cyprus"],
+    "italy": ["greece", "france", "spain", "malta", "croatia", "slovenia", "turkey"],
+    "slovenia": ["italy", "croatia", "greece", "malta"],
+    "croatia": ["italy", "slovenia", "greece", "montenegro", "malta"],
+    "montenegro": ["croatia", "italy", "greece", "albania"],
+    "albania": ["greece", "italy", "montenegro", "croatia", "turkey"],
+    "spain": ["portugal", "france", "italy", "gibraltar", "morocco", "uk", "netherlands"],
+    "portugal": ["spain", "gibraltar", "france", "morocco", "uk", "netherlands"],
+    "gibraltar": ["spain", "portugal", "morocco", "uk", "france", "italy"],
+    "france": ["belgium", "netherlands", "uk", "spain", "italy", "germany"],
+    "netherlands": ["belgium", "germany", "uk", "france", "denmark"],
     "belgium": ["netherlands", "france", "germany", "uk"],
-    "germany": ["netherlands", "poland", "denmark", "france"],
-    "spain": ["portugal", "france", "italy", "gibraltar", "morocco"],
-    "italy": ["greece", "france", "spain", "malta"],
-    "china": ["south korea", "japan", "taiwan", "singapore"],
-    "south korea": ["china", "japan"],
-    "thailand": ["singapore", "malaysia", "vietnam"],
-    "uae": ["oman", "saudi arabia", "qatar", "bahrain"],
-    "morocco": ["spain", "portugal", "gibraltar", "algeria"],
-    "algeria": ["morocco", "spain", "italy", "tunisia"]
+    "germany": ["netherlands", "belgium", "denmark", "poland", "sweden", "uk", "france"],
+    "uk": ["netherlands", "belgium", "france", "ireland", "germany", "denmark", "norway", "spain"],
+    "ireland": ["uk", "netherlands", "belgium", "france", "spain"],
+    "denmark": ["germany", "sweden", "norway", "netherlands", "poland", "uk"],
+    "norway": ["sweden", "denmark", "germany", "netherlands", "uk", "finland"],
+    "sweden": ["denmark", "norway", "finland", "germany", "poland", "estonia", "latvia", "lithuania", "netherlands"],
+    "finland": ["sweden", "estonia", "latvia", "lithuania", "poland", "germany", "denmark", "norway"],
+    "poland": ["germany", "lithuania", "latvia", "estonia", "sweden", "denmark", "netherlands"],
+    "estonia": ["finland", "latvia", "lithuania", "sweden", "poland", "germany"],
+    "latvia": ["lithuania", "estonia", "finland", "sweden", "poland", "germany"],
+    "lithuania": ["latvia", "poland", "estonia", "sweden", "finland", "germany"],
+
+    # --- MIDDLE EAST ---
+    "uae": ["oman", "saudi arabia", "qatar", "bahrain", "kuwait", "india", "singapore"],
+    "oman": ["uae", "saudi arabia", "qatar", "bahrain", "kuwait", "india"],
+    "saudi arabia": ["uae", "bahrain", "qatar", "kuwait", "oman", "egypt", "jordan"],
+    "qatar": ["uae", "bahrain", "saudi arabia", "kuwait", "oman"],
+    "bahrain": ["saudi arabia", "qatar", "uae", "kuwait", "oman"],
+    "kuwait": ["saudi arabia", "bahrain", "qatar", "uae", "iraq", "oman"],
+    "iraq": ["kuwait", "uae", "saudi arabia", "bahrain", "qatar", "oman"],
+    "iran": ["uae", "oman", "qatar", "bahrain", "kuwait", "turkey"],
+    "jordan": ["egypt", "saudi arabia", "israel", "cyprus", "uae", "greece"],
+    "israel": ["cyprus", "greece", "egypt", "turkey", "jordan", "italy"],
+    "lebanon": ["cyprus", "turkey", "greece", "egypt", "israel"],
+    "syria": ["turkey", "cyprus", "lebanon", "greece", "egypt"],
+    "yemen": ["oman", "uae", "saudi arabia", "djibouti", "egypt"],
+
+    # --- AFRICA ---
+    "egypt": ["greece", "cyprus", "turkey", "saudi arabia", "israel", "jordan", "italy", "malta", "uae"],
+    "morocco": ["spain", "portugal", "gibraltar", "algeria", "tunisia", "france"],
+    "algeria": ["morocco", "tunisia", "spain", "france", "italy", "malta"],
+    "tunisia": ["italy", "malta", "algeria", "morocco", "france", "greece", "spain"],
+    "libya": ["malta", "italy", "tunisia", "egypt", "greece", "turkey"],
+    "sudan": ["egypt", "saudi arabia", "djibouti", "uae"],
+    "djibouti": ["uae", "oman", "saudi arabia", "egypt", "kenya"],
+    "senegal": ["ivory coast", "ghana", "morocco", "spain", "nigeria"],
+    "guinea": ["senegal", "ivory coast", "ghana", "sierra leone", "liberia"],
+    "sierra leone": ["guinea", "liberia", "senegal", "ivory coast", "ghana"],
+    "liberia": ["ivory coast", "ghana", "sierra leone", "guinea", "senegal"],
+    "mauritania": ["senegal", "morocco", "spain", "portugal"],
+    "ivory coast": ["ghana", "senegal", "nigeria", "togo", "benin", "cameroon", "south africa"],
+    "ghana": ["ivory coast", "nigeria", "togo", "benin", "senegal", "cameroon", "south africa"],
+    "togo": ["ghana", "benin", "nigeria", "ivory coast", "senegal"],
+    "benin": ["nigeria", "togo", "ghana", "ivory coast", "cameroon"],
+    "nigeria": ["ghana", "ivory coast", "benin", "togo", "cameroon", "senegal", "south africa"],
+    "cameroon": ["nigeria", "ghana", "ivory coast", "gabon", "congo", "angola", "south africa"],
+    "gabon": ["cameroon", "congo", "nigeria", "angola", "ivory coast", "south africa"],
+    "congo": ["angola", "gabon", "cameroon", "dr congo", "south africa", "namibia"],
+    "dr congo": ["congo", "angola", "gabon", "cameroon", "south africa", "namibia"],
+    "angola": ["namibia", "south africa", "congo", "gabon", "cameroon", "nigeria"],
+    "namibia": ["south africa", "angola", "congo"],
+    "south africa": ["namibia", "mozambique", "angola", "mauritius", "kenya", "tanzania", "uae"],
+    "mozambique": ["south africa", "tanzania", "kenya", "mauritius", "madagascar", "namibia"],
+    "tanzania": ["kenya", "mozambique", "south africa", "mauritius", "uae"],
+    "kenya": ["tanzania", "south africa", "mozambique", "djibouti", "uae"],
+    "mauritius": ["south africa", "madagascar", "mozambique", "kenya", "uae", "singapore"],
+    "madagascar": ["mauritius", "south africa", "mozambique", "tanzania", "kenya"],
+
+    # --- ASIA & FAR EAST ---
+    "singapore": ["malaysia", "indonesia", "thailand", "vietnam", "philippines", "china"],
+    "malaysia": ["singapore", "thailand", "indonesia", "vietnam", "philippines", "china"],
+    "thailand": ["singapore", "malaysia", "vietnam", "indonesia", "china", "philippines"],
+    "indonesia": ["singapore", "malaysia", "australia", "philippines", "thailand", "vietnam"],
+    "philippines": ["singapore", "taiwan", "china", "malaysia", "vietnam", "indonesia", "south korea", "japan"],
+    "vietnam": ["singapore", "china", "thailand", "malaysia", "taiwan", "philippines"],
+    "cambodia": ["thailand", "vietnam", "singapore", "malaysia"],
+    "myanmar": ["thailand", "singapore", "malaysia", "india", "bangladesh"],
+    "brunei": ["malaysia", "singapore", "indonesia", "philippines"],
+    "china": ["south korea", "japan", "taiwan", "singapore", "vietnam", "philippines"],
+    "taiwan": ["china", "south korea", "japan", "philippines", "singapore", "vietnam"],
+    "south korea": ["china", "japan", "taiwan", "singapore"],
+    "japan": ["south korea", "china", "taiwan", "singapore"],
+    "india": ["sri lanka", "uae", "singapore", "pakistan", "bangladesh", "oman"],
+    "sri lanka": ["india", "singapore", "malaysia", "uae"],
+    "pakistan": ["uae", "oman", "india", "saudi arabia", "bahrain", "qatar"],
+    "bangladesh": ["india", "sri lanka", "singapore", "malaysia", "thailand"],
+
+    # --- AMERICAS & CARIBBEAN ---
+    "usa": ["canada", "mexico", "panama", "bahamas", "colombia"],
+    "canada": ["usa", "uk", "netherlands"],
+    "mexico": ["usa", "panama", "colombia", "brazil"],
+    "panama": ["colombia", "usa", "mexico", "costa rica", "ecuador", "brazil"],
+    "colombia": ["panama", "ecuador", "peru", "brazil", "venezuela", "usa"],
+    "venezuela": ["colombia", "panama", "trinidad and tobago", "brazil", "usa"],
+    "guyana": ["trinidad and tobago", "suriname", "brazil", "panama", "colombia", "usa"],
+    "suriname": ["guyana", "trinidad and tobago", "brazil", "panama", "colombia"],
+    "ecuador": ["peru", "colombia", "panama", "chile"],
+    "peru": ["chile", "ecuador", "colombia", "panama", "brazil"],
+    "chile": ["peru", "argentina", "uruguay", "brazil", "ecuador", "panama"],
+    "brazil": ["argentina", "uruguay", "chile", "colombia", "panama", "peru"],
+    "argentina": ["uruguay", "brazil", "chile"],
+    "uruguay": ["argentina", "brazil", "chile"],
+    "trinidad and tobago": ["panama", "colombia", "usa", "brazil", "venezuela"],
+    "jamaica": ["usa", "panama", "colombia", "dominican republic", "bahamas"],
+    "dominican republic": ["usa", "puerto rico", "panama", "colombia", "jamaica"],
+    "bahamas": ["usa", "panama", "jamaica", "dominican republic"],
+    "puerto rico": ["usa", "dominican republic", "panama", "colombia"],
+    "cuba": ["mexico", "panama", "jamaica", "dominican republic", "bahamas"],
+
+    # --- AUSTRALIA & OCEANIA ---
+    "australia": ["new zealand", "singapore", "indonesia", "malaysia"],
+    "new zealand": ["australia", "singapore"],
 }
 
 KNOWN_MAKERS = [
@@ -192,6 +418,11 @@ KNOWN_MAKERS = [
 COUNTRY_ALIASES = {}
 for _country_name in set(PORT_TO_COUNTRY.values()):
     COUNTRY_ALIASES[_country_name.lower()] = _country_name
+for _country_key in NEIGHBORING_COUNTRIES.keys():
+    COUNTRY_ALIASES[_country_key.lower()] = _country_key.upper()
+    for _neigh in NEIGHBORING_COUNTRIES[_country_key]:
+        COUNTRY_ALIASES[_neigh.lower()] = _neigh.upper()
+
 COUNTRY_ALIASES.update({
     "uae": "UAE",
     "u.a.e.": "UAE",
@@ -204,12 +435,23 @@ COUNTRY_ALIASES.update({
     "uk": "UK",
     "u.k.": "UK",
     "united kingdom": "UK",
+    "great britain": "UK",
+    "england": "UK",
     "korea": "SOUTH KOREA",
     "south korea": "SOUTH KOREA",
     "republic of korea": "SOUTH KOREA",
     "hellas": "GREECE",
     "ελλάδα": "GREECE",
     "ελλαδα": "GREECE",
+    "ρουμανία": "ROMANIA",
+    "ρουμανια": "ROMANIA",
+    "βουλγαρία": "BULGARIA",
+    "βουλγαρια": "BULGARIA",
+    "τούρκια": "TURKEY",
+    "τουρκία": "TURKEY",
+    "τουρκια": "TURKEY",
+    "κύπρος": "CYPRUS",
+    "κυπρος": "CYPRUS",
     "brasil": "BRAZIL",
     "türkiye": "TURKEY",
     "turkiye": "TURKEY",
@@ -224,6 +466,7 @@ COUNTRY_ALIASES.update({
     "prc": "CHINA",
     "p.r.c.": "CHINA",
     "hong kong": "CHINA",
+    "russian federation": "RUSSIA",
 })
 
 RESULT_DEFAULTS = {
@@ -558,7 +801,6 @@ def parse_manual_inputs(manual_text):
     if not manual_text or not str(manual_text).strip():
         return overrides, explicit
     text = str(manual_text)
-
     country_match = re.search(
         r"(?im)(?:^|\n)\s*(?:country|χώρα|χωρα)\s*[:=]\s*([^\n]+)",
         text,
@@ -580,8 +822,16 @@ def parse_manual_inputs(manual_text):
             overrides["port"] = known_ports[0][2].title()
             overrides["_port_country"] = known_ports[0][3]
         else:
-            overrides["port"] = captured.strip(" .,").title()
-        explicit.add("port")
+             found_c = find_country(captured)
+             if found_c and "country" not in explicit:
+                 overrides["country"] = found_c
+                 explicit.add("country")
+                 overrides["port"] = "Not specified"
+             else:
+                 overrides["port"] = captured.strip(" .,").title()
+                 explicit.add("port")
+        if overrides.get("port") and overrides.get("port") != "Not specified":
+            explicit.add("port")
 
     vessel_match = re.search(
         r"(?im)(?:^|\n)\s*(?:vessel|ship|πλο[ιί]ο|πλοιο|m/v|m/t)\s*[:=]\s*([^\n]+)",
@@ -681,7 +931,13 @@ def normalize_result(data):
         else:
             result[field] = str(result[field]).strip()
     if specified(result.get("country")):
-        result["country"] = str(result["country"]).strip().upper()
+        raw_c = str(result["country"]).strip()
+        canonical_c = find_country(raw_c)
+        result["country"] = canonical_c if canonical_c else raw_c.upper()
+    if not specified(result.get("country")) and specified(result.get("port")):
+        p_key = str(result["port"]).strip().lower()
+        if p_key in PORT_TO_COUNTRY:
+            result["country"] = PORT_TO_COUNTRY[p_key]
     return result
 
 
@@ -742,8 +998,8 @@ def build_prompt(manual_override_text, cleaned_files, image_count):
         else "No photographs were attached."
     )
     truncation_line = "The inquiry text was truncated for length.\n" if truncated else ""
-    return f"""
-You are an expert maritime technical coordinator. Parse the commercial RFQ and extract facts into JSON.
+    return f"""You are an expert maritime technical coordinator. Parse the commercial RFQ and extract facts into JSON.
+
 CRITICAL INSTRUCTIONS:
 1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH. If a country, port, or vessel is stated there, use it unconditionally, even when documents or photographs disagree. Still record the disagreement inside "discrepancies".
 2. DO NOT extract 'Piraeus' or 'Greece' when it comes from a company footer or office address (OneTech, Mega Shipping, Vasilikon 51, Akti Miaouli, Akti Moutsopoulou, postal codes 185xx, telephone/email signature blocks). Those are not the service port.
@@ -752,10 +1008,13 @@ CRITICAL INSTRUCTIONS:
 5. Cross-check MANUAL OVERRIDE vs INQUIRY TEXT vs PHOTOGRAPHS. List every conflicting port, country, vessel, ETA, or maker in "discrepancies", naming the source of each fact.
 6. Office addresses must never become the service port.
 {truncation_line}{photo_line}
+
 MANUAL OVERRIDE (ground truth):
 \"\"\"{manual_override_text or ""}\"\"\"
+
 INQUIRY TEXT (office addresses already stripped where detected):
 \"\"\"{inquiry}\"\"\"
+
 Return ONLY valid JSON matching this schema:
 {{
   "vessel_name": "Name of vessel or 'Not specified'",
@@ -767,8 +1026,7 @@ Return ONLY valid JSON matching this schema:
   "spares_requested": "Spares",
   "discrepancies": ["Source A says X; source B says Y"],
   "missing_critical_data": ["What is missing"]
-}}
-"""
+}}"""
 
 
 def image_to_data_url(uploaded_file):
@@ -943,7 +1201,6 @@ def reject_office_piraeus(result, cleaned_files, manual_text):
     if operational_port_context(cleaned_files or "", "piraeus"):
         return
     if re.search(r"(?<![a-z0-9])piraeus(?![a-z0-9])", (cleaned_files or "").lower()):
-        # Still mentioned after signature stripping, but not as a port call.
         if operational_port_context(cleaned_files, "piraeus"):
             return
     result["port"] = "Not specified"
@@ -1063,7 +1320,6 @@ def analyze_rfq(manual_override_text, files_text, image_files):
     photos_analyzed = False
     if len(image_files) > 4:
         st.info("Only the first 4 photographs were sent to Groq.")
-
     if client:
         prompt_text = build_prompt(manual_override_text, cleaned_files, len(data_urls))
         try:
@@ -1116,10 +1372,8 @@ def analyze_rfq(manual_override_text, files_text, image_files):
             st.warning(f"Groq API request failed: {exc}. Executing local rule engine.")
     else:
         st.info("GROQ_API_KEY not detected in secrets. Running local parser.")
-
     if not res_json:
         res_json = smart_local_parser(manual_override_text, files_text)
-
     res_json = normalize_result(res_json) or smart_local_parser(manual_override_text, files_text)
     reject_office_piraeus(res_json, cleaned_files, manual_override_text)
     if image_files and not photos_analyzed:
@@ -1172,7 +1426,6 @@ with col2:
 
 doc_files = [f for f in uploaded_files if not f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
 image_files = [f for f in uploaded_files if f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
-
 files_combined_text = ""
 if doc_files:
     for f in doc_files:
@@ -1195,6 +1448,7 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
                 st.caption("Groq did not return a result. Local rule engine was used.")
             else:
                 st.caption("Local rule engine (no Groq API key).")
+
             col_b1, col_b2, col_b3 = st.columns(3)
             with col_b1:
                 st.info(f"**Vessel Name:** {parsed.get('vessel_name')}")
@@ -1208,6 +1462,7 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
             with col_b3:
                 st.warning(f"**Reported Problem / Scope:** {parsed.get('scope')}")
                 st.warning(f"**Spares Inquired:** {parsed.get('spares_requested')}")
+
             st.markdown("---")
             st.subheader("3. Discrepancy & Conflict Audit (Cross-Source Check)")
             discrepancies = parsed.get("discrepancies", [])
@@ -1217,54 +1472,84 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
                     st.warning(f"- {d}")
             else:
                 st.success("No discrepancies or conflicts detected between manual input, documents, and photo evidence.")
+
             missing = parsed.get("missing_critical_data") or []
             if missing:
                 st.info("Missing critical data:")
                 for item in missing:
                     st.write(f"- {item}")
+
             st.markdown("---")
             st.subheader("4. Recommended Service Stations")
             target_country = str(parsed.get("country", "")).strip().lower()
             target_makers = [m.lower() for m in parsed.get("makers", [])]
+
             if not df.empty and target_country and target_country != "not specified":
-                country_match = df[df["Country"].str.strip().str.lower() == target_country]
+                country_match = df[df["Country"].astype(str).str.strip().str.lower() == target_country]
                 final_df = pd.DataFrame()
                 matched_location_label = target_country.upper()
 
                 def maker_filter(approved_str):
                     app_lower = str(approved_str).lower()
-                    return any(m in app_lower for m in target_makers)
+                    for m in target_makers:
+                        if m in app_lower:
+                            return True
+                        tokens = m.split()
+                        if tokens and len(tokens[0]) >= 3 and tokens[0] in app_lower:
+                            return True
+                    return False
 
+                # 1. Έλεγχος στην κύρια χώρα μόνο για σταθμούς που υποστηρίζουν τον κατασκευαστή
                 if not country_match.empty:
                     if target_makers:
                         filtered = country_match[country_match["Approved Makers"].apply(maker_filter)]
-                        final_df = filtered if not filtered.empty else country_match
+                        if not filtered.empty:
+                            final_df = filtered
                     else:
                         final_df = country_match
+
+                # 2. Αν δεν βρέθηκε ο κατασκευαστής στην κύρια χώρα, ψάχνουμε στις γειτονικές χώρες
                 if final_df.empty and target_country in NEIGHBORING_COUNTRIES:
                     neighbors = NEIGHBORING_COUNTRIES[target_country]
+                    neighbor_matches = []
+                    matched_neighbors = []
                     for neigh in neighbors:
-                        neigh_match = df[df["Country"].str.strip().str.lower() == neigh]
+                        neigh_match = df[df["Country"].astype(str).str.strip().str.lower() == neigh]
                         if not neigh_match.empty:
                             if target_makers:
                                 filtered_neigh = neigh_match[neigh_match["Approved Makers"].apply(maker_filter)]
                                 if not filtered_neigh.empty:
-                                    final_df = filtered_neigh
-                                    matched_location_label = f"{neigh.upper()} (Neighboring Country to {target_country.upper()})"
-                                    break
+                                    neighbor_matches.append(filtered_neigh)
+                                    matched_neighbors.append(neigh.upper())
                             else:
-                                final_df = neigh_match
-                                matched_location_label = f"{neigh.upper()} (Neighboring Country to {target_country.upper()})"
+                                neighbor_matches.append(neigh_match)
+                                matched_neighbors.append(neigh.upper())
                                 break
+                    if neighbor_matches:
+                        final_df = pd.concat(neighbor_matches, ignore_index=True)
+                        matched_location_label = (
+                            f"{', '.join(matched_neighbors)} "
+                            f"(Neighboring Countries to {target_country.upper()})"
+                        )
+
                 makers_formatted = ', '.join([m.upper() for m in target_makers]) if target_makers else "ALL"
                 if not final_df.empty:
+                    if matched_location_label != target_country.upper():
+                        st.info(
+                            f"No approved station in **{target_country.upper()}** supports **{makers_formatted}**. "
+                            f"Showing approved stations in neighboring countries:"
+                        )
                     st.success(f"Matched stations in **{matched_location_label}** for makers: {makers_formatted}")
                     st.dataframe(final_df, use_container_width=True)
                 else:
-                    st.warning(f"No approved stations found in {target_country.upper()} or neighboring regions. Showing full directory:")
+                    st.warning(
+                        f"No approved stations found for **{makers_formatted}** in {target_country.upper()} "
+                        f"or neighboring regions. Showing full directory:"
+                    )
                     st.dataframe(df, use_container_width=True)
             else:
                 st.warning("Target country is not specified or no stations matched.")
+
             with st.expander("Show Parsed Raw Inputs"):
                 st.write("**Manual Override Text:**")
                 st.text(rfq_pasted_text)
