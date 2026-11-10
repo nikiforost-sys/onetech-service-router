@@ -109,7 +109,7 @@ def extract_text_from_file(uploaded_file):
         st.error(f"Error parsing {uploaded_file.name}: {e}")
     return extracted_text
 
-def parse_rfq_brief(text):
+def parse_rfq_brief(primary_text, full_text):
     brief = {
         "vessel": "Not specified",
         "eta": "Not specified",
@@ -118,29 +118,43 @@ def parse_rfq_brief(text):
         "spares": "None explicitly requested"
     }
     
-    # 1. Vessel extraction
-    vessel_match = re.search(r'(?:vessel|m/v|m\.v\.|mt|m\.t\.)\s*[:\-]?\s*([A-Za-z0-9\s\-]+?)(?=[,\.\n\r]|\s+(?:is|has|calling|arriving|eta|imo))', text, re.IGNORECASE)
+    # Clean text to avoid brand interference with ports
+    scrubbed_primary = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', primary_text, flags=re.IGNORECASE)
+    scrubbed_full = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', full_text, flags=re.IGNORECASE)
+    
+    # 1. Vessel extraction (check full text)
+    vessel_match = re.search(r'(?:vessel|m/v|m\.v\.|mt|m\.t\.)\s*[:\-]?\s*([A-Za-z0-9\s\-]+?)(?=[,\.\n\r]|\s+(?:is|has|calling|arriving|eta|imo))', full_text, re.IGNORECASE)
     if vessel_match:
         name = vessel_match.group(1).strip()
         if len(name) > 2 and len(name) < 30 and name.lower() not in ["s", "name", "the"]:
             brief["vessel"] = name.upper()
 
-    # 2. ETA extraction
-    eta_match = re.search(r'(?:eta|arrival|arriving|calling\s+on)\s*[:\-]?\s*(?:is\s+on\s+the|is\s+on|on\s+the|on)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+(?:\s+[0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}(?:st|nd|rd|th)?(?:\s+agw\s+wp|\s+agw|\s+wp)?)', text, re.IGNORECASE)
+    # 2. ETA extraction (check primary message first, then full text)
+    eta_match = re.search(r'(?:eta|arrival|arriving|calling\s+on)\s*[:\-]?\s*(?:is\s+on\s+the|is\s+on|on\s+the|on)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+(?:\s+[0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}(?:st|nd|rd|th)?(?:\s+agw\s+wp|\s+agw|\s+wp)?)', primary_text, re.IGNORECASE)
+    if not eta_match:
+        eta_match = re.search(r'(?:eta|arrival|arriving|calling\s+on)\s*[:\-]?\s*(?:is\s+on\s+the|is\s+on|on\s+the|on)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+(?:\s+[0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}(?:st|nd|rd|th)?(?:\s+agw\s+wp|\s+agw|\s+wp)?)', full_text, re.IGNORECASE)
     if eta_match:
         val = eta_match.group(1).strip()
         if len(val) >= 2:
             brief["eta"] = val.upper()
 
-    # 3. Port extraction
+    # 3. Port extraction: Give priority to primary text
+    found_port = False
     for port, country in PORT_TO_COUNTRY.items():
-        if re.search(r'\b' + re.escape(port) + r'\b', text, re.IGNORECASE):
+        if re.search(r'\b' + re.escape(port) + r'\b', scrubbed_primary, re.IGNORECASE):
             brief["port"] = f"{port.title()} ({country.upper()})"
+            found_port = True
             break
+            
+    if not found_port:
+        for port, country in PORT_TO_COUNTRY.items():
+            if re.search(r'\b' + re.escape(port) + r'\b', scrubbed_full, re.IGNORECASE):
+                brief["port"] = f"{port.title()} ({country.upper()})"
+                break
 
     # 4. Defect / Scope extraction
     defect_sentences = []
-    lines = text.splitlines()
+    lines = full_text.splitlines()
     for line in lines:
         l_lower = line.lower()
         if any(w in l_lower for w in ["defect", "fault", "alarm", "error", "malfunction", "apt", "annual test", "gyro", "radar", "vdr", "not working", "fails", "failure"]):
@@ -216,9 +230,10 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
         text_lower = combined_text.lower()
+        pasted_lower = rfq_pasted_text.lower()
         
         # 2. RFQ Executive Brief
-        brief_data = parse_rfq_brief(combined_text)
+        brief_data = parse_rfq_brief(rfq_pasted_text, combined_text)
         st.markdown("---")
         st.subheader("2. RFQ Executive Brief")
         
@@ -259,21 +274,40 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
 
         if not df.empty:
             target_countries = set()
-            detected_ports = []
             
+            # Remove Tokyo Keiki brand noise so it doesn't trigger Japan
+            search_primary = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', pasted_lower)
+            search_full = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', text_lower)
+            
+            # Step A: Check ports in pasted message first
             for port, country in PORT_TO_COUNTRY.items():
                 pattern = r'\b' + re.escape(port) + r'\b'
-                if re.search(pattern, text_lower):
-                    detected_ports.append(port)
+                if re.search(pattern, search_primary):
                     target_countries.add(country)
             
+            # Step B: If no port in pasted text, check full text
+            if not target_countries:
+                for port, country in PORT_TO_COUNTRY.items():
+                    pattern = r'\b' + re.escape(port) + r'\b'
+                    if re.search(pattern, search_full):
+                        target_countries.add(country)
+
+            # Step C: Fallback to country names only if still no port matched
             if not target_countries:
                 for val in df["Country"].dropna().unique():
                     c_str = str(val).strip().lower()
                     if c_str and len(c_str) > 2:
                         pattern = r'\b' + re.escape(c_str) + r'\b'
-                        if re.search(pattern, text_lower):
+                        if re.search(pattern, search_primary):
                             target_countries.add(c_str)
+                            
+                if not target_countries:
+                    for val in df["Country"].dropna().unique():
+                        c_str = str(val).strip().lower()
+                        if c_str and len(c_str) > 2:
+                            pattern = r'\b' + re.escape(c_str) + r'\b'
+                            if re.search(pattern, search_full):
+                                target_countries.add(c_str)
 
             if target_countries:
                 st.info(f"Target scope locked to: {', '.join([c.upper() for c in target_countries])}")
