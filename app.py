@@ -201,9 +201,10 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
 
 @st.cache_data(ttl=300)
 def load_directory():
+    base_url = "https://" + "[www.googleapis.com/auth/](https://www.googleapis.com/auth/)"
     scopes = [
-        "[https://www.googleapis.com/auth/spreadsheets](https://www.googleapis.com/auth/spreadsheets)",
-        "[https://www.googleapis.com/auth/drive](https://www.googleapis.com/auth/drive)"
+        base_url + "spreadsheets",
+        base_url + "drive"
     ]
     creds_dict = dict(st.secrets["gcp_service_account"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
