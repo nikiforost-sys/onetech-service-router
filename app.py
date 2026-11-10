@@ -12,9 +12,8 @@ import extract_msg
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("High-Speed Maritime RFQ Parser & Station Router.")
+st.markdown("High-Speed Maritime RFQ Parser & Station Router with Neighboring Country Fallback.")
 
-# Προαιρετικό Gemini (αν είναι διαθέσιμο, αλλιώς εκτελείται ακαριαία ο τοπικός έξυπνος αναλυτής)
 api_key = st.secrets.get("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key) if api_key else None
 
@@ -32,7 +31,27 @@ PORT_TO_COUNTRY = {
     "shenzhen": "CHINA", "guangzhou": "CHINA", "qingdao": "CHINA",
     "tianjin": "CHINA", "hong kong": "CHINA", "busan": "SOUTH KOREA",
     "houston": "USA", "new orleans": "USA", "new york": "USA",
-    "panama": "PANAMA", "santos": "BRAZIL"
+    "panama": "PANAMA", "santos": "BRAZIL",
+    # Προσθήκες για Μαρόκο και Αλγερία
+    "casablanca": "MOROCCO", "tangier": "MOROCCO", "agadir": "MOROCCO",
+    "jorf lasfar": "MOROCCO", "algiers": "ALGERIA", "oran": "ALGERIA",
+    "annaba": "ALGERIA", "arzew": "ALGERIA"
+}
+
+# Ενημερωμένος πίνακας γειτονικών / περιφερειακών χωρών (συμπεριλαμβανομένων Morocco, Algeria, Spain)
+NEIGHBORING_COUNTRIES = {
+    "turkey": ["greece", "bulgaria", "cyprus", "italy"],
+    "greece": ["turkey", "cyprus", "italy", "malta"],
+    "netherlands": ["belgium", "germany", "france", "uk"],
+    "belgium": ["netherlands", "france", "germany", "uk"],
+    "germany": ["netherlands", "poland", "denmark", "france"],
+    "spain": ["portugal", "france", "italy", "gibraltar", "morocco"],
+    "italy": ["greece", "france", "spain", "malta"],
+    "china": ["south korea", "japan", "taiwan", "singapore"],
+    "south korea": ["china", "japan"],
+    "uae": ["oman", "saudi arabia", "qatar", "bahrain"],
+    "morocco": ["spain", "portugal", "gibraltar", "algeria"],
+    "algeria": ["morocco", "spain", "italy", "tunisia"]
 }
 
 KNOWN_MAKERS = [
@@ -97,36 +116,27 @@ def clean_json(text):
     return text.strip()
 
 def clean_vessel_name(raw_name):
-    """Γενικός καθαρισμός: κρατάει έως 3 λέξεις και κόβει οτιδήποτε ακολουθεί (π.χ. will, at, eta, κλπ.)"""
     if not raw_name or raw_name.lower() == "not specified":
         return "Not specified"
-    
-    # Λίστα διαχωριστικών λέξεων που συναντώνται μετά το όνομα του πλοίου στα RFQ
     stop_words_pattern = r"\b(will|at|eta|port|call|calling|arr|arriving|due|to|for|is|and|the|in|on|sailing)\b"
     cleaned = re.split(stop_words_pattern, raw_name, flags=re.IGNORECASE)[0]
-    
-    # Περιορισμός στις πρώτες 3 λέξεις μέγιστο για αποφυγή ρύπανσης
     words = cleaned.strip().split()
     if len(words) > 3:
         words = words[:3]
-        
     return " ".join(words).strip().title()
 
 def smart_local_parser(full_text):
     text_lower = full_text.lower()
     
-    # 1. Εντοπισμός ονόματος πλοίου γενικά
     vessel_name = "Not specified"
     vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", text_lower)
     if vessel_match:
         vessel_name = clean_vessel_name(vessel_match.group(1))
     else:
-        # Fallback στις πρώτες λέξεις του κειμένου
         lines = [line.strip() for line in full_text.split('\n') if line.strip()]
         if lines:
             vessel_name = clean_vessel_name(lines[0][:30])
 
-    # 2. Εντοπισμός λιμανιού και χώρας
     detected_port = "Not specified"
     detected_country = "Not specified"
     for port_key, country_val in PORT_TO_COUNTRY.items():
@@ -135,7 +145,6 @@ def smart_local_parser(full_text):
             detected_country = country_val
             break
             
-    # 3. Έξυπνος εντοπισμός κατασκευαστή με αποκλεισμό αν ανήκει στο όνομα του πλοίου
     found_makers = []
     for maker in KNOWN_MAKERS:
         if maker in text_lower:
@@ -143,7 +152,6 @@ def smart_local_parser(full_text):
                 continue
             found_makers.append(maker.upper())
             
-    # 4. Εντοπισμός εργασίας / scope
     scope_text = "Standard service / inquiry inspection requested."
     if "annual" in text_lower:
         scope_text = "Annual Radio / VDR / Navigation Survey"
@@ -187,7 +195,6 @@ Return ONLY a raw JSON dictionary using these exact keys:
         try:
             response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
             res_json = json.loads(clean_json(response.text.strip()))
-            # Καθαρισμός και στο αποτέλεσμα του AI για απόλυτη ασφάλεια
             if "vessel_name" in res_json:
                 res_json["vessel_name"] = clean_vessel_name(res_json["vessel_name"])
             return res_json
@@ -270,32 +277,52 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
             target_country = str(parsed.get("country", "")).strip().lower()
             target_makers = [m.lower() for m in parsed.get("makers", [])]
 
-            if not df.empty:
+            if not df.empty and target_country:
                 country_match = df[df["Country"].str.strip().str.lower() == target_country]
                 
+                final_df = pd.DataFrame()
+                matched_location_label = target_country.upper()
+                
+                def maker_filter(approved_str):
+                    app_lower = str(approved_str).lower()
+                    return any(m in app_lower for m in target_makers)
+
                 if not country_match.empty:
                     if target_makers:
-                        def maker_filter(approved_str):
-                            app_lower = str(approved_str).lower()
-                            return any(m in app_lower for m in target_makers)
-
-                        final_df = country_match[country_match["Approved Makers"].apply(maker_filter)]
-                        
-                        makers_formatted = ', '.join([m.upper() for m in target_makers])
-                        if not final_df.empty:
-                            st.success(f"Matched stations in {target_country.upper()} for: {makers_formatted}")
-                            st.dataframe(final_df, use_container_width=True)
+                        filtered = country_match[country_match["Approved Makers"].apply(maker_filter)]
+                        if not filtered.empty:
+                            final_df = filtered
                         else:
-                            st.warning(f"Stations found in {target_country.upper()}, but none with explicit approval for {makers_formatted}. Showing all stations in country:")
-                            st.dataframe(country_match, use_container_width=True)
+                            final_df = country_match
                     else:
-                        st.info(f"Showing all stations in {target_country.upper()} (No specific maker detected):")
-                        st.dataframe(country_match, use_container_width=True)
+                        final_df = country_match
+                
+                if final_df.empty and target_country in NEIGHBORING_COUNTRIES:
+                    neighbors = NEIGHBORING_COUNTRIES[target_country]
+                    for neigh in neighbors:
+                        neigh_match = df[df["Country"].str.strip().str.lower() == neigh]
+                        if not neigh_match.empty:
+                            if target_makers:
+                                filtered_neigh = neigh_match[neigh_match["Approved Makers"].apply(maker_filter)]
+                                if not filtered_neigh.empty:
+                                    final_df = filtered_neigh
+                                    matched_location_label = f"{neigh.upper()} (Neighboring Country to {target_country.upper()})"
+                                    break
+                            else:
+                                final_df = neigh_match
+                                matched_location_label = f"{neigh.upper()} (Neighboring Country to {target_country.upper()})"
+                                break
+
+                makers_formatted = ', '.join([m.upper() for m in target_makers]) if target_makers else "ALL"
+                
+                if not final_df.empty:
+                    st.success(f"Matched stations in **{matched_location_label}** for makers: {makers_formatted}")
+                    st.dataframe(final_df, use_container_width=True)
                 else:
-                    st.warning(f"No service stations found in directory for country: {target_country.upper()}. Showing full directory:")
+                    st.warning(f"No approved stations found in {target_country.upper()} or neighboring regions. Showing full directory:")
                     st.dataframe(df, use_container_width=True)
             else:
-                st.warning("Directory is empty or inaccessible.")
+                st.warning("Directory is empty or target country is not specified.")
 
             with st.expander("Show Extracted Raw Text"):
                 st.text(combined_text)
