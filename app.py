@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
+import requests
 from google import genai
 import pypdf
 import io
@@ -35,7 +34,7 @@ PORT_TO_COUNTRY = {
     "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE",
     "singapore": "SINGAPORE", "shanghai": "CHINA", "ningbo": "CHINA",
     "shenzhen": "CHINA", "guangzhou": "CHINA", "qingdao": "CHINA",
-    "tianjin": "CHINA", "hong kong": "CHINA", "busan": "SOUTH KOREA",
+    "tianjin": "CHINA", "hong kong": "CHINA", "busan": "SOUTH KORET",
     "houston": "USA", "new orleans": "USA", "new york": "USA",
     "panama": "PANAMA", "santos": "BRAZIL"
 }
@@ -201,18 +200,13 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
 
 @st.cache_data(ttl=300)
 def load_directory():
-    base_url = "https://" + "[www.googleapis.com/auth/](https://www.googleapis.com/auth/)"
-    scopes = [
-        base_url + "spreadsheets",
-        base_url + "drive"
-    ]
-    creds_dict = dict(st.secrets["gcp_service_account"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client_gs = gspread.authorize(creds)
     sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
-    sheet = client_gs.open_by_key(sheet_id).sheet1
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
+    gid = "428894731"
+    url = f"[https://docs.google.com/spreadsheets/d/](https://docs.google.com/spreadsheets/d/){sheet_id}/export?format=csv&gid={gid}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return pd.read_csv(io.BytesIO(response.content))
 
 try:
     df = load_directory()
