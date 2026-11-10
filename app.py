@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from google import genai
+import requests
 import pypdf
 import io
 import re
@@ -8,14 +8,15 @@ import json
 import email
 from email import policy
 import extract_msg
+from PIL import Image
+import base64
 
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("High-Speed Maritime RFQ Parser & Station Router with Expanded Global Port Directory.")
+st.markdown("High-Speed Maritime RFQ Parser with Manual Override & Image Support (Groq AI).")
 
-api_key = st.secrets.get("GEMINI_API_KEY")
-client = genai.Client(api_key=api_key) if api_key else None
+groq_api_key = st.secrets.get("GROQ_API_KEY")
 
 PORT_TO_COUNTRY = {
     # --- BRAZIL ---
@@ -83,7 +84,7 @@ PORT_TO_COUNTRY = {
     "jorf lasfar": "MOROCCO", "nador": "MOROCCO", "mohammedia": "MOROCCO",
     "algiers": "ALGERIA", "oran": "ALGERIA", "annaba": "ALGERIA", "arzew": "ALGERIA",
     "alexandria": "EGYPT", "port said": "EGYPT", "suez": "EGYPT", "damietta": "EGYPT",
-    "cairo": "EGYPT", "safaga": "EGYPT", "alexandria": "EGYPT",
+    "cairo": "EGYPT", "safaga": "EGYPT",
     "tunis": "TUNISIA", "sfax": "TUNISIA", "bizerte": "TUNISIA", "la goulette": "TUNISIA",
     "tripoli": "LIBYA", "benghazi": "LIBYA", "misurata": "LIBYA", "tobruk": "LIBYA",
     "lagos": "NIGERIA", "port harcourt": "NIGERIA", "onne": "NIGERIA",
@@ -94,13 +95,14 @@ PORT_TO_COUNTRY = {
     "shanghai": "CHINA", "ningbo": "CHINA", "shenzhen": "CHINA",
     "guangzhou": "CHINA", "qingdao": "CHINA", "tianjin": "CHINA",
     "hong kong": "CHINA", "dalian": "CHINA", "xiamen": "CHINA",
-    "tianjin": "CHINA", "rizhao": "CHINA", "yingkou": "CHINA",
+    "rizhao": "CHINA", "yingkou": "CHINA",
     "busan": "SOUTH KOREA", "ulsan": "SOUTH KOREA", "incheon": "SOUTH KOREA",
     "yeosu": "SOUTH KOREA", "pohang": "SOUTH KOREA", "daesan": "SOUTH KOREA",
     "tokyo": "JAPAN", "yokohama": "JAPAN", "nagoya": "JAPAN",
     "osaka": "JAPAN", "kobe": "JAPAN", "chiba": "JAPAN", "kitakyushu": "JAPAN",
     "port kelang": "MALAYSIA", "penang": "MALAYSIA", "pasir gudang": "MALAYSIA",
-    "tanjung pelepas": "MALAYSIA", "miri": "MALAYSIA", "bintulu": "MALAYSIA",
+    "tanjung pelepas": "MALAYSIA", "kohsichang": "THAILAND", "sichang": "THAILAND",
+    "miri": "MALAYSIA", "bintulu": "MALAYSIA",
     "bangkok": "THAILAND", "laem chabang": "THAILAND", "map ta phut": "THAILAND",
     "jakarta": "INDONESIA", "surabaya": "INDONESIA", "belawan": "INDONESIA",
     "batam": "INDONESIA", "balikpapan": "INDONESIA", "semarang": "INDONESIA",
@@ -129,12 +131,12 @@ PORT_TO_COUNTRY = {
     "concepcion": "CHILE", "iquique": "CHILE", "talcahuano": "CHILE",
     "callao": "PERU", "paita": "PERU", "marcona": "PERU",
     "cartagena": "COLOMBIA", "barranquilla": "COLOMBIA", "santa marta": "COLOMBIA",
-    "venezuela": "VENEZUELA", "puerto cabello": "VENEZUELA", "maracaibo": "VENEZUELA",
+    "puerto cabello": "VENEZUELA", "maracaibo": "VENEZUELA",
 
     # --- AUSTRALIA & OCEANIA ---
     "sydney": "AUSTRALIA", "melbourne": "AUSTRALIA", "brisbane": "AUSTRALIA",
     "fremantle": "AUSTRALIA", "newcastle": "AUSTRALIA", "port hedland": "AUSTRALIA",
-    "adelaide": "AUSTRALIA", "darwin": "AUSTRALIA", "haynes": "AUSTRALIA",
+    "adelaide": "AUSTRALIA", "darwin": "AUSTRALIA",
     "auckland": "NEW ZEALAND", "wellington": "NEW ZEALAND", "lyttelton": "NEW ZEALAND"
 }
 
@@ -149,6 +151,7 @@ NEIGHBORING_COUNTRIES = {
     "italy": ["greece", "france", "spain", "malta"],
     "china": ["south korea", "japan", "taiwan", "singapore"],
     "south korea": ["china", "japan"],
+    "thailand": ["malaysia", "singapore", "vietnam"],
     "uae": ["oman", "saudi arabia", "qatar", "bahrain"],
     "morocco": ["spain", "portugal", "gibraltar", "algeria"],
     "algeria": ["morocco", "spain", "italy", "tunisia"]
@@ -225,17 +228,17 @@ def clean_vessel_name(raw_name):
         words = words[:3]
     return " ".join(words).strip().title()
 
-def smart_local_parser(full_text):
-    text_lower = full_text.lower()
+def smart_local_parser(manual_override_text, files_text):
+    # Συνδυασμός: Το manual override μπαίνει ΠΡΩΤΟ για να έχει απόλυτη προτεραιότητα σε σύγκρουση
+    combined = manual_override_text + "\n" + files_text
+    text_lower = combined.lower()
     
-    # ΚΟΦΤΗΣ ΥΠΟΓΡΑΦΗΣ: Κρατάμε μόνο το κείμενο ΠΡΙΝ το "best regards" για να αγνοούμε τα στοιχεία της OneTech
     body_text = text_lower
     if "best regards" in text_lower:
         body_text = text_lower.split("best regards")[0]
     elif "regards" in text_lower:
         body_text = text_lower.split("regards")[0]
 
-    # 1. Εντοπισμός πλοίου
     vessel_name = "Not specified"
     vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", body_text)
     if vessel_match:
@@ -245,7 +248,6 @@ def smart_local_parser(full_text):
         if vessel_match_gen:
             vessel_name = clean_vessel_name(vessel_match_gen.group(1))
 
-    # 2. Εντοπισμός λιμανιού και χώρας από το σώμα
     detected_port = "Not specified"
     detected_country = "Not specified"
     for port_key, country_val in PORT_TO_COUNTRY.items():
@@ -254,7 +256,6 @@ def smart_local_parser(full_text):
             detected_country = country_val
             break
             
-    # 3. Εντοπισμός κατασκευαστή
     found_makers = []
     for maker in KNOWN_MAKERS:
         if maker in body_text:
@@ -262,7 +263,6 @@ def smart_local_parser(full_text):
                 continue
             found_makers.append(maker.upper())
             
-    # 4. Scope εργασίας
     scope_text = "Standard service / inquiry inspection requested."
     if "annual" in body_text:
         scope_text = "Annual Radio / VDR / Navigation Survey"
@@ -282,8 +282,73 @@ def smart_local_parser(full_text):
         "missing_critical_data": []
     }
 
-def analyze_rfq(full_text):
-    return smart_local_parser(full_text)
+def analyze_rfq(manual_override_text, files_text, image_files):
+    if groq_api_key:
+        url = "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)"
+        headers = {
+            "Authorization": f"Bearer {groq_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        messages_content = [
+            {
+                "type": "text",
+                "text": f"""
+Parse the following commercial RFQ / technical inquiry and extract operational facts into JSON.
+CRITICAL OVERRIDE RULE: Information provided in the 'MANUAL OVERRIDE' section takes absolute priority over attached files or emails if there is any conflict (e.g., overriding port, vessel, or scope).
+CRITICAL: Do NOT list a brand as a maker if it is part of the vessel's name (e.g. 'HTM Highlander' -> ignore Highlander).
+
+MANUAL OVERRIDE (User priority input):
+\"\"\"{manual_override_text}\"\"\"
+
+ATTACHED FILES / EMAIL TEXT:
+\"\"\"{files_text}\"\"\"
+
+Return ONLY a raw JSON dictionary using these exact keys:
+{{
+  "vessel_name": "Name of vessel or 'Not specified'",
+  "eta": "Vessel ETA or 'Not specified'",
+  "port": "Port or 'Not specified'",
+  "country": "Country or 'Not specified'",
+  "makers": ["Maker requiring service"],
+  "scope": "Summary",
+  "spares_requested": "Spares",
+  "missing_critical_data": []
+}}
+"""
+            }
+        ]
+
+        # Προσθήκη εικόνων αν ανέβασε ο χρήστης (Vision API)
+        if image_files:
+            for img_file in image_files:
+                img_bytes = img_file.read()
+                base64_image = base64.b64encode(img_bytes).decode('utf-8')
+                messages_content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}"
+                    }
+                })
+
+        payload = {
+            "model": "llama-3.2-11b-vision-preview" if image_files else "llama-3.3-70b-versatile",
+            "messages": [{"role": "user", "content": messages_content if image_files else messages_content[0]["text"]}] if image_files else [{"role": "user", "content": messages_content[0]["text"]}],
+            "temperature": 0.1
+        }
+        
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=15)
+            if response.status_code == 200:
+                content = response.json()["choices"][0]["message"]["content"]
+                res_json = json.loads(clean_json(content))
+                if "vessel_name" in res_json:
+                    res_json["vessel_name"] = clean_vessel_name(res_json["vessel_name"])
+                return res_json
+        except Exception:
+            pass
+            
+    return smart_local_parser(manual_override_text, files_text)
 
 @st.cache_data
 def load_directory():
@@ -301,30 +366,34 @@ col1, col2 = st.columns([1, 1])
 
 with col1:
     rfq_pasted_text = st.text_area(
-        "Paste RFQ text / email body here:",
+        "Paste RFQ text / email body or MANUAL OVERRIDE (Port/Vessel/etc):",
         height=180,
-        placeholder="Vessel name, port, equipment maker/model, defect description..."
+        placeholder="e.g. PORT: KOHSICHANG THAILAND or additional notes..."
     )
 
 with col2:
     uploaded_files = st.file_uploader(
-        "Upload customer files (PDF, EML, MSG, TXT):",
-        type=["pdf", "eml", "msg", "txt"],
+        "Upload customer files (PDF, EML, MSG, TXT, JPG, PNG):",
+        type=["pdf", "eml", "msg", "txt", "jpg", "jpeg", "png"],
         accept_multiple_files=True
     )
 
-combined_text = rfq_pasted_text + "\n"
-if uploaded_files:
-    for f in uploaded_files:
-        combined_text += f"\n--- Content from {f.name} ---\n"
-        combined_text += extract_text_from_file(f)
+# Διαχωρισμός αρχείων κειμένου/pdf και εικόνων
+doc_files = [f for f in uploaded_files if not f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
+image_files = [f for f in uploaded_files if f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
+
+files_combined_text = ""
+if doc_files:
+    for f in doc_files:
+        files_combined_text += f"\n--- Content from {f.name} ---\n"
+        files_combined_text += extract_text_from_file(f)
 
 if st.button("Process RFQ & Find Service Stations", type="primary"):
-    if not combined_text.strip():
-        st.warning("Please provide RFQ text or upload at least one inquiry file.")
+    if not rfq_pasted_text.strip() and not uploaded_files:
+        st.warning("Please provide manual text or upload at least one file/image.")
     else:
-        with st.spinner("Processing RFQ instantly..."):
-            parsed = analyze_rfq(combined_text)
+        with st.spinner("Processing RFQ with manual override & image analysis..."):
+            parsed = analyze_rfq(rfq_pasted_text, files_combined_text, image_files)
 
         if parsed:
             st.markdown("---")
@@ -406,5 +475,8 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
             else:
                 st.warning("Directory is empty or target country is not specified.")
 
-            with st.expander("Show Extracted Raw Text"):
-                st.text(combined_text)
+            with st.expander("Show Parsed Raw Inputs"):
+                st.write("**Manual Override Text:**")
+                st.text(rfq_pasted_text)
+                st.write("**Files Text:**")
+                st.text(files_combined_text)
