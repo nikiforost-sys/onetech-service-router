@@ -23,34 +23,30 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
-# Robust model initialization with auto-discovery
+# Strictly enforce free-tier Flash models (avoids 429 quota limits on Pro)
 @st.cache_resource
 def get_working_model():
-    candidate_names = [
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro-latest",
-        "gemini-1.5-pro",
-        "gemini-pro"
+    flash_candidates = [
+        "models/gemini-2.5-flash",
+        "models/gemini-2.0-flash",
+        "models/gemini-1.5-flash",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash"
     ]
-    # Try listing models supported by this specific key
     try:
         available = [
             m.name for m in genai.list_models()
             if "generateContent" in m.supported_generation_methods
         ]
-        if available:
-            # Prefer a flash or pro model from the active account list
-            for cand in candidate_names:
-                for av in available:
-                    if cand in av:
-                        return genai.GenerativeModel(av)
-            return genai.GenerativeModel(available[0])
+        for cand in flash_candidates:
+            for av in available:
+                if cand in av:
+                    return genai.GenerativeModel(av)
     except Exception:
         pass
     
-    # Fallback to direct name
-    return genai.GenerativeModel("gemini-1.5-flash-latest")
+    return genai.GenerativeModel("gemini-2.5-flash")
 
 model = get_working_model()
 
@@ -182,7 +178,7 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Analyzing RFQ semantics with Gemini..."):
+        with st.spinner("Analyzing RFQ semantics with Gemini Flash..."):
             parsed = analyze_rfq_with_llm(combined_text)
 
         if parsed:
