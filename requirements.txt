@@ -1,8 +1,7 @@
 streamlit
 pandas
-gspread
-google-auth
+google-genai
 pypdf
 extract-msg
-google-genai
-requests
+openai
+anthropic
