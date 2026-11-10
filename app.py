@@ -14,11 +14,15 @@ import base64
 st.set_page_config(page_title="Onetech Service Station Router & Discrepancy Audit", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Discrepancy Audit")
-st.markdown("Automated RFQ Parsing, Global Port Matching & Cross-Source Discrepancy Detection via Groq AI.")
+st.markdown("Automated RFQ Parsing, Global Port Matching & Cross-Source Discrepancy Detection.")
 
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 
 PORT_TO_COUNTRY = {
+    # --- THAILAND ---
+    "kohsichang": "THAILAND", "sichang": "THAILAND", "bangkok": "THAILAND",
+    "laem chabang": "THAILAND", "map ta phut": "THAILAND", "songkhla": "THAILAND",
+
     # --- BRAZIL ---
     "sao francisco do sul": "BRAZIL", "santos": "BRAZIL", "paranagua": "BRAZIL",
     "rio grande": "BRAZIL", "itajai": "BRAZIL", "imbituba": "BRAZIL",
@@ -101,9 +105,7 @@ PORT_TO_COUNTRY = {
     "tokyo": "JAPAN", "yokohama": "JAPAN", "nagoya": "JAPAN",
     "osaka": "JAPAN", "kobe": "JAPAN", "chiba": "JAPAN", "kitakyushu": "JAPAN",
     "port kelang": "MALAYSIA", "penang": "MALAYSIA", "pasir gudang": "MALAYSIA",
-    "tanjung pelepas": "MALAYSIA", "kohsichang": "THAILAND", "sichang": "THAILAND",
-    "miri": "MALAYSIA", "bintulu": "MALAYSIA",
-    "bangkok": "THAILAND", "laem chabang": "THAILAND", "map ta phut": "THAILAND",
+    "tanjung pelepas": "MALAYSIA", "miri": "MALAYSIA", "bintulu": "MALAYSIA",
     "jakarta": "INDONESIA", "surabaya": "INDONESIA", "belawan": "INDONESIA",
     "batam": "INDONESIA", "balikpapan": "INDONESIA", "semarang": "INDONESIA",
     "manila": "PHILIPPINES", "cebu": "PHILIPPINES", "subic bay": "PHILIPPINES",
@@ -151,7 +153,7 @@ NEIGHBORING_COUNTRIES = {
     "italy": ["greece", "france", "spain", "malta"],
     "china": ["south korea", "japan", "taiwan", "singapore"],
     "south korea": ["china", "japan"],
-    "thailand": ["malaysia", "singapore", "vietnam"],
+    "thailand": ["singapore", "malaysia", "vietnam"],
     "uae": ["oman", "saudi arabia", "qatar", "bahrain"],
     "morocco": ["spain", "portugal", "gibraltar", "algeria"],
     "algeria": ["morocco", "spain", "italy", "tunisia"]
@@ -161,7 +163,7 @@ KNOWN_MAKERS = [
     "sperry marine", "sperry", "jrc", "alphatron", "furuno",
     "tokyo keiki", "anschutz", "raytheon", "yokogawa", "ydk",
     "macgregor", "danelec", "headway", "consilium", "highlander",
-    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad"
+    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad", "entel"
 ]
 
 def extract_text_from_file(uploaded_file):
@@ -207,7 +209,7 @@ def extract_text_from_file(uploaded_file):
             extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
     except Exception as e:
         st.error(f"Error parsing {uploaded_file.name}: {e}")
-    return extracted_text[:6000]
+    return extracted_text[:10000]
 
 def clean_json(text):
     if text.startswith("```json"):
@@ -228,82 +230,120 @@ def clean_vessel_name(raw_name):
         words = words[:3]
     return " ".join(words).strip().title()
 
-def smart_local_parser(manual_override_text, files_text):
-    combined = manual_override_text + "\n" + files_text
-    text_lower = combined.lower()
-    
-    body_text = text_lower
-    if "best regards" in text_lower:
-        body_text = text_lower.split("best regards")[0]
-    elif "regards" in text_lower:
-        body_text = text_lower.split("regards")[0]
+def clean_signatures(text):
+    # Αφαιρούμε διευθύνσεις γραφείων για να μην εντοπίζεται ο Πειραιάς ως προορισμός
+    cleaned = re.sub(r"(?i)vasilikon\s*51[^\n]*piraeus[^\n]*greece", "", text)
+    cleaned = re.sub(r"(?i)akti\s*moutsopoulou[^\n]*piraeus[^\n]*greece", "", cleaned)
+    cleaned = re.sub(r"(?i)piraeus\s*185\d\d\s*greece", "", cleaned)
+    return cleaned
 
+def parse_manual_inputs(manual_text):
+    overrides = {}
+    if not manual_text:
+        return overrides
+    
+    country_match = re.search(r"(?i)country\s*[:=]\s*([a-zA-Z\s]+)", manual_text)
+    if country_match:
+        overrides["country"] = country_match.group(1).strip().upper()
+    else:
+        for c in ["thailand", "brazil", "turkey", "greece", "singapore", "china", "spain", "netherlands"]:
+            if c in manual_text.lower():
+                overrides["country"] = c.upper()
+                break
+
+    port_match = re.search(r"(?i)port\s*[:=]\s*([a-zA-Z0-9\s-]+)", manual_text)
+    if port_match:
+        overrides["port"] = port_match.group(1).strip().title()
+
+    vessel_match = re.search(r"(?i)vessel\s*[:=]\s*([a-zA-Z0-9\s-]+)", manual_text)
+    if vessel_match:
+        overrides["vessel_name"] = clean_vessel_name(vessel_match.group(1))
+
+    return overrides
+
+def smart_local_parser(manual_override_text, files_text):
+    cleaned_files = clean_signatures(files_text)
+    combined = manual_override_text + "\n" + cleaned_files
+    text_lower = combined.lower()
+
+    # 1. Έλεγχος ονόματος πλοίου
     vessel_name = "Not specified"
-    vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", body_text)
+    vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", text_lower)
     if vessel_match:
         vessel_name = clean_vessel_name(vessel_match.group(1))
-    else:
-        vessel_match_gen = re.search(r"(?:m/v|m/t)\s+([a-zA-Z0-9\s]+)", body_text)
-        if vessel_match_gen:
-            vessel_name = clean_vessel_name(vessel_match_gen.group(1))
 
+    # 2. Έλεγχος λιμανιού και χώρας
     detected_port = "Not specified"
     detected_country = "Not specified"
     for port_key, country_val in PORT_TO_COUNTRY.items():
-        if port_key in body_text:
+        if port_key in text_lower:
             detected_port = port_key.title()
             detected_country = country_val
             break
-            
+
+    # 3. Έλεγχος κατασκευαστή
     found_makers = []
     for maker in KNOWN_MAKERS:
-        if maker in body_text:
+        if maker in text_lower:
             if maker in vessel_name.lower():
                 continue
             found_makers.append(maker.upper())
-            
-    scope_text = "Standard service / inquiry inspection requested."
-    if "annual" in body_text:
-        scope_text = "Annual Radio / VDR / Navigation Survey"
-    elif "spare" in body_text or "spares" in body_text:
-        scope_text = "Supply of spare parts / hardware component inquiry"
-    elif "repair" in body_text or "defect" in body_text or "malfunction" in body_text:
-        scope_text = "Technical troubleshooting and defect rectification"
 
-    return {
+    # 4. Εργασίες
+    scope_text = "Standard technical attendance inquiry."
+    if "annual" in text_lower:
+        scope_text = "Annual Radio / VDR / Navigation Survey"
+    elif "re-programming" in text_lower or "reprogramming" in text_lower:
+        scope_text = "Re-programming of Radio and Navigation Equipment"
+    elif "spare" in text_lower:
+        scope_text = "Spare parts supply"
+
+    result = {
         "vessel_name": vessel_name,
         "eta": "Not specified",
         "port": detected_port,
         "country": detected_country,
         "makers": list(set(found_makers)),
         "scope": scope_text,
-        "spares_requested": "Inquired per RFQ text",
+        "spares_requested": "Inquired per inquiry",
         "discrepancies": [],
         "missing_critical_data": []
     }
 
+    # Εφαρμογή manual override
+    overrides = parse_manual_inputs(manual_override_text)
+    for k, v in overrides.items():
+        result[k] = v
+
+    return result
+
 def analyze_rfq(manual_override_text, files_text, image_files):
+    cleaned_files = clean_signatures(files_text)
+    res_json = None
+
     if groq_api_key:
         url = "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)"
         headers = {
             "Authorization": f"Bearer {groq_api_key}",
             "Content-Type": "application/json"
         }
-        
+
         prompt_text = f"""
-You are an expert maritime technical coordinator. Parse the commercial RFQ and cross-check all provided sources.
+You are an expert maritime technical coordinator. Parse the commercial RFQ and extract facts into JSON.
 
-CRITICAL OVERRIDE INSTRUCTION: 
-1. If the user provides information in the 'MANUAL OVERRIDE' section (such as vessel name, port, or country), you MUST treat it as absolute ground truth and priority. Completely override any conflicting ports, countries, or vessel names found in the attached files, email threads, or footers (e.g. ignore Piraeus footers if Thailand or another port/country is specified in the manual override).
-2. Cross-check all sources (Manual Override, Email/Files text, and Attached Images) to detect any discrepancies or contradictions and list them in the 'discrepancies' array.
+CRITICAL INSTRUCTIONS:
+1. 'MANUAL OVERRIDE' IS ABSOLUTE GROUND TRUTH. If a country, port, or vessel is stated there, use it unconditionally.
+2. DO NOT extract 'Piraeus' or 'Greece' if it comes from company footers or office addresses (OneTech or Mega Shipping).
+3. If an inquiry states 'MV KIRRIBILLI TBN SEA GRACE', the vessel name is 'Kirribilli' (or 'Kirribilli / Sea Grace').
+4. List any conflicting facts found across sources in 'discrepancies'.
 
-MANUAL OVERRIDE (User priority input - Absolute Ground Truth):
+MANUAL OVERRIDE:
 \"\"\"{manual_override_text}\"\"\"
 
-ATTACHED FILES / EMAIL TEXT:
-\"\"\"{files_text}\"\"\"
+INQUIRY TEXT:
+\"\"\"{cleaned_files}\"\"\"
 
-Return ONLY a raw JSON dictionary using these exact keys:
+Return ONLY valid JSON matching this schema:
 {{
   "vessel_name": "Name of vessel or 'Not specified'",
   "eta": "Vessel ETA or 'Not specified'",
@@ -312,7 +352,7 @@ Return ONLY a raw JSON dictionary using these exact keys:
   "makers": ["Maker requiring service"],
   "scope": "Summary",
   "spares_requested": "Spares",
-  "discrepancies": ["List any discrepancies found between sources"],
+  "discrepancies": [],
   "missing_critical_data": []
 }}
 """
@@ -335,19 +375,30 @@ Return ONLY a raw JSON dictionary using these exact keys:
             "messages": [{"role": "user", "content": messages_content if image_files else prompt_text}],
             "temperature": 0.1
         }
-        
+
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=20)
+            response = requests.post(url, json=payload, headers=headers, timeout=25)
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"]
                 res_json = json.loads(clean_json(content))
                 if "vessel_name" in res_json:
                     res_json["vessel_name"] = clean_vessel_name(res_json["vessel_name"])
-                return res_json
-        except Exception:
-            pass
-            
-    return smart_local_parser(manual_override_text, files_text)
+            else:
+                st.error(f"Groq API Error: {response.status_code} - {response.text}")
+        except Exception as e:
+            st.warning(f"Groq API Request failed: {e}. Executing local rule engine.")
+    else:
+        st.info("GROQ_API_KEY not detected in secrets. Running local parser.")
+
+    if not res_json:
+        res_json = smart_local_parser(manual_override_text, files_text)
+
+    # Απόλυτη επιβολή του Manual Override στα τελικά αποτελέσματα
+    overrides = parse_manual_inputs(manual_override_text)
+    for k, v in overrides.items():
+        res_json[k] = v
+
+    return res_json
 
 @st.cache_data
 def load_directory():
@@ -367,7 +418,7 @@ with col1:
     rfq_pasted_text = st.text_area(
         "Manual Override / Priority Info (Port, Vessel, etc.):",
         height=180,
-        placeholder="e.g. Country: Thailand\nVESSEL: KIRRIBILLI"
+        placeholder="e.g. Country: Thailand\nPort: Kohsichang\nVessel: Kirribilli"
     )
 
 with col2:
@@ -390,7 +441,7 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
     if not rfq_pasted_text.strip() and not uploaded_files:
         st.warning("Please provide manual text or upload at least one file/image.")
     else:
-        with st.spinner("Processing RFQ & cross-checking data discrepancies via Groq..."):
+        with st.spinner("Processing inquiry and running station audit..."):
             parsed = analyze_rfq(rfq_pasted_text, files_combined_text, image_files)
 
         if parsed:
@@ -414,24 +465,24 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
             st.subheader("3. Discrepancy & Conflict Audit (Cross-Source Check)")
             discrepancies = parsed.get("discrepancies", [])
             if discrepancies:
-                st.error("⚠️ **Discrepancies / Conflicts Detected Across Sources:**")
+                st.error("Discrepancies / Conflicts Detected Across Sources:")
                 for d in discrepancies:
                     st.warning(f"- {d}")
             else:
-                st.success("✅ No discrepancies or conflicts detected between manual input, documents, and photo evidence.")
+                st.success("No discrepancies or conflicts detected between manual input, documents, and photo evidence.")
 
             st.markdown("---")
             st.subheader("4. Recommended Service Stations")
-            
+
             target_country = str(parsed.get("country", "")).strip().lower()
             target_makers = [m.lower() for m in parsed.get("makers", [])]
 
-            if not df.empty and target_country:
+            if not df.empty and target_country and target_country != "not specified":
                 country_match = df[df["Country"].str.strip().str.lower() == target_country]
-                
+
                 final_df = pd.DataFrame()
                 matched_location_label = target_country.upper()
-                
+
                 def maker_filter(approved_str):
                     app_lower = str(approved_str).lower()
                     return any(m in app_lower for m in target_makers)
@@ -439,13 +490,10 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
                 if not country_match.empty:
                     if target_makers:
                         filtered = country_match[country_match["Approved Makers"].apply(maker_filter)]
-                        if not filtered.empty:
-                            final_df = filtered
-                        else:
-                            final_df = country_match
+                        final_df = filtered if not filtered.empty else country_match
                     else:
                         final_df = country_match
-                
+
                 if final_df.empty and target_country in NEIGHBORING_COUNTRIES:
                     neighbors = NEIGHBORING_COUNTRIES[target_country]
                     for neigh in neighbors:
@@ -463,7 +511,7 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
                                 break
 
                 makers_formatted = ', '.join([m.upper() for m in target_makers]) if target_makers else "ALL"
-                
+
                 if not final_df.empty:
                     st.success(f"Matched stations in **{matched_location_label}** for makers: {makers_formatted}")
                     st.dataframe(final_df, use_container_width=True)
@@ -471,7 +519,7 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
                     st.warning(f"No approved stations found in {target_country.upper()} or neighboring regions. Showing full directory:")
                     st.dataframe(df, use_container_width=True)
             else:
-                st.warning("Directory is empty or target country is not specified.")
+                st.warning("Target country is not specified or no stations matched.")
 
             with st.expander("Show Parsed Raw Inputs"):
                 st.write("**Manual Override Text:**")
