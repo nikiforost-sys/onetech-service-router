@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
+import google.generativeai as genai
 import pypdf
 import io
-import re
+import json
 import email
 from email import policy
 import extract_msg
@@ -12,79 +13,16 @@ import extract_msg
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("Automated RFQ completeness audit and approved service station matching.")
+st.markdown("Automated RFQ semantic audit and approved service station matching.")
 
-PORT_TO_COUNTRY = {
-    # USA
-    "houston": "usa",
-    "new orleans": "usa",
-    "los angeles": "usa",
-    "long beach": "usa",
-    "new york": "usa",
-    "miami": "usa",
-    "seattle": "usa",
-    "savannah": "usa",
-    # Europe
-    "rotterdam": "netherlands",
-    "antwerp": "belgium",
-    "hamburg": "germany",
-    "bremerhaven": "germany",
-    "valencia": "spain",
-    "barcelona": "spain",
-    "algeciras": "spain",
-    "piraeus": "greece",
-    "genoa": "italy",
-    "trieste": "italy",
-    "le havre": "france",
-    "marseille": "france",
-    # Asia & Middle East
-    "singapore": "singapore",
-    "shanghai": "china",
-    "ningbo": "china",
-    "shenzhen": "china",
-    "guangzhou": "china",
-    "qingdao": "china",
-    "tianjin": "china",
-    "hong kong": "china",
-    "busan": "south korea",
-    "ulsan": "south korea",
-    "tokyo": "japan",
-    "yokohama": "japan",
-    "kobe": "japan",
-    "dubai": "uae",
-    "jebel ali": "uae",
-    "fujairah": "uae",
-    # Others
-    "santos": "brazil",
-    "buenos aires": "argentina",
-    "sydney": "australia",
-    "melbourne": "australia",
-    "chittagong": "bangladesh",
-    "panama": "panama",
-    "gibraltar": "gibraltar"
-}
+# Secure API configuration via Streamlit Secrets
+api_key = st.secrets.get("GEMINI_API_KEY")
+if not api_key:
+    st.error("Missing GEMINI_API_KEY in Streamlit Secrets. Please check your app settings.")
+    st.stop()
 
-# Supported makers to detect in text and match against Approved Makers column
-KNOWN_MAKERS = [
-    "sperry marine", "sperry",
-    "jrc", "alphatron",
-    "furuno",
-    "tokyo keiki",
-    "anschutz", "raytheon anschütz", "raytheon",
-    "yokogawa", "ydk",
-    "macgregor",
-    "danelec",
-    "headway",
-    "consilium",
-    "highlander",
-    "hyundai",
-    "samsung",
-    "wartsila", "wzrtsila",
-    "cobham", "sailor",
-    "jotron",
-    "netwave",
-    "simrad"
-]
+genai.configure(api_key=api_key)
+model = genai.GenerativeModel("gemini-1.5-pro")
 
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
@@ -107,7 +45,7 @@ def extract_text_from_file(uploaded_file):
                     if pdf_data:
                         pdf_stream = io.BytesIO(pdf_data)
                         pdf_reader = pypdf.PdfReader(pdf_stream)
-                        extracted_text += f"\n--- Embedded PDF in EML: {att_name} ---\n"
+                        extracted_text += f"\n--- Embedded PDF: {att_name} ---\n"
                         for page in pdf_reader.pages:
                             extracted_text += page.extract_text() or ""
         elif file_name.endswith(".msg"):
@@ -120,7 +58,7 @@ def extract_text_from_file(uploaded_file):
                     try:
                         pdf_stream = io.BytesIO(att_data)
                         pdf_reader = pypdf.PdfReader(pdf_stream)
-                        extracted_text += f"\n--- Embedded PDF in MSG: {att_name} ---\n"
+                        extracted_text += f"\n--- Embedded PDF: {att_name} ---\n"
                         for page in pdf_reader.pages:
                             extracted_text += page.extract_text() or ""
                     except Exception as err:
@@ -131,88 +69,40 @@ def extract_text_from_file(uploaded_file):
         st.error(f"Error parsing {uploaded_file.name}: {e}")
     return extracted_text
 
-def parse_rfq_brief(primary_text, full_text):
-    brief = {
-        "vessel": "Not specified",
-        "eta": "Not specified",
-        "port": "Not specified",
-        "defect": "Not clearly identified",
-        "spares": "None explicitly requested",
-        "maker": "Not specified"
-    }
-    
-    scrubbed_primary = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', primary_text, flags=re.IGNORECASE)
-    scrubbed_full = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', full_text, flags=re.IGNORECASE)
-    
-    # 1. Vessel extraction
-    vessel_match = re.search(r'(?:vessel|m/v|m\.v\.|mt|m\.t\.)\s*[:\-]?\s*([A-Za-z0-9\s\-]+?)(?=[,\.\n\r]|\s+(?:is|has|calling|arriving|eta|imo))', full_text, re.IGNORECASE)
-    if vessel_match:
-        name = vessel_match.group(1).strip()
-        if len(name) > 2 and len(name) < 30 and name.lower() not in ["s", "name", "the"]:
-            brief["vessel"] = name.upper()
+def analyze_rfq_with_llm(full_text):
+    prompt = f"""
+You are a senior maritime technical operations coordinator. Extract key operational details from the RFQ inquiry below.
+Carefully analyze semantic context:
+- Do NOT confuse vessel names with equipment makers (e.g. 'HTM Highlander' is a vessel, not the maker Highlander).
+- Do NOT confuse sender/receiver company locations with the actual vessel port of call.
+- Extract the exact maker requiring service (e.g., YOKOGAWA, SPERRY, JRC, etc.).
 
-    # 2. ETA extraction
-    eta_match = re.search(r'(?:eta|arrival|arriving|calling\s+on)\s*[:\-]?\s*(?:is\s+on\s+the|is\s+on|on\s+the|on)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+(?:\s+[0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}(?:st|nd|rd|th)?(?:\s+agw\s+wp|\s+agw|\s+wp)?)', primary_text, re.IGNORECASE)
-    if not eta_match:
-        eta_match = re.search(r'(?:eta|arrival|arriving|calling\s+on)\s*[:\-]?\s*(?:is\s+on\s+the|is\s+on|on\s+the|on)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+(?:\s+[0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}(?:st|nd|rd|th)?(?:\s+agw\s+wp|\s+agw|\s+wp)?)', full_text, re.IGNORECASE)
-    if eta_match:
-        val = eta_match.group(1).strip()
-        if len(val) >= 2:
-            brief["eta"] = val.upper()
+Inquiry Text:
+\"\"\"{full_text}\"\"\"
 
-    # 3. Port extraction
-    found_port = False
-    for port, country in PORT_TO_COUNTRY.items():
-        if re.search(r'\b' + re.escape(port) + r'\b', scrubbed_primary, re.IGNORECASE):
-            brief["port"] = f"{port.title()} ({country.upper()})"
-            found_port = True
-            break
-            
-    if not found_port:
-        for port, country in PORT_TO_COUNTRY.items():
-            if re.search(r'\b' + re.escape(port) + r'\b', scrubbed_full, re.IGNORECASE):
-                brief["port"] = f"{port.title()} ({country.upper()})"
-                break
-
-    # 4. Maker extraction
-    detected_makers = []
-    text_lower = full_text.lower()
-    for m in ["sperry marine", "sperry", "jrc", "furuno", "tokyo keiki", "anschutz", "yokogawa", "macgregor", "danelec", "headway", "consilium"]:
-        if re.search(r'\b' + re.escape(m) + r'\b', text_lower):
-            display_name = "SPERRY" if "sperry" in m else m.upper()
-            if display_name not in detected_makers:
-                detected_makers.append(display_name)
-    if detected_makers:
-        brief["maker"] = ", ".join(detected_makers)
-
-    # 5. Defect extraction
-    defect_sentences = []
-    lines = full_text.splitlines()
-    for line in lines:
-        l_lower = line.lower()
-        if any(w in l_lower for w in ["defect", "fault", "alarm", "error", "malfunction", "apt", "annual test", "gyro", "radar", "vdr", "not working", "fails", "failure"]):
-            clean_line = line.strip()
-            if len(clean_line) > 10 and len(clean_line) < 250:
-                defect_sentences.append(clean_line)
-                if len(defect_sentences) == 2:
-                    break
-    if defect_sentences:
-        brief["defect"] = " | ".join(defect_sentences)
-
-    # 6. Spares extraction
-    spares_found = []
-    for line in lines:
-        l_lower = line.lower()
-        if any(w in l_lower for w in ["spare", "part", "p/n", "part number", "replacement", "battery", "magnetron"]):
-            clean_line = line.strip()
-            if len(clean_line) > 5 and len(clean_line) < 200:
-                spares_found.append(clean_line)
-                if len(spares_found) == 2:
-                    break
-    if spares_found:
-        brief["spares"] = " | ".join(spares_found)
-
-    return brief
+Return ONLY a valid JSON object without markdown formatting or code fences, with these exact keys:
+{{
+  "vessel_name": "String or 'Not specified'",
+  "eta": "String or 'Not specified'",
+  "port": "String or 'Not specified'",
+  "country": "String or 'Not specified' (Target country where attendance is required)",
+  "makers": ["List of makers needing service/overhaul/survey, e.g. 'YOKOGAWA', 'SPERRY MARINE'"],
+  "scope": "Clear summary of defect, survey, overhaul, or requested scope of work",
+  "spares_requested": "Summary of spares requested or 'None explicitly requested'",
+  "missing_critical_data": ["List of missing essentials among: Vessel Schedule, Port Agent, Equipment Maker/Model, Clear Scope"]
+}}
+"""
+    try:
+        response = model.generate_content(prompt)
+        raw_text = response.text.strip()
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:]
+        if raw_text.endswith("```"):
+            raw_text = raw_text[:-3]
+        return json.loads(raw_text.strip())
+    except Exception as e:
+        st.error(f"Semantic parsing error: {e}")
+        return None
 
 @st.cache_data(ttl=300)
 def load_directory():
@@ -262,119 +152,70 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        text_lower = combined_text.lower()
-        pasted_lower = rfq_pasted_text.lower()
-        
-        # 2. RFQ Executive Brief
-        brief_data = parse_rfq_brief(rfq_pasted_text, combined_text)
-        st.markdown("---")
-        st.subheader("2. RFQ Executive Brief")
-        
-        col_b1, col_b2, col_b3 = st.columns(3)
-        with col_b1:
-            st.info(f"**Vessel Name:** {brief_data['vessel']}")
-            st.info(f"**Vessel ETA:** {brief_data['eta']}")
-        with col_b2:
-            st.info(f"**Port / Destination:** {brief_data['port']}")
-            st.warning(f"**Maker Detected:** {brief_data['maker']}")
-        with col_b3:
-            st.warning(f"**Reported Problem / Scope:** {brief_data['defect']}")
-            st.warning(f"**Spares Inquired:** {brief_data['spares']}")
+        with st.spinner("Analyzing RFQ semantics with Gemini Pro..."):
+            parsed = analyze_rfq_with_llm(combined_text)
 
-        # 3. Completeness Audit
-        st.markdown("---")
-        st.subheader("3. RFQ Completeness Audit")
-        
-        missing_items = []
-        if not any(k in text_lower for k in ["eta", "etd", "arrival", "departure", "calling", "date"]):
-            missing_items.append("Vessel Schedule (ETA / ETD / Date of Attendance)")
-        if not any(k in text_lower for k in ["agent", "agency", "husbandry", "pic", "contact"]):
-            missing_items.append("Local Port Agent details")
-        if not any(k in text_lower for k in ["maker", "model", "type", "s/n", "serial", "jrc", "furuno", "sperry", "yokogawa", "anschutz", "tokyo keiki", "danelec", "macgregor"]):
-            missing_items.append("Equipment Maker, Model, or Serial Number")
-        if not any(k in text_lower for k in ["alarm", "fault", "defect", "error", "malfunction", "survey", "apt", "annual", "issue", "problem"]):
-            missing_items.append("Fault Description / Alarm Codes / Scope of Attendance")
+        if parsed:
+            # 2. Executive Brief
+            st.markdown("---")
+            st.subheader("2. RFQ Executive Brief")
+            col_b1, col_b2, col_b3 = st.columns(3)
+            with col_b1:
+                st.info(f"**Vessel Name:** {parsed.get('vessel_name')}")
+                st.info(f"**Vessel ETA:** {parsed.get('eta')}")
+            with col_b2:
+                port_disp = parsed.get('port')
+                country_disp = parsed.get('country')
+                st.info(f"**Port / Destination:** {port_disp} ({country_disp})")
+                makers_str = ", ".join(parsed.get('makers', [])) or "None detected"
+                st.warning(f"**Maker Detected:** {makers_str}")
+            with col_b3:
+                st.warning(f"**Reported Problem / Scope:** {parsed.get('scope')}")
+                st.warning(f"**Spares Inquired:** {parsed.get('spares_requested')}")
 
-        if missing_items:
-            st.error("Missing critical operational data. Revert to client requesting:")
-            for item in missing_items:
-                st.write(f"- **{item}**")
-        else:
-            st.success("All operational essentials detected in the customer inquiry.")
-
-        # 4. Station Matching (Country + Approved Maker)
-        st.markdown("---")
-        st.subheader("4. Recommended Service Stations")
-
-        if not df.empty:
-            target_countries = set()
-            
-            # Identify target countries
-            search_primary = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', pasted_lower)
-            search_full = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', text_lower)
-            
-            for port, country in PORT_TO_COUNTRY.items():
-                pattern = r'\b' + re.escape(port) + r'\b'
-                if re.search(pattern, search_primary):
-                    target_countries.add(country)
-            
-            if not target_countries:
-                for port, country in PORT_TO_COUNTRY.items():
-                    pattern = r'\b' + re.escape(port) + r'\b'
-                    if re.search(pattern, search_full):
-                        target_countries.add(country)
-
-            if not target_countries:
-                for val in df["Country"].dropna().unique():
-                    c_str = str(val).strip().lower()
-                    if c_str and len(c_str) > 2:
-                        pattern = r'\b' + re.escape(c_str) + r'\b'
-                        if re.search(pattern, search_primary) or re.search(pattern, search_full):
-                            target_countries.add(c_str)
-
-            # Identify target makers mentioned in the inquiry
-            detected_makers_filter = []
-            for m in KNOWN_MAKERS:
-                pattern = r'\b' + re.escape(m) + r'\b'
-                if re.search(pattern, text_lower):
-                    detected_makers_filter.append(m)
-
-            if target_countries:
-                # 1. Filter by country first
-                matched_country_indices = []
-                for idx, row in df.iterrows():
-                    row_country = str(row.get("Country", "")).strip().lower()
-                    if row_country in target_countries:
-                        matched_country_indices.append(idx)
-                
-                country_df = df.loc[matched_country_indices]
-                
-                # 2. Filter by approved makers if any detected
-                final_indices = []
-                if detected_makers_filter:
-                    for idx, row in country_df.iterrows():
-                        approved_str = str(row.get("Approved Makers", "")).lower()
-                        # Check if any detected maker matches the station's approved makers
-                        for m in detected_makers_filter:
-                            clean_maker_term = "sperry" if "sperry" in m else m
-                            if clean_maker_term in approved_str:
-                                final_indices.append(idx)
-                                break
-                                
-                    if final_indices:
-                        st.success(f"Matched stations in {', '.join([c.upper() for c in target_countries])} authorized for: {', '.join(set([m.upper() for m in detected_makers_filter]))}")
-                        st.dataframe(df.loc[final_indices], use_container_width=True)
-                    else:
-                        st.warning(f"Found stations in {', '.join([c.upper() for c in target_countries])}, but none explicitly list authorization for {', '.join(set([m.upper() for m in detected_makers_filter]))}. Showing all country stations:")
-                        st.dataframe(country_df, use_container_width=True)
-                else:
-                    st.info(f"Target scope locked to: {', '.join([c.upper() for c in target_countries])} (No specific maker identified to filter by)")
-                    st.dataframe(country_df, use_container_width=True)
+            # 3. Completeness Audit
+            st.markdown("---")
+            st.subheader("3. RFQ Completeness Audit")
+            missing = parsed.get("missing_critical_data", [])
+            if missing:
+                st.error("Missing critical operational data. Revert to client requesting:")
+                for m in missing:
+                    st.write(f"- **{m}**")
             else:
-                st.info("No specific service location detected. Showing full directory below:")
-                st.dataframe(df, use_container_width=True)
+                st.success("All operational essentials detected in the customer inquiry.")
+
+            # 4. Service Station Matching
+            st.markdown("---")
+            st.subheader("4. Recommended Service Stations")
+            
+            target_country = str(parsed.get("country", "")).strip().lower()
+            target_makers = [m.lower() for m in parsed.get("makers", [])]
+
+            if not df.empty:
+                country_match = df[df["Country"].str.strip().str.lower() == target_country]
                 
-            with st.expander("Show Extracted Text from Message & Attachments"):
+                if not country_match.empty:
+                    if target_makers:
+                        def maker_filter(approved_str):
+                            app_lower = str(approved_str).lower()
+                            return any(m in app_lower for m in target_makers)
+
+                        final_df = country_match[country_match["Approved Makers"].apply(maker_filter)]
+                        
+                        if not final_df.empty:
+                            st.success(f"Matched authorized stations in {target_country.upper()} for: {', '.join([m.upper() for m in target_makers])}")
+                            st.dataframe(final_df, use_container_width=True)
+                        else:
+                            st.warning(f"Stations found in {target_country.upper()}, but none explicitly approved for {', '.join([m.upper() for m in target_makers])}. Showing all stations in country:")
+                            st.dataframe(country_match, use_container_width=True)
+                    else:
+                        st.info(f"Showing all approved stations in {target_country.upper()} (No specific maker identified):")
+                        st.dataframe(country_match, use_container_width=True)
+                else:
+                    st.warning(f"No service stations found in directory for country: {target_country.upper()}. Showing full directory:")
+                    st.dataframe(df, use_container_width=True)
+            else:
+                st.warning("Directory is empty or inaccessible.")
+
+            with st.expander("Show Extracted Raw Text"):
                 st.text(combined_text)
-        else:
-            st.warning("Service station directory is empty or inaccessible.")
