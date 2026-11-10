@@ -291,12 +291,13 @@ def analyze_rfq(manual_override_text, files_text, image_files):
         }
         
         prompt_text = f"""
-You are an expert maritime technical coordinator. Parse the commercial RFQ and cross-check all provided sources (Manual Override, Email/Files text, and Attached Images/Photos) to detect discrepancies or contradictions (e.g., conflicting vessel names, mismatch between reported defect and photo evidence, conflicting ports, or incorrect maker models).
+You are an expert maritime technical coordinator. Parse the commercial RFQ and cross-check all provided sources.
 
-CRITICAL OVERRIDE RULE: Information provided in the 'MANUAL OVERRIDE' section takes absolute priority over attached files or emails if there is any conflict.
-CRITICAL: Do NOT list a brand as a maker if it is part of the vessel's name (e.g. 'HTM Highlander' -> ignore Highlander).
+CRITICAL OVERRIDE INSTRUCTION: 
+1. If the user provides information in the 'MANUAL OVERRIDE' section (such as vessel name, port, or country), you MUST treat it as absolute ground truth and priority. Completely override any conflicting ports, countries, or vessel names found in the attached files, email threads, or footers (e.g. ignore Piraeus footers if Thailand or another port/country is specified in the manual override).
+2. Cross-check all sources (Manual Override, Email/Files text, and Attached Images) to detect any discrepancies or contradictions and list them in the 'discrepancies' array.
 
-MANUAL OVERRIDE (User priority input):
+MANUAL OVERRIDE (User priority input - Absolute Ground Truth):
 \"\"\"{manual_override_text}\"\"\"
 
 ATTACHED FILES / EMAIL TEXT:
@@ -311,7 +312,7 @@ Return ONLY a raw JSON dictionary using these exact keys:
   "makers": ["Maker requiring service"],
   "scope": "Summary",
   "spares_requested": "Spares",
-  "discrepancies": ["List any discrepancies found between manual input, emails, documents, or photo evidence"],
+  "discrepancies": ["List any discrepancies found between sources"],
   "missing_critical_data": []
 }}
 """
@@ -366,7 +367,7 @@ with col1:
     rfq_pasted_text = st.text_area(
         "Manual Override / Priority Info (Port, Vessel, etc.):",
         height=180,
-        placeholder="e.g. PORT: KOHSICHANG THAILAND\nVESSEL: KIRRIBILLI"
+        placeholder="e.g. Country: Thailand\nVESSEL: KIRRIBILLI"
     )
 
 with col2:
@@ -389,7 +390,7 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
     if not rfq_pasted_text.strip() and not uploaded_files:
         st.warning("Please provide manual text or upload at least one file/image.")
     else:
-        with st.spinner("Processing RFQ & cross-checking data discrepancies..."):
+        with st.spinner("Processing RFQ & cross-checking data discrepancies via Groq..."):
             parsed = analyze_rfq(rfq_pasted_text, files_combined_text, image_files)
 
         if parsed:
