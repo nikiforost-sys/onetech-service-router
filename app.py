@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-import requests
+import urllib.request
+import urllib.error
 import pypdf
 import io
 import re
@@ -318,14 +319,6 @@ def analyze_rfq(manual_override_text, files_text, image_files):
     res_json = None
 
     if groq_api_key:
-        clean_url = "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)"
-        endpoint = str(clean_url).encode("ascii", "ignore").decode("ascii").strip()
-
-        headers = {
-            "Authorization": f"Bearer {groq_api_key}",
-            "Content-Type": "application/json"
-        }
-
         prompt_text = f"""
 You are an expert maritime technical coordinator. Parse the commercial RFQ and extract facts into JSON.
 
@@ -374,15 +367,29 @@ Return ONLY valid JSON matching this schema:
             "temperature": 0.1
         }
 
+        req_data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)",
+            data=req_data,
+            headers={
+                "Authorization": f"Bearer {groq_api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0"
+            },
+            method="POST"
+        )
+
         try:
-            response = requests.post(endpoint, json=payload, headers=headers, timeout=25)
-            if response.status_code == 200:
-                content = response.json()["choices"][0]["message"]["content"]
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                resp_body = resp.read().decode("utf-8")
+                resp_dict = json.loads(resp_body)
+                content = resp_dict["choices"][0]["message"]["content"]
                 res_json = json.loads(clean_json(content))
                 if "vessel_name" in res_json:
                     res_json["vessel_name"] = clean_vessel_name(res_json["vessel_name"])
-            else:
-                st.error(f"Groq API Error: {response.status_code} - {response.text}")
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="ignore")
+            st.error(f"Groq HTTP Error {e.code}: {err_body}")
         except Exception as e:
             st.warning(f"Groq API Request failed: {e}. Executing local rule engine.")
     else:
