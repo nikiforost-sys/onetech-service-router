@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-import google.generativeai as genai
+from google import genai
 import pypdf
 import io
 import json
@@ -15,13 +15,13 @@ st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 st.title("Onetech Marine Service Assistant & Station Router")
 st.markdown("Automated RFQ semantic audit and approved service station matching.")
 
-# Secure API configuration via Streamlit Secrets
+# Initialize the new Google GenAI Client
 api_key = st.secrets.get("GEMINI_API_KEY")
 if not api_key:
     st.error("Missing GEMINI_API_KEY in Streamlit Secrets. Please check your app settings.")
     st.stop()
 
-genai.configure(api_key=api_key)
+client = genai.Client(api_key=api_key)
 
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
@@ -70,52 +70,44 @@ def extract_text_from_file(uploaded_file):
 
 def analyze_rfq_with_llm(full_text):
     prompt = f"""
-You are a senior maritime technical operations coordinator. Extract key operational details from the RFQ inquiry below.
-Carefully analyze semantic context:
-- Do NOT confuse vessel names with equipment makers (e.g. 'HTM Highlander' is a vessel, not the maker Highlander).
-- Do NOT confuse sender/receiver company locations with the actual vessel port of call.
-- Extract the exact maker requiring service (e.g., YOKOGAWA, SPERRY, JRC, etc.).
+You are an expert technical coordinator in maritime navigation and communication equipment supply.
+Parse the following commercial RFQ / technical inquiry and extract all operational facts into JSON.
 
-Inquiry Text:
+Strict Operational Guidelines:
+1. Contextual Distinction: Distinguish between the vessel's identity and makers. If a vessel is named after a brand (e.g. 'HTM Highlander', 'Sperry Spirit'), do NOT list that brand as a required maker unless that equipment on board is genuinely malfunctioning or being serviced.
+2. Port & Country: Identify the destination port where attendance is required, and resolve its country (e.g. Tutunciftlik -> Turkey, Piraeus -> Greece).
+3. Equipment Maker: Identify ONLY the equipment maker(s) requiring attendance, overhaul, annual survey, or spares.
+4. Scope of Attendance: Accurately summarize the required service, overhaul, or defect.
+
+Inquiry:
 \"\"\"{full_text}\"\"\"
 
-Return ONLY a valid JSON object without markdown formatting or code fences, with these exact keys:
+Return ONLY a raw JSON dictionary without Markdown formatting or fences, using these exact keys:
 {{
-  "vessel_name": "String or 'Not specified'",
-  "eta": "String or 'Not specified'",
-  "port": "String or 'Not specified'",
-  "country": "String or 'Not specified' (Target country where attendance is required)",
-  "makers": ["List of makers needing service/overhaul/survey, e.g. 'YOKOGAWA', 'SPERRY MARINE'"],
-  "scope": "Clear summary of defect, survey, overhaul, or requested scope of work",
-  "spares_requested": "Summary of spares requested or 'None explicitly requested'",
-  "missing_critical_data": ["List of missing essentials among: Vessel Schedule, Port Agent, Equipment Maker/Model, Clear Scope"]
+  "vessel_name": "Name of vessel or 'Not specified'",
+  "eta": "Vessel ETA / attendance schedule or 'Not specified'",
+  "port": "Port of attendance or 'Not specified'",
+  "country": "Country of attendance or 'Not specified'",
+  "makers": ["Maker requiring service, e.g. YOKOGAWA, FURUNO"],
+  "scope": "Operational summary of the requested job",
+  "spares_requested": "Spares mentioned or 'None explicitly requested'",
+  "missing_critical_data": ["List of missing essentials among: Schedule/ETA, Port Agent details, Maker/Model, Scope of attendance"]
 }}
 """
-    model_candidates = [
-        "models/gemini-2.0-flash",
-        "gemini-2.0-flash",
-        "models/gemini-2.5-flash",
-        "models/gemini-1.5-flash",
-        "gemini-1.5-flash"
-    ]
-    
-    last_err = None
-    for m_name in model_candidates:
-        try:
-            active_model = genai.GenerativeModel(m_name)
-            response = active_model.generate_content(prompt)
-            raw_text = response.text.strip()
-            if raw_text.startswith("```json"):
-                raw_text = raw_text[7:]
-            if raw_text.endswith("```"):
-                raw_text = raw_text[:-3]
-            return json.loads(raw_text.strip())
-        except Exception as err:
-            last_err = err
-            continue
-            
-    st.error(f"Semantic parsing error: {last_err}")
-    return None
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        raw_text = response.text.strip()
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:]
+        if raw_text.endswith("```"):
+            raw_text = raw_text[:-3]
+        return json.loads(raw_text.strip())
+    except Exception as e:
+        st.error(f"Semantic parsing error: {e}")
+        return None
 
 @st.cache_data(ttl=300)
 def load_directory():
@@ -125,9 +117,9 @@ def load_directory():
     ]
     creds_dict = dict(st.secrets["gcp_service_account"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client = gspread.authorize(creds)
+    client_gs = gspread.authorize(creds)
     sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
-    sheet = client.open_by_key(sheet_id).sheet1
+    sheet = client_gs.open_by_key(sheet_id).sheet1
     data = sheet.get_all_records()
     return pd.DataFrame(data)
 
@@ -165,7 +157,7 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Analyzing RFQ semantics with Gemini Flash..."):
+        with st.spinner("Analyzing inquiry semantics with Gemini 2.5 Flash..."):
             parsed = analyze_rfq_with_llm(combined_text)
 
         if parsed:
