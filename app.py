@@ -12,34 +12,134 @@ import extract_msg
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("High-Speed Maritime RFQ Parser & Station Router with Neighboring Country Fallback.")
+st.markdown("High-Speed Maritime RFQ Parser & Station Router with Expanded Global Port Directory.")
 
 api_key = st.secrets.get("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key) if api_key else None
 
 PORT_TO_COUNTRY = {
+    # --- BRAZIL ---
+    "sao francisco do sul": "BRAZIL", "santos": "BRAZIL", "paranagua": "BRAZIL",
+    "rio grande": "BRAZIL", "itajai": "BRAZIL", "imbituba": "BRAZIL",
+    "tubarao": "BRAZIL", "vitoria": "BRAZIL", "suape": "BRAZIL",
+    "rio de janeiro": "BRAZIL", "salvador": "BRAZIL", "manaus": "BRAZIL",
+    "paranaagua": "BRAZIL", "pecem": "BRAZIL", "fortaleza": "BRAZIL",
+
+    # --- TURKEY ---
     "tutunciftlik": "TURKEY", "tüpraş": "TURKEY", "tupras": "TURKEY",
     "izmit": "TURKEY", "yalova": "TURKEY", "tuzla": "TURKEY",
     "istanbul": "TURKEY", "aliaga": "TURKEY", "iskenderun": "TURKEY",
     "mersin": "TURKEY", "canakkale": "TURKEY", "nemrut": "TURKEY",
+    "ambarli": "TURKEY", "gemlik": "TURKEY", "bandirma": "TURKEY",
+    "samsun": "TURKEY", "trabzon": "TURKEY", "eregli": "TURKEY",
+    "tekirdag": "TURKEY", "zeytinburnu": "TURKEY", "haydarpasa": "TURKEY",
+
+    # --- GREECE ---
     "piraeus": "GREECE", "thessaloniki": "GREECE", "eleusis": "GREECE",
-    "rotterdam": "NETHERLANDS", "antwerp": "BELGIUM", "hamburg": "GERMANY",
-    "algeciras": "SPAIN", "gibraltar": "GIBRALTAR", "valencia": "SPAIN",
-    "barcelona": "SPAIN", "las palmas": "SPAIN", "genoa": "ITALY",
+    "perama": "GREECE", "agios theodoroi": "GREECE", "corinth": "GREECE",
+    "patras": "GREECE", "volos": "GREECE", "heraklion": "GREECE",
+    "syros": "GREECE", "rhodes": "GREECE", "lavrio": "GREECE",
+    "megara": "GREECE", "astakos": "GREECE", "kavala": "GREECE",
+
+    # --- NETHERLANDS, BELGIUM & GERMANY ---
+    "rotterdam": "NETHERLANDS", "amsterdam": "NETHERLANDS", "vlissingen": "NETHERLANDS",
+    "terneuzen": "NETHERLANDS", "ijmuiden": "NETHERLANDS", "moerdijk": "NETHERLANDS",
+    "antwerp": "BELGIUM", "zeebrugge": "BELGIUM", "ghent": "BELGIUM",
+    "ostend": "BELGIUM", "brussels": "BELGIUM",
+    "hamburg": "GERMANY", "bremen": "GERMANY", "bremerhaven": "GERMANY",
+    "wilhelmshaven": "GERMANY", "rostock": "GERMANY", "kiel": "GERMANY",
+
+    # --- SPAIN, GIBRALTAR & PORTUGAL ---
+    "algeciras": "SPAIN", "valencia": "SPAIN", "barcelona": "SPAIN",
+    "las palmas": "SPAIN", "bilbao": "SPAIN", "cartagena": "SPAIN",
+    "huelva": "SPAIN", "tarragona": "SPAIN", "malaga": "SPAIN",
+    "vigo": "SPAIN", "cadiz": "SPAIN", "castellon": "SPAIN",
+    "gibraltar": "GIBRALTAR",
+    "lisbon": "PORTUGAL", "sines": "PORTUGAL", "leixoes": "PORTUGAL", "setubal": "PORTUGAL",
+
+    # --- ITALY & FRANCE ---
+    "genoa": "ITALY", "augusta": "ITALY", "trieste": "ITALY",
+    "venice": "ITALY", "ravenna": "ITALY", "livorno": "ITALY",
+    "naples": "ITALY", "cagliari": "ITALY", "gioia tauro": "ITALY",
+    "taranto": "ITALY", "savona": "ITALY", "la spezia": "ITALY",
+    "marseilles": "FRANCE", "le havre": "FRANCE", "dunkirk": "FRANCE",
+    "fayard": "FRANCE", "bordeaux": "FRANCE", "st nazaire": "FRANCE",
+
+    # --- MIDDLE EAST & UAE ---
     "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE",
-    "singapore": "SINGAPORE", "shanghai": "CHINA", "ningbo": "CHINA",
-    "shenzhen": "CHINA", "guangzhou": "CHINA", "qingdao": "CHINA",
-    "tianjin": "CHINA", "hong kong": "CHINA", "busan": "SOUTH KOREA",
-    "houston": "USA", "new orleans": "USA", "new york": "USA",
-    "panama": "PANAMA", "santos": "BRAZIL",
-    # Προσθήκες για Μαρόκο και Αλγερία
+    "khor fakkan": "UAE", "abu dhabi": "UAE", "sharjah": "UAE",
+    "ras al khaimah": "UAE", "hamriyah": "UAE",
+    "sohar": "OMAN", "salalah": "OMAN", "muscat": "OMAN",
+    "dammam": "SAUDI ARABIA", "jeddah": "SAUDI ARABIA", "jubail": "SAUDI ARABIA",
+    "yanbu": "SAUDI ARABIA", "ras tanura": "SAUDI ARABIA",
+    "doha": "QATAR", "ras laffan": "QATAR", "umesaid": "QATAR",
+    "bahrain": "BAHRAIN", "mina sulman": "BAHRAIN",
+    "kuwait": "KUWAIT", "shuwaikh": "KUWAIT", "shuaiba": "KUWAIT",
+    "bandar abbas": "IRAN", "khark island": "IRAN",
+    "basrah": "IRAQ", "um qasr": "IRAQ",
+
+    # --- NORTH & WEST AFRICA ---
     "casablanca": "MOROCCO", "tangier": "MOROCCO", "agadir": "MOROCCO",
-    "jorf lasfar": "MOROCCO", "algiers": "ALGERIA", "oran": "ALGERIA",
-    "annaba": "ALGERIA", "arzew": "ALGERIA"
+    "jorf lasfar": "MOROCCO", "nador": "MOROCCO", "mohammedia": "MOROCCO",
+    "algiers": "ALGERIA", "oran": "ALGERIA", "annaba": "ALGERIA", "arzew": "ALGERIA",
+    "alexandria": "EGYPT", "port said": "EGYPT", "suez": "EGYPT", "damietta": "EGYPT",
+    "cairo": "EGYPT", "safaga": "EGYPT", "alexandria": "EGYPT",
+    "tunis": "TUNISIA", "sfax": "TUNISIA", "bizerte": "TUNISIA", "la goulette": "TUNISIA",
+    "tripoli": "LIBYA", "benghazi": "LIBYA", "misurata": "LIBYA", "tobruk": "LIBYA",
+    "lagos": "NIGERIA", "port harcourt": "NIGERIA", "onne": "NIGERIA",
+    "dakar": "SENEGAL", "abidjan": "IVORY COAST", "accra": "GHANA", "tema": "GHANA",
+
+    # --- ASIA & FAR EAST ---
+    "singapore": "SINGAPORE",
+    "shanghai": "CHINA", "ningbo": "CHINA", "shenzhen": "CHINA",
+    "guangzhou": "CHINA", "qingdao": "CHINA", "tianjin": "CHINA",
+    "hong kong": "CHINA", "dalian": "CHINA", "xiamen": "CHINA",
+    "tianjin": "CHINA", "rizhao": "CHINA", "yingkou": "CHINA",
+    "busan": "SOUTH KOREA", "ulsan": "SOUTH KOREA", "incheon": "SOUTH KOREA",
+    "yeosu": "SOUTH KOREA", "pohang": "SOUTH KOREA", "daesan": "SOUTH KOREA",
+    "tokyo": "JAPAN", "yokohama": "JAPAN", "nagoya": "JAPAN",
+    "osaka": "JAPAN", "kobe": "JAPAN", "chiba": "JAPAN", "kitakyushu": "JAPAN",
+    "port kelang": "MALAYSIA", "penang": "MALAYSIA", "pasir gudang": "MALAYSIA",
+    "tanjung pelepas": "MALAYSIA", "miri": "MALAYSIA", "bintulu": "MALAYSIA",
+    "bangkok": "THAILAND", "laem chabang": "THAILAND", "map ta phut": "THAILAND",
+    "jakarta": "INDONESIA", "surabaya": "INDONESIA", "belawan": "INDONESIA",
+    "batam": "INDONESIA", "balikpapan": "INDONESIA", "semarang": "INDONESIA",
+    "manila": "PHILIPPINES", "cebu": "PHILIPPINES", "subic bay": "PHILIPPINES",
+    "ho chi minh": "VIETNAM", "haiphong": "VIETNAM", "danang": "VIETNAM",
+    "mumbai": "INDIA", "chennai": "INDIA", "kolkata": "INDIA",
+    "cochin": "INDIA", "visakhapatnam": "INDIA", "mormugao": "INDIA",
+    "kandla": "INDIA", "mundra": "INDIA", "nhava sheva": "INDIA",
+    "colombo": "SRI LANKA", "galle": "SRI LANKA", "trincomalee": "SRI LANKA",
+    "karachi": "PAKISTAN", "port qasim": "PAKISTAN",
+    "chittagong": "BANGLADESH", "mongla": "BANGLADESH",
+
+    # --- AMERICAS & CARIBBEAN ---
+    "houston": "USA", "new orleans": "USA", "new york": "USA",
+    "los angeles": "USA", "long beach": "USA", "savannah": "USA",
+    "miami": "USA", "baltimore": "USA", "seattle": "USA",
+    "philadelphia": "USA", "charleston": "USA", "port arthur": "USA",
+    "galveston": "USA", "corpus christi": "USA", "baton rouge": "USA",
+    "vancouver": "CANADA", "montreal": "CANADA", "halifax": "CANADA",
+    "quebec": "CANADA", "prince rupert": "CANADA", "toronto": "CANADA",
+    "panama": "PANAMA", "balboa": "PANAMA", "cristobal": "PANAMA",
+    "colon": "PANAMA", "manzanillo": "PANAMA",
+    "buenos aires": "ARGENTINA", "rosario": "ARGENTINA", "bahia blanca": "ARGENTINA",
+    "la plata": "ARGENTINA", "san lorenzo": "ARGENTINA",
+    "valparaiso": "CHILE", "san antonio": "CHILE", "antofagasta": "CHILE",
+    "concepcion": "CHILE", "iquique": "CHILE", "talcahuano": "CHILE",
+    "callao": "PERU", "paita": "PERU", "marcona": "PERU",
+    "cartagena": "COLOMBIA", "barranquilla": "COLOMBIA", "santa marta": "COLOMBIA",
+    "venezuela": "VENEZUELA", "puerto cabello": "VENEZUELA", "maracaibo": "VENEZUELA",
+
+    # --- AUSTRALIA & OCEANIA ---
+    "sydney": "AUSTRALIA", "melbourne": "AUSTRALIA", "brisbane": "AUSTRALIA",
+    "fremantle": "AUSTRALIA", "newcastle": "AUSTRALIA", "port hedland": "AUSTRALIA",
+    "adelaide": "AUSTRALIA", "darwin": "AUSTRALIA", "haynes": "AUSTRALIA",
+    "auckland": "NEW ZEALAND", "wellington": "NEW ZEALAND", "lyttelton": "NEW ZEALAND"
 }
 
-# Ενημερωμένος πίνακας γειτονικών / περιφερειακών χωρών (συμπεριλαμβανομένων Morocco, Algeria, Spain)
 NEIGHBORING_COUNTRIES = {
+    "brazil": ["argentina", "uruguay", "panama"],
     "turkey": ["greece", "bulgaria", "cyprus", "italy"],
     "greece": ["turkey", "cyprus", "italy", "malta"],
     "netherlands": ["belgium", "germany", "france", "uk"],
@@ -128,36 +228,47 @@ def clean_vessel_name(raw_name):
 def smart_local_parser(full_text):
     text_lower = full_text.lower()
     
+    # ΚΟΦΤΗΣ ΥΠΟΓΡΑΦΗΣ: Κρατάμε μόνο το κείμενο ΠΡΙΝ το "best regards" για να αγνοούμε τα στοιχεία της OneTech
+    body_text = text_lower
+    if "best regards" in text_lower:
+        body_text = text_lower.split("best regards")[0]
+    elif "regards" in text_lower:
+        body_text = text_lower.split("regards")[0]
+
+    # 1. Εντοπισμός πλοίου
     vessel_name = "Not specified"
-    vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", text_lower)
+    vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", body_text)
     if vessel_match:
         vessel_name = clean_vessel_name(vessel_match.group(1))
     else:
-        lines = [line.strip() for line in full_text.split('\n') if line.strip()]
-        if lines:
-            vessel_name = clean_vessel_name(lines[0][:30])
+        vessel_match_gen = re.search(r"(?:m/v|m/t)\s+([a-zA-Z0-9\s]+)", body_text)
+        if vessel_match_gen:
+            vessel_name = clean_vessel_name(vessel_match_gen.group(1))
 
+    # 2. Εντοπισμός λιμανιού και χώρας από το σώμα
     detected_port = "Not specified"
     detected_country = "Not specified"
     for port_key, country_val in PORT_TO_COUNTRY.items():
-        if port_key in text_lower:
-            detected_port = port_key.capitalize()
+        if port_key in body_text:
+            detected_port = port_key.title()
             detected_country = country_val
             break
             
+    # 3. Εντοπισμός κατασκευαστή
     found_makers = []
     for maker in KNOWN_MAKERS:
-        if maker in text_lower:
+        if maker in body_text:
             if maker in vessel_name.lower():
                 continue
             found_makers.append(maker.upper())
             
+    # 4. Scope εργασίας
     scope_text = "Standard service / inquiry inspection requested."
-    if "annual" in text_lower:
+    if "annual" in body_text:
         scope_text = "Annual Radio / VDR / Navigation Survey"
-    elif "spare" in text_lower or "spares" in text_lower:
+    elif "spare" in body_text or "spares" in body_text:
         scope_text = "Supply of spare parts / hardware component inquiry"
-    elif "repair" in text_lower or "defect" in text_lower or "malfunction" in text_lower:
+    elif "repair" in body_text or "defect" in body_text or "malfunction" in body_text:
         scope_text = "Technical troubleshooting and defect rectification"
 
     return {
@@ -172,35 +283,6 @@ def smart_local_parser(full_text):
     }
 
 def analyze_rfq(full_text):
-    if client:
-        prompt = f"""
-Parse the following commercial RFQ / technical inquiry and extract operational facts into JSON.
-CRITICAL: Do NOT list a brand as a maker if it is part of the vessel's name (e.g. 'HTM Highlander' -> ignore Highlander).
-
-Inquiry:
-\"\"\"{full_text}\"\"\"
-
-Return ONLY a raw JSON dictionary using these exact keys:
-{{
-  "vessel_name": "Name of vessel or 'Not specified'",
-  "eta": "Vessel ETA or 'Not specified'",
-  "port": "Port or 'Not specified'",
-  "country": "Country or 'Not specified'",
-  "makers": ["Maker requiring service"],
-  "scope": "Summary",
-  "spares_requested": "Spares",
-  "missing_critical_data": []
-}}
-"""
-        try:
-            response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
-            res_json = json.loads(clean_json(response.text.strip()))
-            if "vessel_name" in res_json:
-                res_json["vessel_name"] = clean_vessel_name(res_json["vessel_name"])
-            return res_json
-        except Exception:
-            pass
-            
     return smart_local_parser(full_text)
 
 @st.cache_data
