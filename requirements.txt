@@ -1,5 +1,8 @@
 streamlit
 pandas
+gspread
+google-auth
 pypdf
 extract-msg
 google-genai
+requests
