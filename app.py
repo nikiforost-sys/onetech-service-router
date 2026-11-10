@@ -5,6 +5,7 @@ from google.oauth2.service_account import Credentials
 from google import genai
 import pypdf
 import io
+import re
 import json
 import email
 from email import policy
@@ -15,13 +16,36 @@ st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 st.title("Onetech Marine Service Assistant & Station Router")
 st.markdown("Automated RFQ semantic audit and approved service station matching.")
 
-# Initialize the new Google GenAI Client
 api_key = st.secrets.get("GEMINI_API_KEY")
 if not api_key:
     st.error("Missing GEMINI_API_KEY in Streamlit Secrets. Please check your app settings.")
     st.stop()
 
 client = genai.Client(api_key=api_key)
+
+PORT_TO_COUNTRY = {
+    "tutunciftlik": "TURKEY", "tüpraş": "TURKEY", "tupras": "TURKEY",
+    "izmit": "TURKEY", "yalova": "TURKEY", "tuzla": "TURKEY",
+    "istanbul": "TURKEY", "aliaga": "TURKEY", "iskenderun": "TURKEY",
+    "mersin": "TURKEY", "canakkale": "TURKEY", "nemrut": "TURKEY",
+    "piraeus": "GREECE", "thessaloniki": "GREECE", "eleusis": "GREECE",
+    "rotterdam": "NETHERLANDS", "antwerp": "BELGIUM", "hamburg": "GERMANY",
+    "algeciras": "SPAIN", "gibraltar": "GIBRALTAR", "valencia": "SPAIN",
+    "barcelona": "SPAIN", "las palmas": "SPAIN", "genoa": "ITALY",
+    "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE",
+    "singapore": "SINGAPORE", "shanghai": "CHINA", "ningbo": "CHINA",
+    "shenzhen": "CHINA", "guangzhou": "CHINA", "qingdao": "CHINA",
+    "tianjin": "CHINA", "hong kong": "CHINA", "busan": "SOUTH KOREA",
+    "houston": "USA", "new orleans": "USA", "new york": "USA",
+    "panama": "PANAMA", "santos": "BRAZIL"
+}
+
+KNOWN_MAKERS = [
+    "sperry marine", "sperry", "jrc", "alphatron", "furuno",
+    "tokyo keiki", "anschutz", "raytheon", "yokogawa", "ydk",
+    "macgregor", "danelec", "headway", "consilium", "highlander",
+    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad"
+]
 
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
@@ -68,6 +92,71 @@ def extract_text_from_file(uploaded_file):
         st.error(f"Error parsing {uploaded_file.name}: {e}")
     return extracted_text
 
+def fallback_local_parser(text):
+    brief = {
+        "vessel_name": "Not specified",
+        "eta": "Not specified",
+        "port": "Not specified",
+        "country": "Not specified",
+        "makers": [],
+        "scope": "Not clearly identified",
+        "spares_requested": "None explicitly requested",
+        "missing_critical_data": []
+    }
+    vessel_pattern = re.search(
+        r'(?:managed\s+vessel|vessel|m/v|m\.v\.|mt|m\.t\.)\s*[:\-]?\s*([A-Za-z0-9\s\-]+?)(?=\s+(?:will\s+call|is\s+now|is\s+calling|calling|arriving|eta|imo|has|\n|\r|,|\.|\s+-\s+))',
+        text, re.IGNORECASE
+    )
+    if vessel_pattern:
+        v_name = vessel_pattern.group(1).strip()
+        if 2 < len(v_name) < 35:
+            brief["vessel_name"] = v_name.upper()
+
+    text_clean = text.lower()
+    for port, country in PORT_TO_COUNTRY.items():
+        if re.search(r'\b' + re.escape(port) + r'\b', text_clean):
+            brief["port"] = port.title()
+            brief["country"] = country
+            break
+
+    eta_pattern = re.search(
+        r'(?:eta|arrival|arriving|calling\s+on|o/a|on/about)\s*(?:is\s+on\s+the|is\s+on|on\s+the|on|o/a)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?[A-Za-z]+(?:\s+[0-9]{2,4})?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?)',
+        text, re.IGNORECASE
+    )
+    if eta_pattern:
+        brief["eta"] = eta_pattern.group(1).strip().upper()
+
+    vessel_tokens = set(brief["vessel_name"].lower().split())
+    text_no_vessel = text_clean
+    for tok in vessel_tokens:
+        if len(tok) > 2:
+            text_no_vessel = re.sub(r'\b' + re.escape(tok) + r'\b', '', text_no_vessel)
+
+    for m in KNOWN_MAKERS:
+        if re.search(r'\b' + re.escape(m) + r'\b', text_no_vessel):
+            norm = "SPERRY" if "sperry" in m else ("YOKOGAWA" if m in ["yokogawa", "ydk"] else m.upper())
+            if norm not in brief["makers"]:
+                brief["makers"].append(norm)
+
+    scope_lines = []
+    for line in text.splitlines():
+        cl = line.strip()
+        if cl.startswith("---") or cl.startswith("Subject:") or cl.startswith("From:"):
+            continue
+        if any(w in cl.lower() for w in ["overhaul", "annual", "defect", "fault", "alarm", "survey", "gyrocompass", "radar", "vdr"]):
+            if 10 < len(cl) < 180:
+                scope_lines.append(cl)
+                if len(scope_lines) == 2:
+                    break
+    if scope_lines:
+        brief["scope"] = " | ".join(scope_lines)
+
+    if brief["eta"] == "Not specified":
+        brief["missing_critical_data"].append("Schedule/ETA")
+    if not any(k in text_clean for k in ["agent", "agency", "husbandry", "pic"]):
+        brief["missing_critical_data"].append("Port Agent details")
+    return brief
+
 def analyze_rfq_with_llm(full_text):
     prompt = f"""
 You are an expert technical coordinator in maritime navigation and communication equipment supply.
@@ -94,26 +183,48 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
   "missing_critical_data": ["List of missing essentials among: Schedule/ETA, Port Agent details, Maker/Model, Scope of attendance"]
 }}
 """
+    candidate_models = [
+        "gemini-3.0-flash",
+        "models/gemini-3.0-flash",
+        "gemini-3.8-flash",
+        "models/gemini-3.8-flash",
+        "gemini-2.0-flash",
+        "models/gemini-2.0-flash"
+    ]
+
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-        )
-        raw_text = response.text.strip()
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-        return json.loads(raw_text.strip())
-    except Exception as e:
-        st.error(f"Semantic parsing error: {e}")
-        return None
+        for m in client.models.list():
+            m_name = getattr(m, "name", "")
+            if "flash" in m_name.lower() and "2.5" not in m_name and "1.5" not in m_name:
+                if m_name not in candidate_models:
+                    candidate_models.insert(0, m_name)
+    except Exception:
+        pass
+
+    for model_name in candidate_models:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+            )
+            raw_text = response.text.strip()
+            if raw_text.startswith("```json"):
+                raw_text = raw_text[7:]
+            elif raw_text.startswith("```"):
+                raw_text = raw_text[3:]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3]
+            return json.loads(raw_text.strip())
+        except Exception:
+            continue
+
+    return fallback_local_parser(full_text)
 
 @st.cache_data(ttl=300)
 def load_directory():
     scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
+        "[https://www.googleapis.com/auth/spreadsheets](https://www.googleapis.com/auth/spreadsheets)",
+        "[https://www.googleapis.com/auth/drive](https://www.googleapis.com/auth/drive)"
     ]
     creds_dict = dict(st.secrets["gcp_service_account"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
@@ -157,11 +268,10 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Analyzing inquiry semantics with Gemini 2.5 Flash..."):
+        with st.spinner("Analyzing inquiry semantics..."):
             parsed = analyze_rfq_with_llm(combined_text)
 
         if parsed:
-            # 2. Executive Brief
             st.markdown("---")
             st.subheader("2. RFQ Executive Brief")
             col_b1, col_b2, col_b3 = st.columns(3)
@@ -178,7 +288,6 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
                 st.warning(f"**Reported Problem / Scope:** {parsed.get('scope')}")
                 st.warning(f"**Spares Inquired:** {parsed.get('spares_requested')}")
 
-            # 3. Completeness Audit
             st.markdown("---")
             st.subheader("3. RFQ Completeness Audit")
             missing = parsed.get("missing_critical_data", [])
@@ -189,7 +298,6 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
             else:
                 st.success("All operational essentials detected in the customer inquiry.")
 
-            # 4. Service Station Matching
             st.markdown("---")
             st.subheader("4. Recommended Service Stations")
             
@@ -208,13 +316,13 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
                         final_df = country_match[country_match["Approved Makers"].apply(maker_filter)]
                         
                         if not final_df.empty:
-                            st.success(f"Matched authorized stations in {target_country.upper()} for: {', '.join([m.upper() for m in target_makers])}")
+                            st.success(f"Matched stations in {target_country.upper()} for: {', '.join([m.upper() for m in target_makers])}")
                             st.dataframe(final_df, use_container_width=True)
                         else:
-                            st.warning(f"Stations found in {target_country.upper()}, but none explicitly approved for {', '.join([m.upper() for m in target_makers])}. Showing all stations in country:")
+                            st.warning(f"Stations found in {target_country.upper()}, but none with explicit approval for {', '.join([m.upper() for m in target_makers])}. Showing all stations in country:")
                             st.dataframe(country_match, use_container_width=True)
                     else:
-                        st.info(f"Showing all approved stations in {target_country.upper()} (No specific maker identified):")
+                        st.info(f"Showing all stations in {target_country.upper()} (No specific maker detected):")
                         st.dataframe(country_match, use_container_width=True)
                 else:
                     st.warning(f"No service stations found in directory for country: {target_country.upper()}. Showing full directory:")
