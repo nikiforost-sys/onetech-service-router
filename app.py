@@ -23,30 +23,23 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 
-# Strictly enforce free-tier Flash models (avoids 429 quota limits on Pro)
+# Dynamically select supported Flash model from active API catalog
 @st.cache_resource
 def get_working_model():
-    flash_candidates = [
-        "models/gemini-2.5-flash",
-        "models/gemini-2.0-flash",
-        "models/gemini-1.5-flash",
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash"
-    ]
     try:
-        available = [
+        models = [
             m.name for m in genai.list_models()
             if "generateContent" in m.supported_generation_methods
         ]
-        for cand in flash_candidates:
-            for av in available:
-                if cand in av:
-                    return genai.GenerativeModel(av)
+        for m_name in models:
+            if "flash" in m_name.lower():
+                return genai.GenerativeModel(m_name)
+        if models:
+            return genai.GenerativeModel(models[0])
     except Exception:
         pass
     
-    return genai.GenerativeModel("gemini-2.5-flash")
+    return genai.GenerativeModel("models/gemini-2.0-flash")
 
 model = get_working_model()
 
