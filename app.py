@@ -64,6 +64,28 @@ PORT_TO_COUNTRY = {
     "gibraltar": "gibraltar"
 }
 
+# Supported makers to detect in text and match against Approved Makers column
+KNOWN_MAKERS = [
+    "sperry marine", "sperry",
+    "jrc", "alphatron",
+    "furuno",
+    "tokyo keiki",
+    "anschutz", "raytheon anschütz", "raytheon",
+    "yokogawa", "ydk",
+    "macgregor",
+    "danelec",
+    "headway",
+    "consilium",
+    "highlander",
+    "hyundai",
+    "samsung",
+    "wartsila", "wzrtsila",
+    "cobham", "sailor",
+    "jotron",
+    "netwave",
+    "simrad"
+]
+
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
     file_name = uploaded_file.name.lower()
@@ -115,21 +137,21 @@ def parse_rfq_brief(primary_text, full_text):
         "eta": "Not specified",
         "port": "Not specified",
         "defect": "Not clearly identified",
-        "spares": "None explicitly requested"
+        "spares": "None explicitly requested",
+        "maker": "Not specified"
     }
     
-    # Clean text to avoid brand interference with ports
     scrubbed_primary = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', primary_text, flags=re.IGNORECASE)
     scrubbed_full = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', full_text, flags=re.IGNORECASE)
     
-    # 1. Vessel extraction (check full text)
+    # 1. Vessel extraction
     vessel_match = re.search(r'(?:vessel|m/v|m\.v\.|mt|m\.t\.)\s*[:\-]?\s*([A-Za-z0-9\s\-]+?)(?=[,\.\n\r]|\s+(?:is|has|calling|arriving|eta|imo))', full_text, re.IGNORECASE)
     if vessel_match:
         name = vessel_match.group(1).strip()
         if len(name) > 2 and len(name) < 30 and name.lower() not in ["s", "name", "the"]:
             brief["vessel"] = name.upper()
 
-    # 2. ETA extraction (check primary message first, then full text)
+    # 2. ETA extraction
     eta_match = re.search(r'(?:eta|arrival|arriving|calling\s+on)\s*[:\-]?\s*(?:is\s+on\s+the|is\s+on|on\s+the|on)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+(?:\s+[0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}(?:st|nd|rd|th)?(?:\s+agw\s+wp|\s+agw|\s+wp)?)', primary_text, re.IGNORECASE)
     if not eta_match:
         eta_match = re.search(r'(?:eta|arrival|arriving|calling\s+on)\s*[:\-]?\s*(?:is\s+on\s+the|is\s+on|on\s+the|on)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+(?:\s+[0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?(?:\s+agw\s+wp|\s+agw|\s+wp)?|[0-9]{1,2}(?:st|nd|rd|th)?(?:\s+agw\s+wp|\s+agw|\s+wp)?)', full_text, re.IGNORECASE)
@@ -138,7 +160,7 @@ def parse_rfq_brief(primary_text, full_text):
         if len(val) >= 2:
             brief["eta"] = val.upper()
 
-    # 3. Port extraction: Give priority to primary text
+    # 3. Port extraction
     found_port = False
     for port, country in PORT_TO_COUNTRY.items():
         if re.search(r'\b' + re.escape(port) + r'\b', scrubbed_primary, re.IGNORECASE):
@@ -152,7 +174,18 @@ def parse_rfq_brief(primary_text, full_text):
                 brief["port"] = f"{port.title()} ({country.upper()})"
                 break
 
-    # 4. Defect / Scope extraction
+    # 4. Maker extraction
+    detected_makers = []
+    text_lower = full_text.lower()
+    for m in ["sperry marine", "sperry", "jrc", "furuno", "tokyo keiki", "anschutz", "yokogawa", "macgregor", "danelec", "headway", "consilium"]:
+        if re.search(r'\b' + re.escape(m) + r'\b', text_lower):
+            display_name = "SPERRY" if "sperry" in m else m.upper()
+            if display_name not in detected_makers:
+                detected_makers.append(display_name)
+    if detected_makers:
+        brief["maker"] = ", ".join(detected_makers)
+
+    # 5. Defect extraction
     defect_sentences = []
     lines = full_text.splitlines()
     for line in lines:
@@ -166,7 +199,7 @@ def parse_rfq_brief(primary_text, full_text):
     if defect_sentences:
         brief["defect"] = " | ".join(defect_sentences)
 
-    # 5. Spares extraction
+    # 6. Spares extraction
     spares_found = []
     for line in lines:
         l_lower = line.lower()
@@ -243,9 +276,10 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
             st.info(f"**Vessel ETA:** {brief_data['eta']}")
         with col_b2:
             st.info(f"**Port / Destination:** {brief_data['port']}")
-            st.warning(f"**Spares Inquired:** {brief_data['spares']}")
+            st.warning(f"**Maker Detected:** {brief_data['maker']}")
         with col_b3:
             st.warning(f"**Reported Problem / Scope:** {brief_data['defect']}")
+            st.warning(f"**Spares Inquired:** {brief_data['spares']}")
 
         # 3. Completeness Audit
         st.markdown("---")
@@ -268,56 +302,74 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
         else:
             st.success("All operational essentials detected in the customer inquiry.")
 
-        # 4. Station Matching from Google Sheet Directory
+        # 4. Station Matching (Country + Approved Maker)
         st.markdown("---")
         st.subheader("4. Recommended Service Stations")
 
         if not df.empty:
             target_countries = set()
             
-            # Remove Tokyo Keiki brand noise so it doesn't trigger Japan
+            # Identify target countries
             search_primary = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', pasted_lower)
             search_full = re.sub(r'\btokyo\s+keiki\b', 'maker_keiki', text_lower)
             
-            # Step A: Check ports in pasted message first
             for port, country in PORT_TO_COUNTRY.items():
                 pattern = r'\b' + re.escape(port) + r'\b'
                 if re.search(pattern, search_primary):
                     target_countries.add(country)
             
-            # Step B: If no port in pasted text, check full text
             if not target_countries:
                 for port, country in PORT_TO_COUNTRY.items():
                     pattern = r'\b' + re.escape(port) + r'\b'
                     if re.search(pattern, search_full):
                         target_countries.add(country)
 
-            # Step C: Fallback to country names only if still no port matched
             if not target_countries:
                 for val in df["Country"].dropna().unique():
                     c_str = str(val).strip().lower()
                     if c_str and len(c_str) > 2:
                         pattern = r'\b' + re.escape(c_str) + r'\b'
-                        if re.search(pattern, search_primary):
+                        if re.search(pattern, search_primary) or re.search(pattern, search_full):
                             target_countries.add(c_str)
-                            
-                if not target_countries:
-                    for val in df["Country"].dropna().unique():
-                        c_str = str(val).strip().lower()
-                        if c_str and len(c_str) > 2:
-                            pattern = r'\b' + re.escape(c_str) + r'\b'
-                            if re.search(pattern, search_full):
-                                target_countries.add(c_str)
+
+            # Identify target makers mentioned in the inquiry
+            detected_makers_filter = []
+            for m in KNOWN_MAKERS:
+                pattern = r'\b' + re.escape(m) + r'\b'
+                if re.search(pattern, text_lower):
+                    detected_makers_filter.append(m)
 
             if target_countries:
-                st.info(f"Target scope locked to: {', '.join([c.upper() for c in target_countries])}")
-                matched_indices = []
+                # 1. Filter by country first
+                matched_country_indices = []
                 for idx, row in df.iterrows():
                     row_country = str(row.get("Country", "")).strip().lower()
                     if row_country in target_countries:
-                        matched_indices.append(idx)
-                results_df = df.loc[matched_indices]
-                st.dataframe(results_df, use_container_width=True)
+                        matched_country_indices.append(idx)
+                
+                country_df = df.loc[matched_country_indices]
+                
+                # 2. Filter by approved makers if any detected
+                final_indices = []
+                if detected_makers_filter:
+                    for idx, row in country_df.iterrows():
+                        approved_str = str(row.get("Approved Makers", "")).lower()
+                        # Check if any detected maker matches the station's approved makers
+                        for m in detected_makers_filter:
+                            clean_maker_term = "sperry" if "sperry" in m else m
+                            if clean_maker_term in approved_str:
+                                final_indices.append(idx)
+                                break
+                                
+                    if final_indices:
+                        st.success(f"Matched stations in {', '.join([c.upper() for c in target_countries])} authorized for: {', '.join(set([m.upper() for m in detected_makers_filter]))}")
+                        st.dataframe(df.loc[final_indices], use_container_width=True)
+                    else:
+                        st.warning(f"Found stations in {', '.join([c.upper() for c in target_countries])}, but none explicitly list authorization for {', '.join(set([m.upper() for m in detected_makers_filter]))}. Showing all country stations:")
+                        st.dataframe(country_df, use_container_width=True)
+                else:
+                    st.info(f"Target scope locked to: {', '.join([c.upper() for c in target_countries])} (No specific maker identified to filter by)")
+                    st.dataframe(country_df, use_container_width=True)
             else:
                 st.info("No specific service location detected. Showing full directory below:")
                 st.dataframe(df, use_container_width=True)
