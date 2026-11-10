@@ -181,46 +181,24 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
   "missing_critical_data": ["List of missing essentials among: Schedule/ETA, Port Agent details, Maker/Model, Scope of attendance"]
 }}
 """
-    candidate_models = [
-        "gemini-3.0-flash",
-        "models/gemini-3.0-flash",
-        "gemini-3.8-flash",
-        "models/gemini-3.8-flash",
-        "gemini-2.0-flash",
-        "models/gemini-2.0-flash"
-    ]
-
     try:
-        for m in client.models.list():
-            m_name = getattr(m, "name", "")
-            if "flash" in m_name.lower() and "2.5" not in m_name and "1.5" not in m_name:
-                if m_name not in candidate_models:
-                    candidate_models.insert(0, m_name)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+        )
+        raw_text = response.text.strip()
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:]
+        elif raw_text.startswith("```"):
+            raw_text = raw_text[3:]
+        if raw_text.endswith("```"):
+            raw_text = raw_text[:-3]
+        return json.loads(raw_text.strip())
     except Exception:
-        pass
-
-    for model_name in candidate_models:
-        try:
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt,
-            )
-            raw_text = response.text.strip()
-            if raw_text.startswith("```json"):
-                raw_text = raw_text[7:]
-            elif raw_text.startswith("```"):
-                raw_text = raw_text[3:]
-            if raw_text.endswith("```"):
-                raw_text = raw_text[:-3]
-            return json.loads(raw_text.strip())
-        except Exception:
-            continue
-
-    return fallback_local_parser(full_text)
+        return fallback_local_parser(full_text)
 
 @st.cache_data(ttl=300)
 def load_directory():
-    # Fallback DataFrame with sample stations so connection never fails
     data = {
         "Station Name": ["Onetech Turkey Hub", "Piraeus Marine Electronics", "Rotterdam Navigational Service"],
         "Country": ["TURKEY", "GREECE", "NETHERLANDS"],
@@ -263,7 +241,7 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Analyzing inquiry semantics..."):
+        with st.spinner("Analyzing inquiry semantics with Gemini..."):
             parsed = analyze_rfq_with_llm(combined_text)
 
         if parsed:
