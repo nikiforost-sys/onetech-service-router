@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
 from google import genai
 import pypdf
 import io
@@ -222,19 +220,9 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
 
 @st.cache_data(ttl=300)
 def load_directory():
-    # Split string prevents clipboard from turning URLs into markdown links
-    prefix = "https://" + "[www.googleapis.com/auth/](https://www.googleapis.com/auth/)"
-    scopes = [
-        prefix + "spreadsheets",
-        prefix + "drive"
-    ]
-    creds_dict = dict(st.secrets["gcp_service_account"])
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client_gs = gspread.authorize(creds)
     sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
-    sheet = client_gs.open_by_key(sheet_id).sheet1
-    data = sheet.get_all_records()
-    return pd.DataFrame(data)
+    url = f"[https://docs.google.com/spreadsheets/d/](https://docs.google.com/spreadsheets/d/){sheet_id}/export?format=csv"
+    return pd.read_csv(url)
 
 try:
     df = load_directory()
