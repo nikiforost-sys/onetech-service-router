@@ -13,7 +13,7 @@ import time
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("Automated RFQ semantic audit with robust Gemini retry engine.")
+st.markdown("Automated RFQ semantic audit with robust fallback parser.")
 
 api_key = st.secrets.get("GEMINI_API_KEY")
 if not api_key:
@@ -38,6 +38,13 @@ PORT_TO_COUNTRY = {
     "houston": "USA", "new orleans": "USA", "new york": "USA",
     "panama": "PANAMA", "santos": "BRAZIL"
 }
+
+KNOWN_MAKERS = [
+    "sperry marine", "sperry", "jrc", "alphatron", "furuno",
+    "tokyo keiki", "anschutz", "raytheon", "yokogawa", "ydk",
+    "macgregor", "danelec", "headway", "consilium", "highlander",
+    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad"
+]
 
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
@@ -93,7 +100,42 @@ def clean_json(text):
         text = text[:-3]
     return text.strip()
 
-def analyze_rfq_with_retry(full_text):
+def fallback_parser(full_text):
+    text_lower = full_text.lower()
+    
+    # Εντοπισμός πλοίου
+    vessel_name = "Not specified"
+    vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s]+)", text_lower)
+    if vessel_match:
+        vessel_name = vessel_match.group(1).strip().title()[:30]
+        
+    # Εντοπισμός λιμανιού και χώρας
+    detected_port = "Not specified"
+    detected_country = "Not specified"
+    for port_key, country_val in PORT_TO_COUNTRY.items():
+        if port_key in text_lower:
+            detected_port = port_key.capitalize()
+            detected_country = country_val
+            break
+            
+    # Εντοπισμός κατασκευαστή
+    found_makers = []
+    for maker in KNOWN_MAKERS:
+        if maker in text_lower:
+            found_makers.append(maker.upper())
+            
+    return {
+        "vessel_name": vessel_name,
+        "eta": "Not specified",
+        "port": detected_port,
+        "country": detected_country,
+        "makers": list(set(found_makers)),
+        "scope": "Extracted via local pattern matching due to server load.",
+        "spares_requested": "None explicitly requested",
+        "missing_critical_data": []
+    }
+
+def analyze_rfq_with_smart_fallback(full_text):
     prompt = f"""
 You are an expert technical coordinator in maritime navigation and communication equipment supply.
 Parse the following commercial RFQ / technical inquiry and extract all operational facts into JSON.
@@ -120,19 +162,13 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
 }}
 """
 
-    models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
-    
-    for model_name in models:
-        for attempt in range(4): # Κάνει 4 προσπάθειες ανά μοντέλο με σταδιακή αναμονή
-            try:
-                response = client.models.generate_content(model=model_name, contents=prompt)
-                raw_text = response.text.strip()
-                return json.loads(clean_json(raw_text))
-            except Exception:
-                time.sleep(2 + (attempt * 2)) # Περιμένει 2, 4, 6 δευτερόλεπτα κλπ. πριν ξαναδοκιμάσει
-                
-    st.error("Τα δωρεάν συστήματα Gemini είναι προσωρινά φορτωμένα. Δοκιμάστε να ξαναπατήσετε το κουμπί σε λίγα δευτερόλεπτα.")
-    return {}
+    try:
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+        raw_text = response.text.strip()
+        return json.loads(clean_json(raw_text))
+    except Exception:
+        # Αν το Gemini αποτύχει, χρησιμοποιεί ακαριαία τον τοπικό αναλυτή κανόνων
+        return fallback_parser(full_text)
 
 @st.cache_data
 def load_directory():
@@ -172,8 +208,8 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Analyzing inquiry semantics with Gemini..."):
-            parsed = analyze_rfq_with_retry(combined_text)
+        with st.spinner("Processing inquiry..."):
+            parsed = analyze_rfq_with_smart_fallback(combined_text)
 
         if parsed:
             st.markdown("---")
