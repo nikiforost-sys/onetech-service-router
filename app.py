@@ -22,7 +22,7 @@ if not api_key:
     st.stop()
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-1.5-pro")
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
@@ -152,7 +152,7 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Analyzing RFQ semantics with Gemini Pro..."):
+        with st.spinner("Analyzing RFQ semantics..."):
             parsed = analyze_rfq_with_llm(combined_text)
 
         if parsed:
