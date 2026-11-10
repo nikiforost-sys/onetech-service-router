@@ -13,7 +13,6 @@ st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 st.title("Onetech Marine Service Assistant & Station Router")
 st.markdown("Automated RFQ completeness audit and approved service station matching.")
 
-# Dictionary mapping major ports to their respective country in your directory
 PORT_TO_COUNTRY = {
     # USA
     "houston": "usa",
@@ -65,41 +64,58 @@ PORT_TO_COUNTRY = {
 }
 
 def extract_text_from_file(uploaded_file):
-    text = ""
+    extracted_text = ""
     file_name = uploaded_file.name.lower()
     
     try:
         if file_name.endswith(".pdf"):
             reader = pypdf.PdfReader(uploaded_file)
             for page in reader.pages:
-                text += page.extract_text() or ""
+                extracted_text += page.extract_text() or ""
+                
         elif file_name.endswith(".eml"):
             msg = email.message_from_bytes(uploaded_file.read(), policy=policy.default)
-            text += f"Subject: {msg.get('subject', '')}\n"
+            extracted_text += f"\nSubject: {msg.get('subject', '')}\n"
             body = msg.get_body(preferencelist=('plain', 'html'))
             if body:
-                text += body.get_content()
+                extracted_text += body.get_content()
+                
+            for part in msg.iter_attachments():
+                att_name = (part.get_filename() or "").lower()
+                if att_name.endswith(".pdf"):
+                    pdf_data = part.get_payload(decode=True)
+                    if pdf_data:
+                        pdf_stream = io.BytesIO(pdf_data)
+                        pdf_reader = pypdf.PdfReader(pdf_stream)
+                        extracted_text += f"\n--- Embedded PDF in EML: {att_name} ---\n"
+                        for page in pdf_reader.pages:
+                            extracted_text += page.extract_text() or ""
+                            
         elif file_name.endswith(".msg"):
             msg = extract_msg.Message(uploaded_file)
-            text += f"Subject: {msg.subject}\nBody:\n{msg.body}\n"
+            extracted_text += f"\nSubject: {msg.subject}\nBody:\n{msg.body}\n"
             
             for attachment in msg.attachments:
                 att_name = str(getattr(attachment, 'longFilename', '') or getattr(attachment, 'shortFilename', '')).lower()
-                if att_name.endswith(".pdf") and hasattr(attachment, 'data'):
+                att_data = getattr(attachment, 'data', None)
+                
+                if att_name.endswith(".pdf") and att_data:
                     try:
-                        pdf_stream = io.BytesIO(attachment.data)
+                        pdf_stream = io.BytesIO(att_data)
                         pdf_reader = pypdf.PdfReader(pdf_stream)
-                        text += f"\n--- Embedded PDF: {att_name} ---\n"
+                        extracted_text += f"\n--- Embedded PDF in MSG: {att_name} ---\n"
                         for page in pdf_reader.pages:
-                            text += page.extract_text() or ""
+                            extracted_text += page.extract_text() or ""
                     except Exception as err:
-                        text += f"\n[Could not parse nested PDF {att_name}: {err}]\n"
+                        extracted_text += f"\n[Could not parse PDF attachment {att_name}: {err}]\n"
+                        
         elif file_name.endswith(".txt"):
-            text = uploaded_file.read().decode("utf-8", errors="ignore")
+            extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
+            
     except Exception as e:
         st.error(f"Error parsing {uploaded_file.name}: {e}")
         
-    return text
+    return extracted_text
 
 @st.cache_data(ttl=300)
 def load_directory():
@@ -123,4 +139,68 @@ except Exception as e:
     st.sidebar.error(f"Connection error: {e}")
     df = pd.DataFrame()
 
-st.subheader("1. In
+st.subheader("1. Ingestion")
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    rfq_pasted_text = st.text_area(
+        "Paste RFQ text / email body here:",
+        height=180,
+        placeholder="Vessel name, port, equipment maker/model, defect description..."
+    )
+
+with col2:
+    uploaded_files = st.file_uploader(
+        "Upload customer files (PDF, EML, MSG, TXT):",
+        type=["pdf", "eml", "msg", "txt"],
+        accept_multiple_files=True
+    )
+
+combined_text = rfq_pasted_text + "\n"
+if uploaded_files:
+    for f in uploaded_files:
+        combined_text += f"\n--- Content from {f.name} ---\n"
+        combined_text += extract_text_from_file(f)
+
+if st.button("Process RFQ & Find Service Stations", type="primary"):
+    if not combined_text.strip():
+        st.warning("Please provide RFQ text or upload at least one inquiry file.")
+    else:
+        text_lower = combined_text.lower()
+        
+        missing_items = []
+        if not any(k in text_lower for k in ["eta", "etd", "arrival", "departure", "calling", "date"]):
+            missing_items.append("Vessel Schedule (ETA / ETD / Date of Attendance)")
+        if not any(k in text_lower for k in ["agent", "agency", "husbandry", "pic", "contact"]):
+            missing_items.append("Local Port Agent details")
+        if not any(k in text_lower for k in ["maker", "model", "type", "s/n", "serial", "jrc", "furuno", "sperry", "yokogawa", "anschutz", "tokyo keiki", "danelec", "macgregor"]):
+            missing_items.append("Equipment Maker, Model, or Serial Number")
+        if not any(k in text_lower for k in ["alarm", "fault", "defect", "error", "malfunction", "survey", "apt", "annual", "issue", "problem"]):
+            missing_items.append("Fault Description / Alarm Codes / Scope of Attendance")
+
+        st.markdown("---")
+        st.subheader("2. RFQ Completeness Audit")
+        
+        if missing_items:
+            st.error("Missing critical operational data. Revert to client requesting:")
+            for item in missing_items:
+                st.write(f"- **{item}**")
+        else:
+            st.success("All operational essentials detected in the customer inquiry.")
+
+        st.markdown("---")
+        st.subheader("3. Recommended Service Stations")
+
+        if not df.empty:
+            target_countries = set()
+            
+            for port, country in PORT_TO_COUNTRY.items():
+                if port in text_lower:
+                    target_countries.add(country)
+            
+            for val in df["Country"].dropna().unique():
+                c_str = str(val).strip().lower()
+                if c_str and len(c_str) > 2 and c_str in text_lower:
+                    target_countries.add(c_str)
+
+            if target_countries:
