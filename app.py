@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import requests
 from google import genai
 import pypdf
 import io
@@ -222,7 +223,9 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
 def load_directory():
     sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
     url = f"[https://docs.google.com/spreadsheets/d/](https://docs.google.com/spreadsheets/d/){sheet_id}/export?format=csv"
-    return pd.read_csv(url)
+    response = requests.get(url)
+    response.raise_for_status()
+    return pd.read_csv(io.BytesIO(response.content))
 
 try:
     df = load_directory()
