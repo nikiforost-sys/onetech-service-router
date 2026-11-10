@@ -90,71 +90,6 @@ def extract_text_from_file(uploaded_file):
         st.error(f"Error parsing {uploaded_file.name}: {e}")
     return extracted_text
 
-def fallback_local_parser(text):
-    brief = {
-        "vessel_name": "Not specified",
-        "eta": "Not specified",
-        "port": "Not specified",
-        "country": "Not specified",
-        "makers": [],
-        "scope": "Not clearly identified",
-        "spares_requested": "None explicitly requested",
-        "missing_critical_data": []
-    }
-    vessel_pattern = re.search(
-        r'(?:managed\s+vessel|vessel|m/v|m\.v\.|mt|m\.t\.)\s*[:\-]?\s*([A-Za-z0-9\s\-]+?)(?=\s+(?:will\s+call|is\s+now|is\s+calling|calling|arriving|eta|imo|has|\n|\r|,|\.|\s+-\s+))',
-        text, re.IGNORECASE
-    )
-    if vessel_pattern:
-        v_name = vessel_pattern.group(1).strip()
-        if 2 < len(v_name) < 35:
-            brief["vessel_name"] = v_name.upper()
-
-    text_clean = text.lower()
-    for port, country in PORT_TO_COUNTRY.items():
-        if re.search(r'\b' + re.escape(port) + r'\b', text_clean):
-            brief["port"] = port.title()
-            brief["country"] = country
-            break
-
-    eta_pattern = re.search(
-        r'(?:eta|arrival|arriving|calling\s+on|o/a|on/about)\s*(?:is\s+on\s+the|is\s+on|on\s+the|on|o/a)?\s*([0-9]{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?[A-Za-z]+(?:\s+[0-9]{2,4})?|[0-9]{1,2}[\/\.\-][0-9]{1,2}(?:[\/\.\-][0-9]{2,4})?)',
-        text, re.IGNORECASE
-    )
-    if eta_pattern:
-        brief["eta"] = eta_pattern.group(1).strip().upper()
-
-    vessel_tokens = set(brief["vessel_name"].lower().split())
-    text_no_vessel = text_clean
-    for tok in vessel_tokens:
-        if len(tok) > 2:
-            text_no_vessel = re.sub(r'\b' + re.escape(tok) + r'\b', '', text_no_vessel)
-
-    for m in KNOWN_MAKERS:
-        if re.search(r'\b' + re.escape(m) + r'\b', text_no_vessel):
-            norm = "SPERRY" if "sperry" in m else ("YOKOGAWA" if m in ["yokogawa", "ydk"] else m.upper())
-            if norm not in brief["makers"]:
-                brief["makers"].append(norm)
-
-    scope_lines = []
-    for line in text.splitlines():
-        cl = line.strip()
-        if cl.startswith("---") or cl.startswith("Subject:") or cl.startswith("From:"):
-            continue
-        if any(w in cl.lower() for w in ["overhaul", "annual", "defect", "fault", "alarm", "survey", "gyrocompass", "radar", "vdr"]):
-            if 10 < len(cl) < 180:
-                scope_lines.append(cl)
-                if len(scope_lines) == 2:
-                    break
-    if scope_lines:
-        brief["scope"] = " | ".join(scope_lines)
-
-    if brief["eta"] == "Not specified":
-        brief["missing_critical_data"].append("Schedule/ETA")
-    if not any(k in text_clean for k in ["agent", "agency", "husbandry", "pic"]):
-        brief["missing_critical_data"].append("Port Agent details")
-    return brief
-
 def analyze_rfq_with_llm(full_text):
     prompt = f"""
 You are an expert technical coordinator in maritime navigation and communication equipment supply.
@@ -194,12 +129,12 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
         if raw_text.endswith("```"):
             raw_text = raw_text[:-3]
         return json.loads(raw_text.strip())
-    except Exception:
-        return fallback_local_parser(full_text)
+    except Exception as e:
+        st.error(f"LLM parsing error: {e}")
+        return {}
 
 @st.cache_data(ttl=300)
 def load_directory():
-    # Επίσημος κατάλογος σταθμών απευθείας από τη βάση δεδομένων της Onetech
     directory_data = {
         "Station Name": [
             "Bosphorus Naval Service", "Istanbul Marine Electronics", "Izmit Technical Support",
