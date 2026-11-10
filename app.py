@@ -199,13 +199,10 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
 
 @st.cache_data(ttl=300)
 def load_directory():
-    data = {
-        "Station Name": ["Onetech Turkey Hub", "Piraeus Marine Electronics", "Rotterdam Navigational Service"],
-        "Country": ["TURKEY", "GREECE", "NETHERLANDS"],
-        "City": ["Istanbul", "Piraeus", "Rotterdam"],
-        "Approved Makers": ["YOKOGAWA, SPERRY, JRC, FURUNO", "SPERRY, YOKOGAWA, ANSCHUTZ", "JRC, FURUNO, SPERRY"]
-    }
-    return pd.DataFrame(data)
+    sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
+    gid = "428894731"
+    url = f"[https://docs.google.com/spreadsheets/d/](https://docs.google.com/spreadsheets/d/){sheet_id}/export?format=csv&gid={gid}"
+    return pd.read_csv(url)
 
 try:
     df = load_directory()
