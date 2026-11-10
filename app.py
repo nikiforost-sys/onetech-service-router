@@ -11,10 +11,10 @@ import extract_msg
 from PIL import Image
 import base64
 
-st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
+st.set_page_config(page_title="Onetech Service Station Router & Discrepancy Audit", layout="wide")
 
-st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("High-Speed Maritime RFQ Parser with Manual Override & Image Support (Groq AI).")
+st.title("Onetech Marine Service Assistant & Discrepancy Audit")
+st.markdown("Automated RFQ Parsing, Global Port Matching & Cross-Source Discrepancy Detection via Groq AI.")
 
 groq_api_key = st.secrets.get("GROQ_API_KEY")
 
@@ -229,7 +229,6 @@ def clean_vessel_name(raw_name):
     return " ".join(words).strip().title()
 
 def smart_local_parser(manual_override_text, files_text):
-    # Συνδυασμός: Το manual override μπαίνει ΠΡΩΤΟ για να έχει απόλυτη προτεραιότητα σε σύγκρουση
     combined = manual_override_text + "\n" + files_text
     text_lower = combined.lower()
     
@@ -279,6 +278,7 @@ def smart_local_parser(manual_override_text, files_text):
         "makers": list(set(found_makers)),
         "scope": scope_text,
         "spares_requested": "Inquired per RFQ text",
+        "discrepancies": [],
         "missing_critical_data": []
     }
 
@@ -294,8 +294,9 @@ def analyze_rfq(manual_override_text, files_text, image_files):
             {
                 "type": "text",
                 "text": f"""
-Parse the following commercial RFQ / technical inquiry and extract operational facts into JSON.
-CRITICAL OVERRIDE RULE: Information provided in the 'MANUAL OVERRIDE' section takes absolute priority over attached files or emails if there is any conflict (e.g., overriding port, vessel, or scope).
+You are an expert maritime technical coordinator. Parse the commercial RFQ and cross-check all provided sources (Manual Override, Email/Files text, and Attached Images/Photos) to detect discrepancies or contradictions (e.g., conflicting vessel names, mismatch between reported defect and photo evidence, conflicting ports, or incorrect maker models).
+
+CRITICAL OVERRIDE RULE: Information provided in the 'MANUAL OVERRIDE' section takes absolute priority over attached files or emails if there is any conflict.
 CRITICAL: Do NOT list a brand as a maker if it is part of the vessel's name (e.g. 'HTM Highlander' -> ignore Highlander).
 
 MANUAL OVERRIDE (User priority input):
@@ -313,13 +314,13 @@ Return ONLY a raw JSON dictionary using these exact keys:
   "makers": ["Maker requiring service"],
   "scope": "Summary",
   "spares_requested": "Spares",
+  "discrepancies": ["List any discrepancies found between manual input, emails, documents, or photo evidence, e.g. Mismatch in port, conflicting vessel names, or photo mismatch"],
   "missing_critical_data": []
 }}
 """
             }
         ]
 
-        # Προσθήκη εικόνων αν ανέβασε ο χρήστης (Vision API)
         if image_files:
             for img_file in image_files:
                 img_bytes = img_file.read()
@@ -338,7 +339,7 @@ Return ONLY a raw JSON dictionary using these exact keys:
         }
         
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=15)
+            response = requests.post(url, json=payload, headers=headers, timeout=20)
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"]
                 res_json = json.loads(clean_json(content))
@@ -361,24 +362,23 @@ except Exception as e:
     st.sidebar.error(f"Error loading directory.csv: {e}")
     df = pd.DataFrame()
 
-st.subheader("1. Ingestion")
+st.subheader("1. Ingestion & Manual Override")
 col1, col2 = st.columns([1, 1])
 
 with col1:
     rfq_pasted_text = st.text_area(
-        "Paste RFQ text / email body or MANUAL OVERRIDE (Port/Vessel/etc):",
+        "Manual Override / Priority Info (Port, Vessel, etc.):",
         height=180,
-        placeholder="e.g. PORT: KOHSICHANG THAILAND or additional notes..."
+        placeholder="e.g. PORT: KOHSICHANG THAILAND\nVESSEL: KIRRIBILLI"
     )
 
 with col2:
     uploaded_files = st.file_uploader(
-        "Upload customer files (PDF, EML, MSG, TXT, JPG, PNG):",
+        "Upload customer files & photos (PDF, EML, MSG, TXT, JPG, PNG):",
         type=["pdf", "eml", "msg", "txt", "jpg", "jpeg", "png"],
         accept_multiple_files=True
     )
 
-# Διαχωρισμός αρχείων κειμένου/pdf και εικόνων
 doc_files = [f for f in uploaded_files if not f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
 image_files = [f for f in uploaded_files if f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
 
@@ -388,11 +388,11 @@ if doc_files:
         files_combined_text += f"\n--- Content from {f.name} ---\n"
         files_combined_text += extract_text_from_file(f)
 
-if st.button("Process RFQ & Find Service Stations", type="primary"):
+if st.button("Process RFQ & Audit Discrepancies", type="primary"):
     if not rfq_pasted_text.strip() and not uploaded_files:
         st.warning("Please provide manual text or upload at least one file/image.")
     else:
-        with st.spinner("Processing RFQ with manual override & image analysis..."):
+        with st.spinner("Processing RFQ & cross-checking data discrepancies..."):
             parsed = analyze_rfq(rfq_pasted_text, files_combined_text, image_files)
 
         if parsed:
@@ -401,82 +401,4 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
             col_b1, col_b2, col_b3 = st.columns(3)
             with col_b1:
                 st.info(f"**Vessel Name:** {parsed.get('vessel_name')}")
-                st.info(f"**Vessel ETA:** {parsed.get('eta')}")
-            with col_b2:
-                port_disp = parsed.get('port')
-                country_disp = parsed.get('country')
-                st.info(f"**Port / Destination:** {port_disp} ({country_disp})")
-                makers_str = ", ".join(parsed.get('makers', [])) or "None detected"
-                st.warning(f"**Maker Detected:** {makers_str}")
-            with col_b3:
-                st.warning(f"**Reported Problem / Scope:** {parsed.get('scope')}")
-                st.warning(f"**Spares Inquired:** {parsed.get('spares_requested')}")
-
-            st.markdown("---")
-            st.subheader("3. RFQ Completeness Audit")
-            missing = parsed.get("missing_critical_data", [])
-            if missing:
-                st.error("Missing critical operational data. Revert to client requesting:")
-                for m in missing:
-                    st.write(f"- **{m}**")
-            else:
-                st.success("All operational essentials detected in the customer inquiry.")
-
-            st.markdown("---")
-            st.subheader("4. Recommended Service Stations")
-            
-            target_country = str(parsed.get("country", "")).strip().lower()
-            target_makers = [m.lower() for m in parsed.get("makers", [])]
-
-            if not df.empty and target_country:
-                country_match = df[df["Country"].str.strip().str.lower() == target_country]
-                
-                final_df = pd.DataFrame()
-                matched_location_label = target_country.upper()
-                
-                def maker_filter(approved_str):
-                    app_lower = str(approved_str).lower()
-                    return any(m in app_lower for m in target_makers)
-
-                if not country_match.empty:
-                    if target_makers:
-                        filtered = country_match[country_match["Approved Makers"].apply(maker_filter)]
-                        if not filtered.empty:
-                            final_df = filtered
-                        else:
-                            final_df = country_match
-                    else:
-                        final_df = country_match
-                
-                if final_df.empty and target_country in NEIGHBORING_COUNTRIES:
-                    neighbors = NEIGHBORING_COUNTRIES[target_country]
-                    for neigh in neighbors:
-                        neigh_match = df[df["Country"].str.strip().str.lower() == neigh]
-                        if not neigh_match.empty:
-                            if target_makers:
-                                filtered_neigh = neigh_match[neigh_match["Approved Makers"].apply(maker_filter)]
-                                if not filtered_neigh.empty:
-                                    final_df = filtered_neigh
-                                    matched_location_label = f"{neigh.upper()} (Neighboring Country to {target_country.upper()})"
-                                    break
-                            else:
-                                final_df = neigh_match
-                                matched_location_label = f"{neigh.upper()} (Neighboring Country to {target_country.upper()})"
-                                break
-
-                makers_formatted = ', '.join([m.upper() for m in target_makers]) if target_makers else "ALL"
-                
-                if not final_df.empty:
-                    st.success(f"Matched stations in **{matched_location_label}** for makers: {makers_formatted}")
-                    st.dataframe(final_df, use_container_width=True)
-                else:
-                    st.warning(f"No approved stations found in {target_country.upper()} or neighboring regions. Showing full directory:")
-                    st.dataframe(df, use_container_width=True)
-            else:
-                st.warning("Directory is empty or target country is not specified.")
-
-            with st.expander("Show Parsed Raw Inputs"):
-                st.write("**Manual Override Text:**")
-                st.text(rfq_pasted_text)
-                st.write("**Files Text:**")
-                st.text(files_combined_text)
+                st.info(f"**
