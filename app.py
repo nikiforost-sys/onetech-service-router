@@ -12,7 +12,6 @@ st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 st.title("Onetech Marine Service Assistant & Station Router")
 st.markdown("Automated RFQ completeness audit and approved service station matching.")
 
-# Helper function to extract text from various file formats
 def extract_text_from_file(uploaded_file):
     text = ""
     file_name = uploaded_file.name.lower()
@@ -38,7 +37,6 @@ def extract_text_from_file(uploaded_file):
         
     return text
 
-# 1. Connect to Google Sheets via Secrets
 @st.cache_data(ttl=300)
 def load_directory():
     scopes = [
@@ -49,7 +47,6 @@ def load_directory():
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(creds)
     
-    # Target Google Sheet ID
     sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
     sheet = client.open_by_key(sheet_id).sheet1
     data = sheet.get_all_records()
@@ -62,7 +59,6 @@ except Exception as e:
     st.sidebar.error(f"Connection error: {e}")
     df = pd.DataFrame()
 
-# 2. Input Section: Text Area and File Upload
 st.subheader("1. Ingestion")
 col1, col2 = st.columns([1, 1])
 
@@ -80,7 +76,6 @@ with col2:
         accept_multiple_files=True
     )
 
-# Combine inputs
 combined_text = rfq_pasted_text + "\n"
 if uploaded_files:
     for f in uploaded_files:
@@ -93,7 +88,6 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     else:
         text_lower = combined_text.lower()
         
-        # 3. Completeness Audit
         missing_items = []
         if not any(k in text_lower for k in ["eta", "etd", "arrival", "departure", "calling", "date"]):
             missing_items.append("Vessel Schedule (ETA / ETD / Date of Attendance)")
@@ -114,7 +108,6 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
         else:
             st.success("All operational essentials detected in the customer inquiry.")
 
-        # 4. Station Matching from Google Sheet Directory
         st.markdown("---")
         st.subheader("3. Recommended Service Stations")
 
@@ -124,5 +117,14 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
                 port_val = str(row.get("Port", "")).strip().lower()
                 country_val = str(row.get("Country", "")).strip().lower()
                 
-                # Match port or country mentioned in the text
-                if (port_val and len(port_val) > 2 and port_val in text_lower) or \
+                if (port_val and len(port_val) > 2 and port_val in text_lower) or (country_val and len(country_val) > 2 and country_val in text_lower):
+                    matched_indices.append(idx)
+
+            if matched_indices:
+                results_df = df.loc[matched_indices]
+                st.dataframe(results_df, use_container_width=True)
+            else:
+                st.info("No direct port or country match detected in the inquiry. Showing full directory below:")
+                st.dataframe(df, use_container_width=True)
+        else:
+            st.warning("Service station directory is empty or inaccessible.")
