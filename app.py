@@ -16,7 +16,8 @@ st.set_page_config(page_title="Onetech Service Station Router & Discrepancy Audi
 st.title("Onetech Marine Service Assistant & Discrepancy Audit")
 st.markdown("Automated RFQ Parsing, Global Port Matching & Cross-Source Discrepancy Detection.")
 
-groq_api_key = st.secrets.get("GROQ_API_KEY")
+raw_groq_key = st.secrets.get("GROQ_API_KEY", "")
+groq_api_key = str(raw_groq_key).strip().strip('"').strip("'")
 
 PORT_TO_COUNTRY = {
     # --- THAILAND ---
@@ -212,6 +213,7 @@ def extract_text_from_file(uploaded_file):
     return extracted_text[:10000]
 
 def clean_json(text):
+    text = text.strip()
     if text.startswith("```json"):
         text = text[7:]
     elif text.startswith("```"):
@@ -231,7 +233,6 @@ def clean_vessel_name(raw_name):
     return " ".join(words).strip().title()
 
 def clean_signatures(text):
-    # Αφαιρούμε διευθύνσεις γραφείων για να μην εντοπίζεται ο Πειραιάς ως προορισμός
     cleaned = re.sub(r"(?i)vasilikon\s*51[^\n]*piraeus[^\n]*greece", "", text)
     cleaned = re.sub(r"(?i)akti\s*moutsopoulou[^\n]*piraeus[^\n]*greece", "", cleaned)
     cleaned = re.sub(r"(?i)piraeus\s*185\d\d\s*greece", "", cleaned)
@@ -241,7 +242,7 @@ def parse_manual_inputs(manual_text):
     overrides = {}
     if not manual_text:
         return overrides
-    
+
     country_match = re.search(r"(?i)country\s*[:=]\s*([a-zA-Z\s]+)", manual_text)
     if country_match:
         overrides["country"] = country_match.group(1).strip().upper()
@@ -266,13 +267,11 @@ def smart_local_parser(manual_override_text, files_text):
     combined = manual_override_text + "\n" + cleaned_files
     text_lower = combined.lower()
 
-    # 1. Έλεγχος ονόματος πλοίου
     vessel_name = "Not specified"
     vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", text_lower)
     if vessel_match:
         vessel_name = clean_vessel_name(vessel_match.group(1))
 
-    # 2. Έλεγχος λιμανιού και χώρας
     detected_port = "Not specified"
     detected_country = "Not specified"
     for port_key, country_val in PORT_TO_COUNTRY.items():
@@ -281,7 +280,6 @@ def smart_local_parser(manual_override_text, files_text):
             detected_country = country_val
             break
 
-    # 3. Έλεγχος κατασκευαστή
     found_makers = []
     for maker in KNOWN_MAKERS:
         if maker in text_lower:
@@ -289,7 +287,6 @@ def smart_local_parser(manual_override_text, files_text):
                 continue
             found_makers.append(maker.upper())
 
-    # 4. Εργασίες
     scope_text = "Standard technical attendance inquiry."
     if "annual" in text_lower:
         scope_text = "Annual Radio / VDR / Navigation Survey"
@@ -310,7 +307,6 @@ def smart_local_parser(manual_override_text, files_text):
         "missing_critical_data": []
     }
 
-    # Εφαρμογή manual override
     overrides = parse_manual_inputs(manual_override_text)
     for k, v in overrides.items():
         result[k] = v
@@ -322,7 +318,9 @@ def analyze_rfq(manual_override_text, files_text, image_files):
     res_json = None
 
     if groq_api_key:
-        url = "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)"
+        clean_url = "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)"
+        endpoint = str(clean_url).encode("ascii", "ignore").decode("ascii").strip()
+
         headers = {
             "Authorization": f"Bearer {groq_api_key}",
             "Content-Type": "application/json"
@@ -377,7 +375,7 @@ Return ONLY valid JSON matching this schema:
         }
 
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=25)
+            response = requests.post(endpoint, json=payload, headers=headers, timeout=25)
             if response.status_code == 200:
                 content = response.json()["choices"][0]["message"]["content"]
                 res_json = json.loads(clean_json(content))
@@ -393,7 +391,6 @@ Return ONLY valid JSON matching this schema:
     if not res_json:
         res_json = smart_local_parser(manual_override_text, files_text)
 
-    # Απόλυτη επιβολή του Manual Override στα τελικά αποτελέσματα
     overrides = parse_manual_inputs(manual_override_text)
     for k, v in overrides.items():
         res_json[k] = v
