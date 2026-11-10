@@ -8,6 +8,7 @@ import json
 import email
 from email import policy
 import extract_msg
+import time
 
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
@@ -116,22 +117,26 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
   "missing_critical_data": ["List of missing essentials among: Schedule/ETA, Port Agent details, Maker/Model, Scope of attendance"]
 }}
 """
-    try:
-        response = client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=prompt,
-        )
-        raw_text = response.text.strip()
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:]
-        elif raw_text.startswith("```"):
-            raw_text = raw_text[3:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-        return json.loads(raw_text.strip())
-    except Exception as e:
-        st.error(f"LLM error: {e}")
-        return {}
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=prompt,
+            )
+            raw_text = response.text.strip()
+            if raw_text.startswith("```json"):
+                raw_text = raw_text[7:]
+            elif raw_text.startswith("```"):
+                raw_text = raw_text[3:]
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3]
+            return json.loads(raw_text.strip())
+        except Exception as e:
+            if attempt == 2:
+                st.error(f"LLM error after retries: {e}")
+                return {}
+            time.sleep(2)
+    return {}
 
 @st.cache_data
 def load_directory():
