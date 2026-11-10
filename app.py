@@ -22,7 +22,37 @@ if not api_key:
     st.stop()
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel("gemini-1.5-flash")
+
+# Robust model initialization with auto-discovery
+@st.cache_resource
+def get_working_model():
+    candidate_names = [
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro-latest",
+        "gemini-1.5-pro",
+        "gemini-pro"
+    ]
+    # Try listing models supported by this specific key
+    try:
+        available = [
+            m.name for m in genai.list_models()
+            if "generateContent" in m.supported_generation_methods
+        ]
+        if available:
+            # Prefer a flash or pro model from the active account list
+            for cand in candidate_names:
+                for av in available:
+                    if cand in av:
+                        return genai.GenerativeModel(av)
+            return genai.GenerativeModel(available[0])
+    except Exception:
+        pass
+    
+    # Fallback to direct name
+    return genai.GenerativeModel("gemini-1.5-flash-latest")
+
+model = get_working_model()
 
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
@@ -152,7 +182,7 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Analyzing RFQ semantics..."):
+        with st.spinner("Analyzing RFQ semantics with Gemini..."):
             parsed = analyze_rfq_with_llm(combined_text)
 
         if parsed:
