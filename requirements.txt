@@ -4,4 +4,4 @@ gspread
 google-auth
 pypdf
 extract-msg
-google-generativeai
+google-genai
