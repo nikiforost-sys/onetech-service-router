@@ -20,7 +20,7 @@ def load_directory():
     client = gspread.authorize(creds)
     
     # Χρήση του ID του Google Sheet για απόλυτη ακρίβεια
-    sheet_id = "1h5fKvAE_dYfcitrSfSSl-qPptTA3OYlVqynunObK3Iw"
+    sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
     sheet = client.open_by_key(sheet_id).sheet1
     data = sheet.get_all_records()
     return pd.DataFrame(data)
