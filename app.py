@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import requests
 from google import genai
 import pypdf
 import io
@@ -134,22 +133,15 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
         st.error(f"LLM error: {e}")
         return {}
 
-@st.cache_data(ttl=300)
+@st.cache_data
 def load_directory():
-    sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
-    gid = "428894731"
-    url = f"[https://docs.google.com/spreadsheets/d/](https://docs.google.com/spreadsheets/d/){sheet_id}/export?format=csv&gid={gid}"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return pd.read_csv(io.BytesIO(response.content))
+    return pd.read_csv("directory.csv")
 
 try:
     df = load_directory()
     st.sidebar.success(f"Connected to Directory. Loaded {len(df)} stations.")
 except Exception as e:
-    st.sidebar.error(f"Connection error: {e}")
+    st.sidebar.error(f"Error loading directory.csv: {e}")
     df = pd.DataFrame()
 
 st.subheader("1. Ingestion")
