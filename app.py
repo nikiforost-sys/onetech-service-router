@@ -52,7 +52,7 @@ def extract_text_from_file(uploaded_file):
     try:
         if file_name.endswith(".pdf"):
             reader = pypdf.PdfReader(uploaded_file)
-            for page in reader.pages:
+            for page in reader.pages[:15]:
                 extracted_text += page.extract_text() or ""
         elif file_name.endswith(".eml"):
             msg = email.message_from_bytes(uploaded_file.read(), policy=policy.default)
@@ -68,7 +68,7 @@ def extract_text_from_file(uploaded_file):
                         pdf_stream = io.BytesIO(pdf_data)
                         pdf_reader = pypdf.PdfReader(pdf_stream)
                         extracted_text += f"\n--- Embedded PDF: {att_name} ---\n"
-                        for page in pdf_reader.pages:
+                        for page in pdf_reader.pages[:15]:
                             extracted_text += page.extract_text() or ""
         elif file_name.endswith(".msg"):
             msg = extract_msg.Message(uploaded_file)
@@ -81,7 +81,7 @@ def extract_text_from_file(uploaded_file):
                         pdf_stream = io.BytesIO(att_data)
                         pdf_reader = pypdf.PdfReader(pdf_stream)
                         extracted_text += f"\n--- Embedded PDF: {att_name} ---\n"
-                        for page in pdf_reader.pages:
+                        for page in pdf_reader.pages[:15]:
                             extracted_text += page.extract_text() or ""
                     except Exception as err:
                         extracted_text += f"\n[Could not parse PDF attachment {att_name}: {err}]\n"
@@ -89,7 +89,7 @@ def extract_text_from_file(uploaded_file):
             extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
     except Exception as e:
         st.error(f"Error parsing {uploaded_file.name}: {e}")
-    return extracted_text
+    return extracted_text[:6000]
 
 def analyze_rfq_with_llm(full_text):
     prompt = f"""
