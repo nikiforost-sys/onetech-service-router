@@ -14,7 +14,6 @@ st.title("Onetech Marine Service Assistant & Station Router")
 st.markdown("Automated RFQ completeness audit and approved service station matching.")
 
 PORT_TO_COUNTRY = {
-    # USA
     "houston": "usa",
     "new orleans": "usa",
     "los angeles": "usa",
@@ -23,7 +22,6 @@ PORT_TO_COUNTRY = {
     "miami": "usa",
     "seattle": "usa",
     "savannah": "usa",
-    # Europe
     "rotterdam": "netherlands",
     "antwerp": "belgium",
     "hamburg": "germany",
@@ -36,7 +34,6 @@ PORT_TO_COUNTRY = {
     "trieste": "italy",
     "le havre": "france",
     "marseille": "france",
-    # Asia & Middle East
     "singapore": "singapore",
     "shanghai": "china",
     "ningbo": "china",
@@ -53,7 +50,6 @@ PORT_TO_COUNTRY = {
     "dubai": "uae",
     "jebel ali": "uae",
     "fujairah": "uae",
-    # Others
     "santos": "brazil",
     "buenos aires": "argentina",
     "sydney": "australia",
@@ -66,20 +62,17 @@ PORT_TO_COUNTRY = {
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
     file_name = uploaded_file.name.lower()
-    
     try:
         if file_name.endswith(".pdf"):
             reader = pypdf.PdfReader(uploaded_file)
             for page in reader.pages:
                 extracted_text += page.extract_text() or ""
-                
         elif file_name.endswith(".eml"):
             msg = email.message_from_bytes(uploaded_file.read(), policy=policy.default)
             extracted_text += f"\nSubject: {msg.get('subject', '')}\n"
             body = msg.get_body(preferencelist=('plain', 'html'))
             if body:
                 extracted_text += body.get_content()
-                
             for part in msg.iter_attachments():
                 att_name = (part.get_filename() or "").lower()
                 if att_name.endswith(".pdf"):
@@ -90,15 +83,12 @@ def extract_text_from_file(uploaded_file):
                         extracted_text += f"\n--- Embedded PDF in EML: {att_name} ---\n"
                         for page in pdf_reader.pages:
                             extracted_text += page.extract_text() or ""
-                            
         elif file_name.endswith(".msg"):
             msg = extract_msg.Message(uploaded_file)
             extracted_text += f"\nSubject: {msg.subject}\nBody:\n{msg.body}\n"
-            
             for attachment in msg.attachments:
                 att_name = str(getattr(attachment, 'longFilename', '') or getattr(attachment, 'shortFilename', '')).lower()
                 att_data = getattr(attachment, 'data', None)
-                
                 if att_name.endswith(".pdf") and att_data:
                     try:
                         pdf_stream = io.BytesIO(att_data)
@@ -108,13 +98,10 @@ def extract_text_from_file(uploaded_file):
                             extracted_text += page.extract_text() or ""
                     except Exception as err:
                         extracted_text += f"\n[Could not parse PDF attachment {att_name}: {err}]\n"
-                        
         elif file_name.endswith(".txt"):
             extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
-            
     except Exception as e:
         st.error(f"Error parsing {uploaded_file.name}: {e}")
-        
     return extracted_text
 
 @st.cache_data(ttl=300)
@@ -126,7 +113,6 @@ def load_directory():
     creds_dict = dict(st.secrets["gcp_service_account"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(creds)
-    
     sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
     sheet = client.open_by_key(sheet_id).sheet1
     data = sheet.get_all_records()
@@ -204,3 +190,19 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
                     target_countries.add(c_str)
 
             if target_countries:
+                st.info(f"Detected country scope: {', '.join([c.upper() for c in target_countries])}")
+                matched_indices = []
+                for idx, row in df.iterrows():
+                    row_country = str(row.get("Country", "")).strip().lower()
+                    if row_country in target_countries:
+                        matched_indices.append(idx)
+                results_df = df.loc[matched_indices]
+                st.dataframe(results_df, use_container_width=True)
+            else:
+                st.info("No recognized port or country match detected in the inquiry. Showing full directory below:")
+                st.dataframe(df, use_container_width=True)
+                
+            with st.expander("Show Extracted Text from Message & Attachments"):
+                st.text(combined_text)
+        else:
+            st.warning("Service station directory is empty or inaccessible.")
