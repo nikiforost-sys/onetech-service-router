@@ -8,20 +8,20 @@ st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 st.title("Onetech Marine Service Assistant & Station Router")
 st.markdown("Εισαγωγή RFQ πελάτη για έλεγχο πληρότητας και εντοπισμό εγκεκριμένου τεχνικού σταθμού.")
 
-# 1. Σύνδεση με το Google Sheet μέσω Secrets
+# 1. Σύνδεση με το Google Sheet μέσω ID
 @st.cache_data(ttl=300)
 def load_directory():
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    # Διαβάζει τα διαπιστευτήρια από τα Secrets του Streamlit
     creds_dict = dict(st.secrets["gcp_service_account"])
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     client = gspread.authorize(creds)
     
-    # Άνοιγμα του Google Sheet
-    sheet = client.open("Global Marine Service Station Directory - Top 30 Commercial Ports").sheet1
+    # Χρήση του ID του Google Sheet για απόλυτη ακρίβεια
+    sheet_id = "1h5fKvAE_dYfcitrSfSSl-qPptTA3OYlVqynunObK3Iw"
+    sheet = client.open_by_key(sheet_id).sheet1
     data = sheet.get_all_records()
     return pd.DataFrame(data)
 
@@ -29,7 +29,7 @@ try:
     df = load_directory()
     st.sidebar.success(f"Επιτυχής σύνδεση! Φορτώθηκαν {len(df)} εγγραφές σταθμών.")
 except Exception as e:
-    st.sidebar.error("Σφάλμα σύνδεσης με το Google Sheet. Ελέγξτε τα Secrets ή την κοινοποίηση.")
+    st.sidebar.error(f"Σφάλμα σύνδεσης: {e}")
     df = pd.DataFrame()
 
 # 2. Πλαίσιο εισαγωγής RFQ
@@ -64,7 +64,6 @@ if st.button("Ανάλυση RFQ & Εύρεση Σταθμού"):
         st.markdown("### 2. Προτεινόμενοι Σταθμοί Εξυπηρέτησης")
 
         if not df.empty:
-            # Φιλτράρισμα με βάση το λιμάνι ή τη χώρα που αναφέρεται στο κείμενο
             matched_indices = []
             for idx, row in df.iterrows():
                 port_val = str(row.get("Port", "")).strip().lower()
