@@ -14,7 +14,7 @@ st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 st.title("Onetech Marine Service Assistant & Station Router")
 st.markdown("High-Speed Maritime RFQ Parser & Station Router.")
 
-# Προαιρετικό Gemini (αν θέλεις να δοκιμάζει, αλλά αν πέσει, προχωράει αμέσως στον τοπικό αναλυτή)
+# Προαιρετικό Gemini (αν είναι διαθέσιμο, αλλιώς εκτελείται ακαριαία ο τοπικός έξυπνος αναλυτής)
 api_key = st.secrets.get("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key) if api_key else None
 
@@ -96,15 +96,36 @@ def clean_json(text):
         text = text[:-3]
     return text.strip()
 
+def clean_vessel_name(raw_name):
+    """Γενικός καθαρισμός: κρατάει έως 3 λέξεις και κόβει οτιδήποτε ακολουθεί (π.χ. will, at, eta, κλπ.)"""
+    if not raw_name or raw_name.lower() == "not specified":
+        return "Not specified"
+    
+    # Λίστα διαχωριστικών λέξεων που συναντώνται μετά το όνομα του πλοίου στα RFQ
+    stop_words_pattern = r"\b(will|at|eta|port|call|calling|arr|arriving|due|to|for|is|and|the|in|on|sailing)\b"
+    cleaned = re.split(stop_words_pattern, raw_name, flags=re.IGNORECASE)[0]
+    
+    # Περιορισμός στις πρώτες 3 λέξεις μέγιστο για αποφυγή ρύπανσης
+    words = cleaned.strip().split()
+    if len(words) > 3:
+        words = words[:3]
+        
+    return " ".join(words).strip().title()
+
 def smart_local_parser(full_text):
     text_lower = full_text.lower()
     
-    # 1. Εντοπισμός ονόματος πλοίου με regex
+    # 1. Εντοπισμός ονόματος πλοίου γενικά
     vessel_name = "Not specified"
     vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", text_lower)
     if vessel_match:
-        vessel_name = vessel_match.group(1).strip().title()[:35]
-        
+        vessel_name = clean_vessel_name(vessel_match.group(1))
+    else:
+        # Fallback στις πρώτες λέξεις του κειμένου
+        lines = [line.strip() for line in full_text.split('\n') if line.strip()]
+        if lines:
+            vessel_name = clean_vessel_name(lines[0][:30])
+
     # 2. Εντοπισμός λιμανιού και χώρας
     detected_port = "Not specified"
     detected_country = "Not specified"
@@ -114,11 +135,10 @@ def smart_local_parser(full_text):
             detected_country = country_val
             break
             
-    # 3. Έξυπνος εντοπισμός κατασκευαστή (αποκλείοντας το όνομα του πλοίου)
+    # 3. Έξυπνος εντοπισμός κατασκευαστή με αποκλεισμό αν ανήκει στο όνομα του πλοίου
     found_makers = []
     for maker in KNOWN_MAKERS:
         if maker in text_lower:
-            # Αν το brand βρίσκεται μέσα στο όνομα του πλοίου, το αγνοούμε εντελώς
             if maker in vessel_name.lower():
                 continue
             found_makers.append(maker.upper())
@@ -144,7 +164,6 @@ def smart_local_parser(full_text):
     }
 
 def analyze_rfq(full_text):
-    # Προσπαθούμε γρήγορα με AI αν είναι διαθέσιμο, αλλιώς πέφτουμε απευθείας στον έξυπνο τοπικό αναλυτή
     if client:
         prompt = f"""
 Parse the following commercial RFQ / technical inquiry and extract operational facts into JSON.
@@ -167,11 +186,14 @@ Return ONLY a raw JSON dictionary using these exact keys:
 """
         try:
             response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
-            return json.loads(clean_json(response.text.strip()))
+            res_json = json.loads(clean_json(response.text.strip()))
+            # Καθαρισμός και στο αποτέλεσμα του AI για απόλυτη ασφάλεια
+            if "vessel_name" in res_json:
+                res_json["vessel_name"] = clean_vessel_name(res_json["vessel_name"])
+            return res_json
         except Exception:
             pass
             
-    # Ακαριαία και αξιόπιστη εξαγωγή τοπικά χωρίς server delays
     return smart_local_parser(full_text)
 
 @st.cache_data
