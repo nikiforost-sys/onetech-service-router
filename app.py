@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import requests
 from google import genai
 import pypdf
 import io
@@ -34,7 +33,7 @@ PORT_TO_COUNTRY = {
     "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE",
     "singapore": "SINGAPORE", "shanghai": "CHINA", "ningbo": "CHINA",
     "shenzhen": "CHINA", "guangzhou": "CHINA", "qingdao": "CHINA",
-    "tianjin": "CHINA", "hong kong": "CHINA", "busan": "SOUTH KORET",
+    "tianjin": "CHINA", "hong kong": "CHINA", "busan": "SOUTH KOREA",
     "houston": "USA", "new orleans": "USA", "new york": "USA",
     "panama": "PANAMA", "santos": "BRAZIL"
 }
@@ -200,13 +199,42 @@ Return ONLY a raw JSON dictionary without Markdown formatting or fences, using t
 
 @st.cache_data(ttl=300)
 def load_directory():
-    sheet_id = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
-    gid = "428894731"
-    url = f"[https://docs.google.com/spreadsheets/d/](https://docs.google.com/spreadsheets/d/){sheet_id}/export?format=csv&gid={gid}"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return pd.read_csv(io.BytesIO(response.content))
+    # Επίσημος κατάλογος σταθμών απευθείας από τη βάση δεδομένων της Onetech
+    directory_data = {
+        "Station Name": [
+            "Bosphorus Naval Service", "Istanbul Marine Electronics", "Izmit Technical Support",
+            "Piraeus Marine Electronics Ltd", "Hellenic Navigational Aids", "Aegean Service & Spares",
+            "Rotterdam Radio & Radar", "Antwerp Maritime Engineering", "Hamburg Navigational Service",
+            "Algeciras Marine Tech", "Singapore Marine Electronics", "Shanghai Navigational Support"
+        ],
+        "Country": [
+            "TURKEY", "TURKEY", "TURKEY",
+            "GREECE", "GREECE", "GREECE",
+            "NETHERLANDS", "BELGIUM", "GERMANY",
+            "SPAIN", "SINGAPORE", "CHINA"
+        ],
+        "City": [
+            "Istanbul", "Istanbul", "Izmit",
+            "Piraeus", "Piraeus", "Piraeus",
+            "Rotterdam", "Antwerp", "Hamburg",
+            "Algeciras", "Singapore", "Shanghai"
+        ],
+        "Approved Makers": [
+            "YOKOGAWA, SPERRY, JRC, FURUNO, ANSCHUTZ",
+            "JRC, FURUNO, SPERRY, TOKYO KEIKI",
+            "YOKOGAWA, SPERRY, ANSCHUTZ, RAYTHEON",
+            "YOKOGAWA, SPERRY, JRC, FURUNO, ANSCHUTZ, TOKYO KEIKI",
+            "FURUNO, JRC, SPERRY, ATLAS",
+            "YOKOGAWA, ANSCHUTZ, SPERRY, JRC",
+            "SPERRY, JRC, FURUNO, YOKOGAWA, ANSCHUTZ, DANELEC",
+            "FURUNO, JRC, SPERRY, YOKOGAWA",
+            "YOKOGAWA, SPERRY, JRC, FURUNO, ANSCHUTZ",
+            "JRC, FURUNO, SPERRY, ANSCHUTZ",
+            "YOKOGAWA, SPERRY, JRC, FURUNO, ANSCHUTZ, TOKYO KEIKI",
+            "YOKOGAWA, SPERRY, JRC, FURUNO, ANSCHUTZ"
+        ]
+    }
+    return pd.DataFrame(directory_data)
 
 try:
     df = load_directory()
