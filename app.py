@@ -290,10 +290,7 @@ def analyze_rfq(manual_override_text, files_text, image_files):
             "Content-Type": "application/json"
         }
         
-        messages_content = [
-            {
-                "type": "text",
-                "text": f"""
+        prompt_text = f"""
 You are an expert maritime technical coordinator. Parse the commercial RFQ and cross-check all provided sources (Manual Override, Email/Files text, and Attached Images/Photos) to detect discrepancies or contradictions (e.g., conflicting vessel names, mismatch between reported defect and photo evidence, conflicting ports, or incorrect maker models).
 
 CRITICAL OVERRIDE RULE: Information provided in the 'MANUAL OVERRIDE' section takes absolute priority over attached files or emails if there is any conflict.
@@ -314,12 +311,12 @@ Return ONLY a raw JSON dictionary using these exact keys:
   "makers": ["Maker requiring service"],
   "scope": "Summary",
   "spares_requested": "Spares",
-  "discrepancies": ["List any discrepancies found between manual input, emails, documents, or photo evidence, e.g. Mismatch in port, conflicting vessel names, or photo mismatch"],
+  "discrepancies": ["List any discrepancies found between manual input, emails, documents, or photo evidence"],
   "missing_critical_data": []
 }}
 """
-            }
-        ]
+
+        messages_content = [{"type": "text", "text": prompt_text}]
 
         if image_files:
             for img_file in image_files:
@@ -334,7 +331,7 @@ Return ONLY a raw JSON dictionary using these exact keys:
 
         payload = {
             "model": "llama-3.2-11b-vision-preview" if image_files else "llama-3.3-70b-versatile",
-            "messages": [{"role": "user", "content": messages_content if image_files else messages_content[0]["text"]}] if image_files else [{"role": "user", "content": messages_content[0]["text"]}],
+            "messages": [{"role": "user", "content": messages_content if image_files else prompt_text}],
             "temperature": 0.1
         }
         
@@ -401,4 +398,82 @@ if st.button("Process RFQ & Audit Discrepancies", type="primary"):
             col_b1, col_b2, col_b3 = st.columns(3)
             with col_b1:
                 st.info(f"**Vessel Name:** {parsed.get('vessel_name')}")
-                st.info(f"**
+                st.info(f"**Vessel ETA:** {parsed.get('eta')}")
+            with col_b2:
+                port_disp = parsed.get('port')
+                country_disp = parsed.get('country')
+                st.info(f"**Port / Destination:** {port_disp} ({country_disp})")
+                makers_str = ", ".join(parsed.get('makers', [])) or "None detected"
+                st.warning(f"**Maker Detected:** {makers_str}")
+            with col_b3:
+                st.warning(f"**Reported Problem / Scope:** {parsed.get('scope')}")
+                st.warning(f"**Spares Inquired:** {parsed.get('spares_requested')}")
+
+            st.markdown("---")
+            st.subheader("3. Discrepancy & Conflict Audit (Cross-Source Check)")
+            discrepancies = parsed.get("discrepancies", [])
+            if discrepancies:
+                st.error("⚠️ **Discrepancies / Conflicts Detected Across Sources:**")
+                for d in discrepancies:
+                    st.warning(f"- {d}")
+            else:
+                st.success("✅ No discrepancies or conflicts detected between manual input, documents, and photo evidence.")
+
+            st.markdown("---")
+            st.subheader("4. Recommended Service Stations")
+            
+            target_country = str(parsed.get("country", "")).strip().lower()
+            target_makers = [m.lower() for m in parsed.get("makers", [])]
+
+            if not df.empty and target_country:
+                country_match = df[df["Country"].str.strip().str.lower() == target_country]
+                
+                final_df = pd.DataFrame()
+                matched_location_label = target_country.upper()
+                
+                def maker_filter(approved_str):
+                    app_lower = str(approved_str).lower()
+                    return any(m in app_lower for m in target_makers)
+
+                if not country_match.empty:
+                    if target_makers:
+                        filtered = country_match[country_match["Approved Makers"].apply(maker_filter)]
+                        if not filtered.empty:
+                            final_df = filtered
+                        else:
+                            final_df = country_match
+                    else:
+                        final_df = country_match
+                
+                if final_df.empty and target_country in NEIGHBORING_COUNTRIES:
+                    neighbors = NEIGHBORING_COUNTRIES[target_country]
+                    for neigh in neighbors:
+                        neigh_match = df[df["Country"].str.strip().str.lower() == neigh]
+                        if not neigh_match.empty:
+                            if target_makers:
+                                filtered_neigh = neigh_match[neigh_match["Approved Makers"].apply(maker_filter)]
+                                if not filtered_neigh.empty:
+                                    final_df = filtered_neigh
+                                    matched_location_label = f"{neigh.upper()} (Neighboring Country to {target_country.upper()})"
+                                    break
+                            else:
+                                final_df = neigh_match
+                                matched_location_label = f"{neigh.upper()} (Neighboring Country to {target_country.upper()})"
+                                break
+
+                makers_formatted = ', '.join([m.upper() for m in target_makers]) if target_makers else "ALL"
+                
+                if not final_df.empty:
+                    st.success(f"Matched stations in **{matched_location_label}** for makers: {makers_formatted}")
+                    st.dataframe(final_df, use_container_width=True)
+                else:
+                    st.warning(f"No approved stations found in {target_country.upper()} or neighboring regions. Showing full directory:")
+                    st.dataframe(df, use_container_width=True)
+            else:
+                st.warning("Directory is empty or target country is not specified.")
+
+            with st.expander("Show Parsed Raw Inputs"):
+                st.write("**Manual Override Text:**")
+                st.text(rfq_pasted_text)
+                st.write("**Files Text:**")
+                st.text(files_combined_text)
