@@ -319,6 +319,9 @@ def analyze_rfq(manual_override_text, files_text, image_files):
     res_json = None
 
     if groq_api_key:
+        api_url = "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)"
+        api_url = api_url.strip("[]'\" ")
+
         prompt_text = f"""
 You are an expert maritime technical coordinator. Parse the commercial RFQ and extract facts into JSON.
 
@@ -369,7 +372,7 @@ Return ONLY valid JSON matching this schema:
 
         req_data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
-            "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)",
+            api_url,
             data=req_data,
             headers={
                 "Authorization": f"Bearer {groq_api_key}",
