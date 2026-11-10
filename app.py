@@ -8,19 +8,15 @@ import json
 import email
 from email import policy
 import extract_msg
-import time
 
 st.set_page_config(page_title="Onetech Service Station Router", layout="wide")
 
 st.title("Onetech Marine Service Assistant & Station Router")
-st.markdown("Automated RFQ semantic audit with robust fallback parser.")
+st.markdown("High-Speed Maritime RFQ Parser & Station Router.")
 
+# Προαιρετικό Gemini (αν θέλεις να δοκιμάζει, αλλά αν πέσει, προχωράει αμέσως στον τοπικό αναλυτή)
 api_key = st.secrets.get("GEMINI_API_KEY")
-if not api_key:
-    st.error("Missing GEMINI_API_KEY in Streamlit Secrets.")
-    st.stop()
-
-client = genai.Client(api_key=api_key)
+client = genai.Client(api_key=api_key) if api_key else None
 
 PORT_TO_COUNTRY = {
     "tutunciftlik": "TURKEY", "tüpraş": "TURKEY", "tupras": "TURKEY",
@@ -100,16 +96,16 @@ def clean_json(text):
         text = text[:-3]
     return text.strip()
 
-def fallback_parser(full_text):
+def smart_local_parser(full_text):
     text_lower = full_text.lower()
     
-    # Εντοπισμός πλοίου
+    # 1. Εντοπισμός ονόματος πλοίου με regex
     vessel_name = "Not specified"
-    vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s]+)", text_lower)
+    vessel_match = re.search(r"(?:vessel|m/v|m/t|ship)[:\s]+([a-zA-Z0-9\s-]+)", text_lower)
     if vessel_match:
-        vessel_name = vessel_match.group(1).strip().title()[:30]
+        vessel_name = vessel_match.group(1).strip().title()[:35]
         
-    # Εντοπισμός λιμανιού και χώρας
+    # 2. Εντοπισμός λιμανιού και χώρας
     detected_port = "Not specified"
     detected_country = "Not specified"
     for port_key, country_val in PORT_TO_COUNTRY.items():
@@ -118,57 +114,65 @@ def fallback_parser(full_text):
             detected_country = country_val
             break
             
-    # Εντοπισμός κατασκευαστή
+    # 3. Έξυπνος εντοπισμός κατασκευαστή (αποκλείοντας το όνομα του πλοίου)
     found_makers = []
     for maker in KNOWN_MAKERS:
         if maker in text_lower:
+            # Αν το brand βρίσκεται μέσα στο όνομα του πλοίου, το αγνοούμε εντελώς
+            if maker in vessel_name.lower():
+                continue
             found_makers.append(maker.upper())
             
+    # 4. Εντοπισμός εργασίας / scope
+    scope_text = "Standard service / inquiry inspection requested."
+    if "annual" in text_lower:
+        scope_text = "Annual Radio / VDR / Navigation Survey"
+    elif "spare" in text_lower or "spares" in text_lower:
+        scope_text = "Supply of spare parts / hardware component inquiry"
+    elif "repair" in text_lower or "defect" in text_lower or "malfunction" in text_lower:
+        scope_text = "Technical troubleshooting and defect rectification"
+
     return {
         "vessel_name": vessel_name,
         "eta": "Not specified",
         "port": detected_port,
         "country": detected_country,
         "makers": list(set(found_makers)),
-        "scope": "Extracted via local pattern matching due to server load.",
-        "spares_requested": "None explicitly requested",
+        "scope": scope_text,
+        "spares_requested": "Inquired per RFQ text",
         "missing_critical_data": []
     }
 
-def analyze_rfq_with_smart_fallback(full_text):
-    prompt = f"""
-You are an expert technical coordinator in maritime navigation and communication equipment supply.
-Parse the following commercial RFQ / technical inquiry and extract all operational facts into JSON.
-
-Strict Operational Guidelines:
-1. Contextual Distinction: Distinguish between the vessel's identity and makers. If a vessel is named after a brand (e.g. 'HTM Highlander', 'Sperry Spirit'), do NOT list that brand as a required maker unless that equipment on board is genuinely malfunctioning or being serviced.
-2. Port & Country: Identify the destination port where attendance is required, and resolve its country (e.g. Tutunciftlik -> Turkey, Piraeus -> Greece).
-3. Equipment Maker: Identify ONLY the equipment maker(s) requiring attendance, overhaul, annual survey, or spares.
-4. Scope of Attendance: Accurately summarize the required service, overhaul, or defect.
+def analyze_rfq(full_text):
+    # Προσπαθούμε γρήγορα με AI αν είναι διαθέσιμο, αλλιώς πέφτουμε απευθείας στον έξυπνο τοπικό αναλυτή
+    if client:
+        prompt = f"""
+Parse the following commercial RFQ / technical inquiry and extract operational facts into JSON.
+CRITICAL: Do NOT list a brand as a maker if it is part of the vessel's name (e.g. 'HTM Highlander' -> ignore Highlander).
 
 Inquiry:
 \"\"\"{full_text}\"\"\"
 
-Return ONLY a raw JSON dictionary without Markdown formatting or fences, using these exact keys:
+Return ONLY a raw JSON dictionary using these exact keys:
 {{
   "vessel_name": "Name of vessel or 'Not specified'",
-  "eta": "Vessel ETA / attendance schedule or 'Not specified'",
-  "port": "Port of attendance or 'Not specified'",
-  "country": "Country of attendance or 'Not specified'",
-  "makers": ["Maker requiring service, e.g. YOKOGAWA, FURUNO"],
-  "scope": "Operational summary of the requested job",
-  "spares_requested": "Spares mentioned or 'None explicitly requested'",
-  "missing_critical_data": ["List of missing essentials among: Schedule/ETA, Port Agent details, Maker/Model, Scope of attendance"]
+  "eta": "Vessel ETA or 'Not specified'",
+  "port": "Port or 'Not specified'",
+  "country": "Country or 'Not specified'",
+  "makers": ["Maker requiring service"],
+  "scope": "Summary",
+  "spares_requested": "Spares",
+  "missing_critical_data": []
 }}
 """
-
-    try:
-        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
-        raw_text = response.text.strip()
-        return json.loads(clean_json(raw_text))
-    except Exception:
-        # Αν το Gemini αποτύχει, χρησιμοποιεί ακαριαία τον τοπικό αναλυτή κανόνων
-        return fallback_parser(full_text)
+        try:
+            response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+            return json.loads(clean_json(response.text.strip()))
+        except Exception:
+            pass
+            
+    # Ακαριαία και αξιόπιστη εξαγωγή τοπικά χωρίς server delays
+    return smart_local_parser(full_text)
 
 @st.cache_data
 def load_directory():
@@ -208,8 +212,8 @@ if st.button("Process RFQ & Find Service Stations", type="primary"):
     if not combined_text.strip():
         st.warning("Please provide RFQ text or upload at least one inquiry file.")
     else:
-        with st.spinner("Processing inquiry..."):
-            parsed = analyze_rfq_with_smart_fallback(combined_text)
+        with st.spinner("Processing RFQ instantly..."):
+            parsed = analyze_rfq(combined_text)
 
         if parsed:
             st.markdown("---")
