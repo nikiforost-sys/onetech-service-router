@@ -1,27 +1,35 @@
-import streamlit as st
-import pandas as pd
-import pypdf
-import io
-import re
-import json
-import os
+import base64
 import email
 from email import policy
+import io
+import json
+import os
+import re
 import extract_msg
+import pandas as pd
 from PIL import Image
-import base64
+import pypdf
+import streamlit as st
 
 # --- API CLIENTS SETUP ---
 from groq import Groq
 
 try:
-    from groq import APIStatusError, APIConnectionError, RateLimitError
+    from groq import APIConnectionError, APIStatusError, RateLimitError
 except ImportError:
     APIStatusError = Exception
     APIConnectionError = Exception
     RateLimitError = Exception
 
-# Optional Gemini SDK imports
+# Optional Google APIs
+try:
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaIoBaseDownload
+    HAS_GOOGLE_DRIVE = True
+except ImportError:
+    HAS_GOOGLE_DRIVE = False
+
 try:
     from google import genai
     from google.genai import types
@@ -61,14 +69,14 @@ client_groq = Groq(api_key=groq_api_key, timeout=60.0, max_retries=2) if groq_ap
 
 TEXT_MODELS = [
     "llama-3.1-8b-instant",
-    "llama-3.3-70b-versatile",
-    "openai/gpt-oss-120b",
+    "llama3-70b-8192",
+    "llama3-8b-8192",
+    "mixtral-8x7b-32768",
 ]
 
 VISION_MODELS = [
     "llama-3.2-11b-vision-preview",
     "meta-llama/llama-4-scout-17b-16e-instruct",
-    "qwen/qwen3.8-27b",
 ]
 
 
@@ -372,7 +380,6 @@ def choose_primary_port(text):
         return "Not specified", "Not specified", []
     lower = (text or "").lower()
 
-    # Split on forwarded / historical email thread headers
     thread_split = re.search(r"(?im)(?:^|\n)\s*(?:from\s*:|sent\s*:|-----original message-----|on\s+.*wrote\s*:)", text)
     first_reply_pos = thread_split.start() if thread_split else len(text)
 
@@ -387,7 +394,6 @@ def choose_primary_port(text):
             if token in window:
                 score += weight
 
-        # CHRONOLOGICAL BOOST: Ports in the active newest email (before first reply) get highest priority
         if start < first_reply_pos:
             score += 15
         else:
@@ -674,7 +680,6 @@ def analyze_rfq(manual_override_text, files_text, image_files):
         res_json = smart_local_parser(manual_override_text, files_text)
         model_used = "Local Rule Engine"
 
-    # Absolute priority: manual override
     overrides, explicit = parse_manual_inputs(manual_override_text)
     for key in ("country", "port", "vessel_name", "eta", "makers"):
         if key in overrides and key in explicit:
@@ -699,10 +704,10 @@ Current Active RFQ Context:
 - Spares: {rfq_context.get('spares_requested', 'None')}
 - Discrepancies: {'; '.join(rfq_context.get('discrepancies', [])) or 'None'}
 
-Answer clearly, politely, and professionally in the language asked (English or Greek)."""
+Answer clearly, politely, and professionally in the requested language (English or Greek)."""
 
-    # 1. Try Gemini first if key available
-    if gemini_api_key:
+    # 1. Try Gemini first if key exists and starts with valid prefix
+    if gemini_api_key and gemini_api_key.startswith("AIza"):
         if HAS_GOOGLE_GENAI:
             try:
                 ai_client = genai.Client(api_key=gemini_api_key)
@@ -723,23 +728,25 @@ Answer clearly, politely, and professionally in the language asked (English or G
             except Exception:
                 pass
 
-    # 2. Fallback to Groq Chat
+    # 2. Call Groq with active, supported models (no hardcoded decommissioned models)
     if client_groq:
-        try:
-            completion = client_groq.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": user_message}
-                ],
-                temperature=0.3,
-                max_tokens=1000
-            )
-            return completion.choices[0].message.content, "Groq / Llama 3.3 70B"
-        except Exception as e:
-            return f"Error contacting AI: {e}", "Error"
+        groq_models = ["llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"]
+        for model in groq_models:
+            try:
+                completion = client_groq.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": user_message}
+                    ],
+                    temperature=0.2,
+                    max_tokens=1000
+                )
+                return completion.choices[0].message.content, f"Groq / {model}"
+            except Exception:
+                continue
 
-    return "No AI API key detected in st.secrets. Please configure GEMINI_API_KEY or GROQ_API_KEY.", "Offline"
+    return "No AI model could answer. Please verify your API keys.", "Offline"
 
 
 # ---------------------------------------------------------------------------
@@ -760,8 +767,32 @@ def reset_everything():
     st.rerun()
 
 
-@st.cache_data
+@st.cache_data(ttl=600)
 def load_directory():
+    sheet_title = "Global Marine Service Station Directory - Verified Service Providers (Final Master 200)"
+    if HAS_GOOGLE_DRIVE and "gcp_service_account" in st.secrets:
+        try:
+            creds = service_account.Credentials.from_service_account_info(
+                st.secrets["gcp_service_account"],
+                scopes=["[https://www.googleapis.com/auth/drive.readonly](https://www.googleapis.com/auth/drive.readonly)"]
+            )
+            drive_service = build("drive", "v3", credentials=creds)
+            query = f"name = '{sheet_title}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false"
+            results = drive_service.files().list(q=query, fields="files(id, name)").execute()
+            files = results.get("files", [])
+            if files:
+                file_id = files[0]["id"]
+                request = drive_service.files().export_media(fileId=file_id, mimeType="text/csv")
+                fh = io.BytesIO()
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while not done:
+                    _, done = downloader.next_chunk()
+                fh.seek(0)
+                return pd.read_csv(fh)
+        except Exception:
+            pass
+
     return pd.read_csv("directory.csv")
 
 
@@ -769,21 +800,20 @@ try:
     df = load_directory()
     st.sidebar.success(f"Connected to Directory. Loaded {len(df)} stations.")
 except Exception as e:
-    st.sidebar.error(f"Error loading directory.csv: {e}")
+    st.sidebar.error(f"Error loading directory: {e}")
     df = pd.DataFrame()
 
-# Sidebar status
 st.sidebar.markdown("---")
 st.sidebar.markdown("**AI Service Status:**")
-if gemini_api_key:
+if gemini_api_key and gemini_api_key.startswith("AIza"):
     st.sidebar.success("✅ Gemini API Ready")
 else:
-    st.sidebar.info("ℹ️ Gemini API not set (using Groq)")
+    st.sidebar.info("ℹ️ Gemini Key Missing or Incomplete (Using Groq)")
 
 if client_groq:
     st.sidebar.success("✅ Groq API Ready")
 else:
-    st.sidebar.warning("⚠️ Groq API not set")
+    st.sidebar.warning("⚠️ Groq API Not Set")
 
 if st.sidebar.button("🔄 Reset / Start New RFQ", use_container_width=True):
     reset_everything()
