@@ -1,314 +1,38 @@
-Country,Service Station Name,Approved Makers
-Argentina,Everthron Marine Systems SRL (Buenos Aires),"Anschütz*, Danelec, Headway*, Hyundai*, JRC, MacGregor*, Samsung*, Tokyo Keiki*"
-Argentina,Sistemas Navales S.A. (Buenos Aires),"Highlander*, Sperry Marine*"
-Australia,"AWA Marine (Sydney, Melbourne, Brisbane, Fremantle)","Cobham SAILOR, Danelec, Furuno, JRC, MacGregor*, Sperry Marine*, Tokyo Keiki*, Wärtsilä*"
-Australia,CC Electronics Pty Ltd (Perth & Melbourne),"MacGregor*, Wärtsilä*"
-Australia,"Electrotech Australia Pty Ltd (Sydney, Brisbane, Darwin, Fremantle)","Cobham SAILOR*, Danelec*, JRC, Sperry Marine*, Tokyo Keiki*, Wärtsilä*"
-Australia,Novamarine (Newcastle / NSW),"Consilium, Headway*, Samsung*"
-Australia,TMQ International (Brisbane / Queensland),"Cobham SAILOR, Jotron, JRC, Samsung*, Simrad"
-Australia,"Taylor Marine Australia (J.N. Taylor & Co. Pty Ltd - Fremantle, Brisbane, Darwin, Sydney)","Furuno*, Jotron, Raytheon Anschütz*, Yokogawa (YDK)*"
-Bahrain,Elcome International W.L.L. (Manama / Bahrain),"Anschütz*, Danelec*, JRC, Samsung*, Sperry Marine*"
-Bangladesh,Marine Electronics Service (Chittagong),"Furuno*, Netwave*, Wärtsilä*"
-Belgium,Alphatron Marine Belgium B.V. (Antwerp),"Jotron, JRC / Alphatron Marine*, Netwave, Wärtsilä*, Yokogawa (YDK)*"
-Belgium,Astron NV (Antwerp),Samsung*
-Belgium,Furuno Danmark A/S,Furuno*
-Belgium,Mackay Marine Belgium (Antwerp),"Danelec*, Furuno*, Jotron, JRC*, MacGregor*, Samsung*, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)*"
-Belgium,Radio Holland Belgium N.V. (Antwerp),"Anschütz (Raytheon)*, Danelec*, Furuno*, JRC*, Sperry Marine*, Tokyo Keiki*, Yokogawa (YDK)*"
-Belgium,Sperry Service Belgium (Antwerp),"Samsung*, Sperry Marine*"
-Brazil,JRC do Brasil Empreendimentos Eletrônicos Ltda. (Santos & Rio de Janeiro),"JRC / Alphatron Marine*, Yokogawa (YDK)"
-Brazil,Mackay Marine do Brasil (Santos & Rio de Janeiro),"Danelec*, Furuno*, Jotron, JRC*, Sperry Marine*, Wärtsilä*"
-Brazil,Metalock Brasil Ltda. (Santos & Rio de Janeiro),"Headway*, JRC / Alphatron Marine*, MacGregor*, Samsung*, Yokogawa (YDK)"
-Brazil,Orion Shiprepairs Ltda. (Vitória / Espirito Santo),"Hyundai*, Samsung*"
-Brazil,Radio Holland Brazil Serviços Marítimos Eireli (Santos & Rio de Janeiro),"Danelec*, Furuno*, JRC*, Sperry Marine*"
-Brazil,Radiomar Eletrônica Naval Ltda.,"Cobham SAILOR, Furuno, Headway*, JRC, Yokogawa (YDK)*"
-Brazil,"Telnav Telecomunicações Navais Ltda. (Santos, Rio de Janeiro & Macaé)","Anschütz*, Danelec, Furuno, JRC, MacGregor*"
-Brazil,Vision Marine Ltda.,"Danelec, Netwave, Sperry Marine*"
-Canada,"Alliance Nav Inc. (Montreal, Quebec & St. Lawrence Seaway)","JRC, Sperry Marine*, Tokyo Keiki*, Wärtsilä*"
-Canada,Hostmost Marine Services (Canada) Ltd. (Vancouver),"Danelec, Furuno, JRC*, Netwave*, Samsung*, Yokogawa (YDK)*"
-Canada,Mackay Marine Canada (Vancouver & Montreal),"Anschütz*, Danelec*, Furuno*, JRC*, Samsung*, Sperry Marine*"
-Canada,Oasis Marine Services Ltd (Vancouver & Montreal),"JRC, Samsung*, Simrad, Transas, Yokogawa (YDK)*"
-Canada,"Sperry Service Canada (Vancouver, Halifax, St. John's)",Sperry Marine*
-Chile,Mackay Marine Chile (Valparaiso),"Furuno*, Jotron, JRC*, Sperry Marine*"
-Chile,Naval Radio Ltda (Valparaiso & San Antonio),"Anschütz*, Furuno, Headway*, Hyundai*, JRC, MacGregor*, Samsung*, Tokyo Keiki*"
-China,COSCO MEEC Shanghai,"Danelec, Furuno, JRC, Samsung*, Tokyo Keiki*, Yokogawa (YDK)*"
-China,"COSCO SHIPPING (Qingdao) Electronics Co., Ltd.",Yokogawa (YDK)*
-China,"COSCO SHIPPING Technology & Engineering (Guangzhou) Co., Ltd. (COSCO GCNC)","Danelec, Furuno, JRC, Samsung*, Yokogawa (YDK)*"
-China,China E-Tech (Ningbo) Maritime Electronics Research Institute (CETC),"Furuno, JRC"
-China,Furuno Danmark A/S,Furuno*
-China,"Guangzhou SeaNET Marine Technology Co., Ltd.","Furuno, JRC"
-China,"Guangzhou Super Sea Electronic Co., Ltd.","Furuno, JRC"
-China,Hostmost (Shanghai) Ltd.,"Danelec, Furuno, JRC*, Netwave*, Samsung*, Yokogawa (YDK)*"
-China,Jason Asia / Jason Electronics (China South / Shenzhen Coverage),"Danelec, Highlander*, JRC, Samsung*, Sperry Marine*, Yokogawa (YDK)*"
-China,Lantek Marine Limited (Guangzhou HQ),"Danelec, JRC, Yokogawa (YDK)*"
-China,"Mackay Marine (China) Ltd. (Shanghai, Ningbo, Shenzhen, Qingdao, Guangzhou, Tianjin)","Danelec*, Furuno*, Jotron, JRC*, Netwave*, Sperry Marine*, Yokogawa (YDK)*"
-China,"Ningbo Electronic Navigation Co., Ltd. (Tongdao)","Danelec, JRC"
-China,"Ningbo Hongzhou Electronics Development Co., Ltd.","AMI, Furuno, Highlander"
-China,"Qingdao Chengxin Electronic Co., Ltd. (CEC)","JRC, Tokyo Keiki*"
-China,"Qingdao Ship Electronic Alpha Service Co., Ltd.","Danelec, JRC"
-China,Radio Holland China (Shanghai),"Danelec*, Furuno*, JRC*, MacGregor*, Netwave, Sperry Marine*, Yokogawa (YDK)*"
-China,"Seven Seas Marine International / Seven Seas Electronic (Shanghai, Qingdao, Guangzhou, Tianjin)","Cobham SAILOR, Danelec, Highlander*, Hyundai*, JRC*, Kelvin Hughes, MacGregor*, Netwave, Samsung*, Tokyo Keiki*, Yokogawa (YDK)*"
-China,"Shanghai Dexie Engineering Equipment Co., Ltd.","Furuno, Highlander*, Sealantern"
-China,"Shanghai Jinhailong Intelligent Technology Co., Ltd. (Taizhou)",Wärtsilä*
-China,"Shanghai Sealion Technology Co., Ltd. (BruceKee)","AMI, Brightsky, Danelec, Headway*, Highlander*, NSR, Sealantern, Sperry Marine*, Totem Plus"
-China,Sperry Service (Shanghai Office),Sperry Marine*
-China,"Tianjin Marine Electronic Co., Ltd. (COSCO MEEC Network)","Headway*, NSR, Sealantern, Yokogawa (YDK)*"
-China,"Xinde Marine Service Co., Ltd.","Cobham SAILOR, Furuno, JRC"
-China,"Yobo Marine (Suzhou YOBO Marine Engineering Co., Ltd.)","Highlander, JRC, Sperry Marine*"
-Colombia,ITEC Colombia (Cartagena & Barranquilla),"Danelec, JRC, MacGregor*, Samsung*, Tokyo Keiki*"
-Croatia,Maritech Adriatic Ltd. (Rijeka),Wärtsilä*
-Croatia,Pelig d.o.o. (Rijeka),"Cobham SAILOR*, Danelec*, Headway*, Highlander*, JRC*, Netwave*, Simrad*, Sperry Marine*"
-Cyprus,Elcome Marine Cyprus Ltd (Limassol),"Danelec*, JRC, Sperry Marine*"
-Cyprus,Furuno Danmark A/S,Furuno*
-Cyprus,Onetech Services Ltd (Limassol HQ),"Consilium, Danelec*, Highlander*, Hyundai*, JRC*, Netwave*, Rutter*, Sperry Marine*, STX"
-Cyprus,Raytec Marine Co. Ltd. (Limassol),"Anschütz*, Danelec*, Furuno, JRC, MacGregor*, Samsung*"
-Cyprus,Tototheo Maritime (Limassol HQ),"Anschütz*, Cobham SAILOR*, Danelec*, Furuno, Jotron, JRC, Netwave, Wärtsilä*"
-Denmark,Furuno Danmark A/S,"Anschütz*, Furuno*"
-Denmark,Isbak Marine Services ApS (Hedehusene),"Anschütz*, Headway*, Kelvin Hughes, MARIS, Simrad*, Sperry Marine*, Wärtsilä*"
-Denmark,Navteam A/S (Svendborg / Copenhagen / Aarhus),"Cobham SAILOR*, Danelec*, Furuno*, Headway*, JRC, Tokyo Keiki*, Wärtsilä*, Yokogawa (YDK)*"
-Denmark,Sperry Service Denmark (Copenhagen),Sperry Marine*
-Dominican Republic,Tronav Marine Electronics / Electronautica (Santo Domingo & Caucedo),"Furuno, JRC, Sperry Marine*"
-Egypt,Eastern Electronics Co.,"Anschütz*, JRC, Yokogawa (YDK)*"
-Egypt,Elcome Marine L.L.C. (Egypt),"Danelec*, Highlander*, JRC, Sperry Marine*, Wärtsilä*"
-Egypt,Mackay Marine Egypt (Port Said),"Danelec*, Furuno*, Jotron, JRC*, Sperry Marine*"
-Egypt,Pan Arab Maritime & Electronics Services (PATEPCO),"Furuno, JRC, Samsung*"
-Egypt,Radio Holland Egypt (Port Tewfik / Alexandria / Suez),"Danelec*, Furuno*, JRC*, Sperry Marine*, Tokyo Keiki*, Wärtsilä*"
-Egypt,Suez Electronics Engineering & Trading Ltd,"Consilium, Danelec, Furuno, Highlander*, JRC"
-Estonia,Avatec Marine OÜ (Tallinn HQ),"Anschütz*, Consilium, MacGregor / Interschalt*, Wärtsilä*"
-Estonia,Hansael SIA / RSTA Marine (Tallinn),"Danelec, JRC, Sperry Marine*"
-Finland,Avatec Marine Finland Oy (Helsinki),"Consilium, Danelec, JRC"
-Finland,Furuno Danmark A/S,Furuno*
-France,AVON Communications S.A (Marseille),"Cobham SAILOR*, Danelec*, Kelvin Hughes, Netwave*, Rutter*, Samsung*, Sperry Marine*"
-France,Alphatron Marine France (Le Havre),"JRC / Alphatron Marine*, Wärtsilä*"
-France,Enavtech S.r.l. (Saint-Raphaël),Wärtsilä*
-France,Furuno Danmark A/S,Furuno*
-France,ISY Marine SARL (Mougins),Wärtsilä*
-France,Radio Holland France (Le Havre & Antibes),"Furuno*, JRC*, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)*"
-France,SIRM France (Marseille),"Danelec, Furuno, JRC"
-France,Sambroni Marine Electronics (Marseille),Wärtsilä*
-France,Themys (La Ciotat / Marseille),"Cobham SAILOR, Danelec, Furuno, JRC"
-Georgia,Marintel Georgia (Batumi & Poti),"Danelec, Jotron, JRC"
-Germany,Alphatron Marine Deutschland GmbH (Hamburg / Halstenbek),"Jotron, JRC / Alphatron Marine*, Yokogawa (YDK)*"
-Germany,Anschütz GmbH (Kiel HQ) & NACOS Marine GmbH (Hamburg),"Anschütz (Raytheon Anschütz)*, SAM Electronics / Wärtsilä"
-Germany,Furuno Danmark A/S,Furuno*
-Germany,Hoppe Marine GmbH (Hamburg),Samsung*
-Germany,Ing.-Büro Querin GmbH (Hamburg / Bremerhaven Region),"Danelec, Furuno, JRC*, Sperry Marine*, Tokyo Keiki*"
-Germany,Lammers Schiffselektronik GmbH (LSE Leer & Hamburg),"Danelec, Furuno, Jotron, JRC, Wärtsilä*, Yokogawa (YDK)*"
-Germany,"Mackay Marine Germany GmbH (Hamburg, Bremerhaven, Leer)","Danelec*, Furuno*, JRC*, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)*"
-Germany,NSSLGlobal GmbH (Barsbüttel / Hamburg),Wärtsilä*
-Germany,Radio Holland Germany GmbH (Hamburg & Bremerhaven),"Danelec*, Furuno*, JRC*, MacGregor*, Sperry Marine*, Tokyo Keiki*, Wärtsilä*, Yokogawa (YDK)*"
-Germany,Sperry Service Deutschland (Hamburg),Sperry Marine*
-Germany,Thitronik Marine GmbH (North German Ports Coverage),"Danelec, Furuno, Sperry Marine*, Tokyo Keiki*"
-Gibraltar,Sandvik Marine Electronics (Gibraltar),"Danelec, Furuno, Jotron, JRC, Netwave, Rutter, SAM, Samsung*"
-"Hong Kong SAR, China",Elekon Company,"Anschütz (Raytheon Anschütz)*, MacGregor*, McMurdo, Transas"
-"Hong Kong SAR, China",Eletek Technology Limited,"Danelec, Furuno, MacGregor*, Tokyo Keiki*"
-"Hong Kong SAR, China",Express Marine Electronics Co. Ltd. (EME),"AMI, Consilium, Furuno, Headway, Highlander*, Kelvin Hughes, Totem Plus"
-"Hong Kong SAR, China",Hostmost Engineering Ltd. (Hong Kong HQ),"Consilium, Danelec, Furuno, Highlander, Jotron, JRC*, Netwave*, Rutter*, Samsung*, Yokogawa (YDK)*"
-"Hong Kong SAR, China",Mackay Marine Hong Kong,"Danelec*, Furuno*, Jotron, JRC*, Sperry Marine*"
-"Hong Kong SAR, China",Radio Holland Hong Kong Co. Ltd.,"Danelec*, Furuno*, Highlander*, JRC*, Sperry Marine*"
-India,A.S. Moloobhoy Pvt. Ltd.,"Danelec, Furuno, Headway*, MARIS, Netwave, Tokyo Keiki*, Yokogawa (YDK)*"
-India,Benson Marine Services Pvt. Ltd. (Mumbai),"SAL*, Tokyo Keiki*, Totem Plus*"
-India,Elcome Integrated Systems Pvt. Ltd. (Navi Mumbai HQ),"Anschütz (Raytheon)*, Danelec*, Jotron, JRC, MacGregor*, Rutter*, SAM, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)*"
-India,Mackay Marine Pvt. Ltd. (Mackay India - Mumbai),"Danelec*, Furuno*, Jotron, JRC*, Rutter*, SAM, Sperry Marine*, Yokogawa (YDK)*"
-India,Marine Electricals (India) Ltd. / Meeres Master Systems,"AMI, Danelec, Highlander*, JRC, MacGregor*, SAM, Sperry Marine*, Totem Plus"
-India,Marks Marine Radio Pvt. Ltd. (MMR India),"Danelec, JRC, Yokogawa (YDK)*"
-India,Navicom Technology International Pvt. Ltd. (Mumbai & Visakhapatnam),Samsung*
-India,"Ultra Marine Services (Mumbai, Kolkata, Cochin)",Samsung*
-Indonesia,Jason Electronics Indonesia (Jakarta),"Cobham SAILOR, Danelec, JRC, Sperry Marine*"
-Indonesia,PT. Kresna Adikarsa (Jakarta & Surabaya),"JRC, Tokyo Keiki*, Yokogawa (YDK)*"
-Ireland,SIRM Ireland (Dublin & Cork),"Danelec, JRC"
-Israel,Alhoutyam Ltd (Haifa & Ashdod),"Anschütz*, Cobham SAILOR*, JRC, Sperry Marine*"
-Italy,Furuno Danmark A/S,Furuno*
-Italy,Master Control (Genoa),Samsung*
-Italy,Messervice s.r.l. (Genoa),"Tokyo Keiki*, Yokogawa (YDK)*"
-Italy,SIRM Italia S.r.l. (Genoa HQ & Naples),"Cobham SAILOR, Danelec, Furuno, Highlander*, Hyundai*, JRC"
-Italy,Team Italia Marine S.r.l. (Livorno),Wärtsilä*
-Italy,"Tefin S.r.l. (Naples, Genoa, Venice, Ravenna)","Anschütz*, Consilium, Danelec, Furuno, JRC, Wärtsilä*, Yokogawa (YDK)*"
-Japan,"Japan Radio Co., Ltd. (JRC Tokyo HQ & Service Depots)","JRC / Alphatron Marine*, Yokogawa (YDK)*"
-Japan,Kaigai Gijutsu K.K. (Tokyo / Yokohama),"Danelec, JRC, Sperry Marine*"
-Japan,"Shinei Service Co., Ltd. (Kobe)","Consilium, JRC, Samsung*, Yokogawa (YDK)"
-Japan,Tokyo Keiki Inc. (Tokyo HQ & Service),"Samsung*, Tokyo Keiki*"
-Kenya,SMD Marine Kenya Ltd (Mombasa),"Anschütz*, Cobham SAILOR, Furuno, JRC, Sperry Marine*, Yokogawa (YDK)*"
-Latvia,Hansael SIA (Riga),"Danelec, Furuno, JRC, Sperry Marine*, Wärtsilä*"
-Latvia,Vivid Point SIA (Riga - Baltic & Estonia Coverage),"Furuno, JRC, Kelvin Hughes, Wärtsilä*"
-Lebanon,Mardad Marine (Beirut),Wärtsilä*
-Lithuania,Hansael UAB (Klaipeda),"Danelec, Furuno, JRC, Sperry Marine*"
-Lithuania,Master Servis UAB (Klaipeda),"Anschütz (Raytheon Anschütz)*, Sperry Marine*, Tokyo Keiki, Yokogawa (YDK)*"
-Malaysia,Alphatron Marine Systems Sdn. Bhd. (Johor / PTP & Port Klang),JRC / Alphatron Marine*
-Malaysia,Elcome International Sdn. Bhd. (Johor / PTP),"Danelec*, JRC, Netwave*, SAL*, Sperry Marine*, Wärtsilä*"
-Malaysia,Furuno Danmark A/S,Furuno*
-Malaysia,Jason (Johindah Malim) Sdn Bhd (Port Klang),"Cobham SAILOR, Danelec, JRC, Netwave, Samsung*, Sperry Marine*, Yokogawa (YDK)*"
-Malaysia,Navteam Asia Sdn. Bhd. (Tanjung Pelepas),"Cobham SAILOR, JRC, Tokyo Keiki*, Yokogawa (YDK)*"
-Malaysia,Racom Electronics Sdn. Bhd. (Port Klang),"JRC, Tokyo Keiki*, Yokogawa (YDK)*"
-Malaysia,Radii Teknologi Sdn. Bhd.,"Cobham SAILOR, Furuno*, Tokyo Keiki*, Wärtsilä*"
-Malaysia,Radio Holland Malaysia Sdn. Bhd. (Port Klang & Johor / Tanjung Pelepas),"Danelec*, Furuno*, JRC*, Sperry Marine*"
-Malta,Aage Hempel Marine Electronics Malta Ltd (Valletta),"Anschütz*, Cobham SAILOR*, Danelec*, Furuno*, JRC, MacGregor*, Samsung*, Sperry Marine*"
-Malta,Medcomms Ltd (Malta),"Cobham SAILOR, Furuno*, Garmin, Netwave*, Simrad"
-Malta,Navicom Marine (Malta),"Danelec, Furuno, JRC"
-Mauritius,SMD Technologies (Mauritius) Ltd (Port Louis),"Anschütz*, Yokogawa (YDK)*"
-Mexico,Indumar Marine (Veracruz & Tampico),"Cobham SAILOR, Danelec, Furuno, Jotron, JRC, Sperry Marine*, Tokyo Keiki*, Wärtsilä*, Yokogawa (YDK)"
-Mexico,Marine Radio Surveyors (MRS Mexico),"Cobham SAILOR, Danelec, Furuno, JRC"
-Morocco,Aage Hempel Marine Electronics Morocco SARL (Casablanca),"Anschütz*, Cobham SAILOR*, Danelec*, Furuno*, JRC, MacGregor*, Samsung*, Sperry Marine*"
-Morocco,Avatec Marine Morocco SARL (Casablanca / Agadir),"Consilium, Danelec, Hyundai, Netwave"
-Morocco,Soremar Group (Tanger & Casablanca),"Cobham SAILOR*, Danelec, Furuno, Jotron, Netwave, Simrad"
-Namibia,SMD Marine Electronics (Pty) Ltd (Walvis Bay),"Cobham SAILOR, Furuno, JRC, Sperry Marine*, Yokogawa (YDK)*"
-Netherlands,Aage Hempel Netherlands B.V. (Rotterdam),"Danelec*, Furuno*, JRC, Sperry Marine*"
-Netherlands,I&C Services B.V. (Alblasserdam),Samsung*
-Netherlands,JRC / Alphatron Marine B.V. (Rotterdam HQ),"Jotron, JRC / Alphatron Marine*, Wärtsilä*, Yokogawa (YDK)*"
-Netherlands,Mackay Marine Netherlands B.V. (Rotterdam),"Danelec*, Furuno*, Headway*, Jotron, JRC*, Samsung*, Sperry Marine*, Tokyo Keiki*, Wärtsilä*, Yokogawa (YDK)*"
-Netherlands,NaviSea Marine Services (Dokkum),Wärtsilä*
-Netherlands,OneTech Group (Rotterdam Station),"JRC*, Netwave*, Sperry Marine*"
-Netherlands,Radio Holland Netherlands (Rotterdam HQ),"Anschütz*, Danelec*, Furuno*, JRC*, Samsung*, Sperry Marine*, Tokyo Keiki*, Wärtsilä*, Yokogawa (YDK)*"
-Netherlands,Sperry Service B.V. (Vlaardingen / Rotterdam),Sperry Marine*
-Netherlands,Tefin S.c.a.r.l. / Holland Ship Repair Network B.V. (Rotterdam),"Furuno, JRC, Tokyo Keiki"
-New Zealand,Electronic Navigation Ltd (ENL - Auckland & Nelson),"Furuno*, Yokogawa (YDK)*"
-Nigeria,Multi Digital Nigeria Ltd (Lagos & Port Harcourt),"JRC, Sperry Marine*"
-Nigeria,Radial Circle Telecommunications (Lagos & Port Harcourt),"Furuno, JRC, Samsung*"
-Norway,Furuno Danmark A/S,Furuno*
-Norway,"IKM Instrutek AS (Larvik, Bergen, Stavanger)","Anschütz*, Danelec, Furuno, Yokogawa (YDK)"
-Norway,Radio Holland Norway (Bergen & Oslo),"Furuno*, JRC*, Sperry Marine*, Wärtsilä*"
-Oman,Elcome International LLC (Oman - Muscat & Sohar),"Anschütz*, Danelec*, JRC, Sperry Marine*, Yokogawa (YDK)*"
-Oman,Master Systems LLC (Oman - Muscat & Salalah),"Cobham SAILOR, Furuno, JRC, Yokogawa (YDK)*"
-Pakistan,UME (United Marine Electronics - Karachi & Port Qasim),"Furuno, Highlander*, JRC"
-Panama,"Anschuetz Panama, S. de R.L.","Anschütz (Raytheon Anschütz)*, Danelec, MARIS"
-Panama,Furuno Danmark A/S,Furuno*
-Panama,Hi-Tek Marine S.A. / Global Marine Electronics S.A.,"Hyundai*, JRC, Samsung*, Yokogawa (YDK)"
-Panama,Mackay Marine Panama,"Danelec*, Furuno*, Jotron, JRC*, MacGregor*, Samsung*, Sperry Marine*"
-Panama,"PanamaTek Group, S.A.","Danelec, Furuno, JRC, MacGregor*"
-Panama,Pasras S.A. (Panama),"Consilium, Headway*, Samsung*"
-Panama,"Protecsa (Protección Técnica, S.A. - Panama)","Raymarine, Simrad*, Sperry Marine*, Tokyo Keiki*"
-Panama,Radio Holland Panama S.A.,"Danelec*, Furuno*, JRC*, MacGregor*, Samsung*, Sperry Marine*"
-Philippines,AWA Marine (Manila),Wärtsilä*
-Philippines,Delnet International Corp. (Manila & Cebu),"Danelec, Furuno, JRC, Netwave, Sperry Marine*"
-Philippines,Hostmost Engineering (Philippines) Inc. (Manila),"Highlander, JRC*, Samsung*, Yokogawa (YDK)*"
-Philippines,"Subic Marine Depot, Inc. (Subic Bay)","JRC, Yokogawa (YDK)*"
-Philippines,Techsys Corporation (Manila),Samsung*
-Poland,Alphatron Marine Poland Sp. z o.o. (Szczecin),"Cobham SAILOR, Jotron, JRC / Alphatron Marine*, Wärtsilä*, Yokogawa (YDK)*"
-Poland,ELSE Technical & Research Service Co. Sp. z o.o. (Gdansk),Sperry Marine*
-Poland,EPA Marine / Escort Ltd (Szczecin),"Anschütz*, Cobham SAILOR, Furuno, JRC"
-Poland,Enamor Sp. z o.o. (Gdynia & Szczecin),"Anschütz*, Furuno, JRC, MacGregor*, SAL*, Samsung*"
-Poland,Furuno Danmark A/S,Furuno*
-Poland,OTCC Sp. z o.o. (Szczecin),Wärtsilä*
-Portugal,Aage Hempel Portugal Unipessoal Lda (Lisbon & Leixoes),"Danelec*, JRC, Samsung*"
-Portugal,"Assistemar - Assistência Técnica Marítima, Lda. (Lisbon)","JRC, Samsung*, Yokogawa (YDK)*"
-Qatar,Elcome International LLC (Doha),"Anschütz*, Danelec*, JRC, Samsung*, Sperry Marine*"
-Romania,Navtron SRL (Constanta),"Anschütz*, Cobham SAILOR*, Danelec*, Furuno, Highlander*, JRC"
-Saudi Arabia,Elcome International (Saudi Arabia),"Anschütz*, Danelec*, JRC, Sperry Marine*, Yokogawa (YDK)*"
-Saudi Arabia,KDU World / KDU Marine (Saudi Arabia - Jeddah & Dammam),"Danelec, Simrad, Sperry Marine*"
-Saudi Arabia,Kanoo Commercial (Saudi Arabia),"Furuno, JRC, Yokogawa (YDK)*"
-Saudi Arabia,Master Systems / Centena / Alfa Marine (Saudi Arabia),"Cobham SAILOR, Furuno, JRC, Rutter, Yokogawa (YDK)*"
-Singapore,Alphatron Marine Systems Pte. Ltd. (JRC Singapore),"JRC / Alphatron Marine*, Wärtsilä*, Yokogawa (YDK)*"
-Singapore,Anschuetz Singapore Pte Ltd,"Anschütz (Raytheon Anschütz)*, Danelec, Totem Plus"
-Singapore,CWH Engineering Pte Ltd (Singapore),Samsung*
-Singapore,Codar (Pte.) Ltd.,"JRC*, Navitron, Yokogawa (YDK)*"
-Singapore,Elcome International Pte Ltd (Singapore),"Danelec*, JRC, Netwave*, SAL*, SAM Electronics / Wärtsilä, Yokogawa (YDK)*"
-Singapore,Furuno Danmark A/S,Furuno*
-Singapore,Hostmost Engineering (S) Pte Ltd,"Consilium, Danelec, Furuno, Highlander, JRC*, Netwave*, Rutter*, Samsung*, Yokogawa (YDK)*"
-Singapore,Jason Electronics (Pte) Ltd (Jason Marine Group),"Cobham SAILOR*, Danelec, Headway*, Highlander*, JRC, Netwave, Samsung*, Simrad, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)"
-Singapore,M2 Nautical Pte Ltd (Singapore),Wärtsilä*
-Singapore,Mackay Marine Singapore,"Cobham SAILOR*, Danelec*, Furuno*, JRC*, MacGregor*, Netwave*, Rutter*, Samsung*, Wärtsilä*, Yokogawa (YDK)*"
-Singapore,Marine Innovation Pte. Ltd. (Singapore),Wärtsilä*
-Singapore,Master Systems Marine Pte Ltd (Singapore),"AMI, Cobham SAILOR, Danelec, Furuno, Netwave, NSR, Totem Plus, Yokogawa (YDK)*"
-Singapore,Radio Holland Singapore Pte. Ltd.,"Danelec*, Furuno*, Headway*, JRC*, MacGregor*, Ocean Voyager, Sperry Marine*, Wärtsilä*"
-Singapore,Sevenseas Electronic Pte Ltd (Singapore),"Danelec, Headway*, Highlander*, JRC, Kelvin Hughes, MacGregor*, Netwave, Totem Plus, Yokogawa (YDK)*"
-Singapore,Sperry Service Singapore,Sperry Marine*
-Singapore,Swift Electronic Engineers Pte. Ltd. (Tokyo Keiki Sole Agent & Service Centre),"Tokyo Keiki*, Totem Plus"
-Singapore,Thawe Marine Pte. Ltd.,"Furuno, Netwave, NSR, Totem Plus"
-Singapore,Treys Pte Ltd (Singapore),Samsung*
-Singapore,Vishwas Marine Services Pte Ltd,"Headway, Ocean Voyager"
-South Africa,Global Marine Sea Tech Ltd (Cape Town),Sperry Marine*
-South Africa,JRC Iberia / Alphatron Marine (South Africa Coverage),JRC*
-South Africa,Mackay Marine South Africa (Durban & Cape Town),"Anschütz*, Danelec*, Furuno*, JRC*, MacGregor*, Sperry Marine*, Yokogawa (YDK)*"
-South Africa,Radio Holland South Africa (Pty) Ltd. (Durban & Cape Town),"Anschütz*, Danelec*, Furuno*, JRC*, Sperry Marine"
-South Africa,SMD Telecommunications (Pty) Ltd (SMD Africa Marine - Durban & Cape Town),"Consilium, Danelec, Furuno, Headway*, Hyundai*, JRC, MacGregor*, Samsung*, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)*"
-South Africa,Swazi Marine (Pty) Ltd. (Durban & Cape Town),"Ben Marine, Furuno, Saura, Totem Plus"
-South Korea,"Arion Communication Co., Ltd. (Busan)",Wärtsilä*
-South Korea,Conocox / Conoco,"Furuno, Samsung*"
-South Korea,"Dong Sung Marine Co., Ltd. (Busan)","Furuno, JRC"
-South Korea,"Dongbo Electric Co., Ltd. (Incheon)",Samsung*
-South Korea,"FT Marine Co., Ltd.",Sperry Marine*
-South Korea,Furuno Danmark A/S,Furuno*
-South Korea,Hae In Information & Telecommunication (Tongyeong),Samsung*
-South Korea,"Han Shin Electronics Co., Ltd. (Ehanshin)","Furuno, JRC, Samsung*"
-South Korea,"KJ Engineering Co., Ltd. / KJ Radio Co., Ltd.","JRC, Samsung*"
-South Korea,Kumho Tech (Busan),"Samsung*, Tokyo Keiki*"
-South Korea,"MRC, Inc. (Marine Radio Co., Ltd.)","Furuno, Hyundai, JRC*, Yokogawa (YDK)*"
-South Korea,"Navicom Electronics Co., Ltd.","AMI, Danelec, Furuno, Headway*, Highlander*, Netwave, SAM"
-South Korea,"Sealink Electronics Co., Ltd. (Busan)",Wärtsilä*
-South Korea,"Seaocean Co., Ltd.","Consilium, Furuno, Headway*, Netwave, NSR, STX"
-South Korea,Shin-A Marine Electronics (Mokpo),Samsung*
-South Korea,"Shindong Digitech Co., Ltd.","Furuno, Tokyo Keiki"
-South Korea,Sperry Service (Busan Office),Sperry Marine*
-South Korea,Vega Communications Co Ltd (Busan),Sperry Marine*
-Spain,"Aage Hempel Group (Algeciras, Valencia, Las Palmas)","Anschütz (Raytheon)*, Cobham SAILOR*, Danelec*, Furuno*, Headway*, Hyundai*, JRC, Samsung*, Sperry Marine*, Tokyo Keiki*"
-Spain,Aeromarine S.A. (Algeciras & Valencia),"Cobham SAILOR*, Danelec, Furuno, JRC, Netwave, Simrad"
-Spain,"Astilleros de Mallorca, S.A. (Palma de Mallorca)",Wärtsilä*
-Spain,ENISA (Electrónica de la Navegación e Industrial S.A.),Yokogawa (YDK)*
-Spain,Elcome Europe S.L. (Algeciras),"Danelec*, Hyundai, JRC, Rutter*, Samsung*, Wärtsilä*, Yokogawa (YDK)*"
-Spain,ElectroMed Algeciras S.L. (Algeciras / Gibraltar),Wärtsilä*
-Spain,Furuno Danmark A/S,Furuno*
-Spain,JRC Iberia / Alphatron Marine Iberia S.L. (Madrid HQ & Algeciras),JRC / Alphatron Marine*
-Spain,"Jason Marine Electronics Spain, S.L. (Jason Europe - Algeciras)","AMI, Danelec, Furuno, Highlander*, JRC, SAM, Yokogawa (YDK)*"
-Spain,"Mackay Marine Spain S.L. (Algeciras, Valencia, Las Palmas, Cádiz)","Danelec*, Furuno*, JRC*, Rutter*, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)*"
-Spain,NavCom Team S.L. (Barcelona),"Anschütz*, Furuno, MacGregor*, Wärtsilä*"
-Spain,"ROSM (Radio Ondas Servicios Marítimos, S.L.)","Cobham SAILOR, Danelec, Furuno, Headway*, Highlander*, JRC, Kelvin Hughes, MacGregor*, Sperry Marine*, Totem Plus*, Yokogawa (YDK)*"
-Spain,"Radio Holland Spain (Algeciras, Valencia, Barcelona)","Danelec*, Furuno*, JRC*, Rutter, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)*"
-Spain,Sandvik Marine Electronics S.L. (SMG - Algeciras),"Danelec, Furuno, JRC, Rutter, SAM, Samsung*"
-Sri Lanka,Elcome Sri Lanka / International Marine Services (Pvt) Ltd,"Danelec*, JRC, Netwave*, SAL*"
-Sri Lanka,Queens Radio Marine Electronics (Pvt) Ltd,"Danelec, Furuno, Netwave, Rutter, Tokyo Keiki*, Yokogawa (YDK)*"
-Sweden,Furuno Danmark A/S,Furuno*
-Sweden,Ranab Marine Communication & Navigation (Skärhamn),"Furuno, Wärtsilä*"
-Taiwan,"Anchang Brothers Co., Ltd.",Furuno
-Taiwan,Eagles Electronics Int'l Inc. (Kaohsiung),Samsung*
-Taiwan,Jenshine Marine Radio Co.,JRC
-Taiwan,"Navcom Electronics Co., Ltd. (Taiwan)",Sperry Marine*
-Taiwan,Reson Electronics Int'l Inc.,"Headway*, Highlander, Netwave, Rutter, SAM, Samsung*, Tokyo Keiki*, Wärtsilä*, Yokogawa (YDK)*"
-Taiwan,"Seven Seas Electronic Co., Ltd. (Taiwan)","Danelec, Furuno, Highlander*, JRC*, Rutter, Samsung*"
-Thailand,"A. & Marine (Thai) Co., Ltd.","AMI, Danelec, Headway*, MacGregor*, Samsung*, Tokyo Keiki*"
-Thailand,"Codar (Thailand) Co., Ltd.","JRC*, Tokyo Keiki*, Yokogawa (YDK)*"
-Thailand,"Jason Electronics (Thailand) Co., Ltd.","Danelec, JRC, Samsung*, Tokyo Keiki*"
-Thailand,"Seatech Electric Co., Ltd.","Cobham SAILOR, Raymarine, Sperry Marine*, Wärtsilä*"
-Togo,Alfa Marine Electronics (Togo - Lomé),JRC
-Togo,Multi Digital Togo (Lomé),"JRC, Sperry Marine*"
-Turkey,Anka Marine Electronics (ANKA PLAZA - Tuzla / Istanbul),"AMI, Danelec, Furuno, Highlander*, JRC"
-Turkey,Avatec Marine Servis Ltd. Sti. (Istanbul / Tuzla),"Anschütz (Raytheon Anschütz)*, Consilium, DEBEG, Furuno, Highlander*, Hyundai, JRC, Netwave, Sperry Marine*"
-Turkey,Istanbul Marin Elektronik San. ve Tic. Ltd. (Pendik / Istanbul),Wärtsilä*
-Turkey,Mare Teknoloji A.Ş. (Tuzla / Istanbul),Wärtsilä*
-Turkey,Ozsay Deniz Elektronigi A.S. (Istanbul),"Danelec, Furuno*, Hyundai*, JRC, Samsung*, Tokyo Keiki*"
-Turkey,Polar Marine Electronics (Istanbul),"JRC, Samsung*, Yokogawa (YDK)*"
-Turkey,STM Marine Electronics (Tuzla / Istanbul),"Danelec*, Furuno*, MacGregor*, Netwave*, Wärtsilä*"
-Turkey,STT Marine / STT International (STT Deniz Ticaret ve Servis Ltd. Sti.),"Broadgate, Danelec*, Furuno, MacGregor / Interschalt*, Netwave, Rutter, Sperry Marine*"
-Turkey,Sabne Elektronik (Istanbul / Karaköy),Sperry Marine*
-Turkey,Seatechnic Marine Electronics (Istanbul),"Furuno, JRC, MacGregor / Interschalt*"
-Turkey,TRC Marine Electronics (Istanbul),"Anschütz, Cobham SAILOR, Danelec, Furuno, JRC"
-Turkey,Zet Electronics (ZET Marine Electronics & Automation - Istanbul / Tuzla),"JRC, Skipper, Totem Plus"
-USA,COSCO-USA / Eversailing USA,"Headway, Hyundai"
-USA,JRC Americas / Alphatron Marine USA (League City / Houston),"JRC / Alphatron Marine*, Yokogawa (YDK)*"
-USA,"Mackay Marine USA (Houston, New Orleans, Los Angeles / Long Beach, New York / New Jersey)","Anschütz (Raytheon)*, Danelec*, Furuno*, JRC*, MacGregor*, MARIS, Samsung*, Sperry Marine*, Tokyo Keiki*, Yokogawa (YDK)"
-USA,Marine Mechanics / Trionics / Rice Electronics (Houston),"Furuno, Netwave, Simrad"
-USA,"Radio Holland USA BV (Houston, Long Beach, New York, New Orleans)","Anschütz (Raytheon)*, Danelec*, Furuno*, JRC*, MacGregor*, MARIS, Sperry Marine*, Tokyo Keiki*, Yokogawa (YDK)*"
-USA,"Sperry Service USA (Seattle, Houston, New Orleans, New York / New Jersey, Los Angeles, San Francisco)","Samsung*, Sperry Marine*"
-USA,Telnav USA LLC (Houston),"Anschütz*, Consilium, Danelec, Furuno, Highlander, JRC, Kelvin Hughes, Netwave, Rutter, Yokogawa (YDK)"
-Ukraine,Eleng LLC (Odessa & Chornomorsk),"Furuno, JRC, Rutter"
-United Arab Emirates,Al Nakheel Electronics Equipment Repairing,"Hyundai*, Yokogawa (YDK)"
-United Arab Emirates,Alfa Marine Electronics FZC,"Furuno, Highlander, JRC, Yokogawa (YDK)"
-United Arab Emirates,Elcome International LLC (Dubai HQ),"Anschütz*, Danelec*, Highlander*, JRC, MacGregor*, Samsung*, Sperry Marine*, Wärtsilä*, Yokogawa (YDK)*"
-United Arab Emirates,KDU Marine Equipment Trading & Maintenance LLC (KDU World - Dubai),"Danelec, Simrad, Sperry Marine*"
-United Arab Emirates,Marintel FZC / Oceanic Marine LLC (UAE),"AMI, Danelec, Furuno, JRC, Netwave, Samsung*, Sperry Marine*, Totem Plus"
-United Arab Emirates,Maritronics / Centena Group (Dubai),"Danelec*, JRC, Samsung*, Tokyo Keiki*, Yokogawa (YDK)*"
-United Arab Emirates,Master Systems LLC (Dubai),"Danelec, Furuno, Highlander*, JRC, MacGregor*, Yokogawa (YDK)*"
-United Arab Emirates,Radio Holland Middle East LLC (Dubai),"Danelec*, Furuno*, JRC*, Sperry Marine*, Yokogawa (YDK)*"
-United Arab Emirates,Zener Marine Services LLC (Dubai),"Danelec, Highlander*, Wärtsilä*"
-United Kingdom,Furuno Danmark A/S,Furuno*
-United Kingdom,JLG Marine / SIRM UK / Charity & Taylor,"JRC, Tokyo Keiki*, Yokogawa (YDK)"
-United Kingdom,MJR Controls Ltd (Stockton-on-Tees),"Hyundai*, Samsung*"
-United Kingdom,Mackay Marine UK,"Danelec*, Furuno*, JRC*, Sperry Marine*, Tokyo Keiki*, Wärtsilä*"
-United Kingdom,NSSLGlobal Ltd (UK),"AMI, Cobham SAILOR*, Danelec, Furuno, Simrad, Wärtsilä*"
-United Kingdom,Navigatx Ltd (Eastleigh / Southampton),Wärtsilä*
-United Kingdom,"Sperry Service UK (New Malden HQ, London & Aberdeen Depots)",Sperry Marine*
-Uruguay,Electromaritima Uruguaya Ltda (Montevideo),"Cobham SAILOR, Danelec, Furuno, Headway*, JRC, Sperry Marine*"
-Vietnam,Codar Vietnam Limited (Ho Chi Minh City),"JRC*, Tokyo Keiki*, Yokogawa (YDK)*"
-Vietnam,Hostmost Vietnam (Ho Chi Minh City),"Danelec, Furuno, JRC*, Yokogawa (YDK)*"
-Vietnam,"Marine Electronic Technique Trading Co., Ltd. (Maritech Co., Ltd.)","AMI, Danelec, Headway*, JRC, Kelvin Hughes, MacGregor*, Netwave, NSR, SAL"
-Vietnam,Maritime Electronics Joint Stock Company (VNMEC),"Furuno, Highlander*, Tokyo Keiki*"
-Vietnam,Rossmap Joint Stock Co (Hanoi),Wärtsilä*
-Vietnam,Vietnam Maritime Services and Consultants Ltd (Hai Phong),Wärtsilä*
+SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ/edit?gid=428894731#gid=428894731"
+EXPORT_CSV_URL = "https://docs.google.com/spreadsheets/d/1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ/export?format=csv&gid=428894731"
+
+@st.cache_data(ttl=600)
+def load_directory():
+    # 1. Προσπάθεια ανάγνωσης με πιστοποίηση Service Account
+    if "gcp_service_account" in st.secrets:
+        try:
+            from google.oauth2 import service_account
+            from google.auth.transport.requests import AuthorizedSession
+            
+            creds = service_account.Credentials.from_service_account_info(
+                st.secrets["gcp_service_account"],
+                scopes=["https://www.googleapis.com/auth/drive.readonly"]
+            )
+            session = AuthorizedSession(creds)
+            response = session.get(EXPORT_CSV_URL, timeout=15)
+            if response.status_code == 200 and len(response.text) > 100:
+                df = pd.read_csv(io.StringIO(response.text))
+                df.columns = [str(c).strip() for c in df.columns]
+                if "Country" in df.columns:
+                    df = df.dropna(subset=["Country"])
+                return df
+        except Exception:
+            pass
+
+    # 2. Απευθείας ανάγνωση μέσω του συνδέσμου εξαγωγής
+    try:
+        df = pd.read_csv(EXPORT_CSV_URL, timeout=15)
+        df.columns = [str(c).strip() for c in df.columns]
+        if "Country" in df.columns:
+            df = df.dropna(subset=["Country"])
+        return df
+    except Exception:
+        pass
+
+    # 3. Εφεδρική ανάγνωση τοπικού αρχείου αν αποτύχει η σύνδεση
+    return pd.read_csv("directory.csv")
