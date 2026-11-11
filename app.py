@@ -85,7 +85,7 @@ GVIZ_CSV_URL = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq
 
 @st.cache_data(ttl=300)
 def load_directory():
-    # Μέθοδος 1: Google Visualization API (GViz) με ταυτότητα κανονικού φυλλομετρητή
+    # 1. Google Visualization API (GViz)
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -99,7 +99,7 @@ def load_directory():
     except Exception:
         pass
 
-    # Μέθοδος 2: Επίσημο Google Drive API v3 μέσω Service Account
+    # 2. Google Drive API v3 μέσω Service Account
     if HAS_GOOGLE_AUTH and "gcp_service_account" in st.secrets:
         try:
             creds = service_account.Credentials.from_service_account_info(
@@ -121,7 +121,7 @@ def load_directory():
         except Exception:
             pass
 
-    # Μέθοδος 3: Εφεδρική ανάγνωση τοπικού αρχείου
+    # 3. Εφεδρική ανάγνωση τοπικού αρχείου
     return pd.read_csv("directory.csv")
 
 
@@ -733,7 +733,10 @@ Current Active RFQ Context:
 
 Answer clearly, politely, and professionally in the requested language (English or Greek)."""
 
-    if gemini_api_key and gemini_api_key.startswith("AIza"):
+    errors = []
+
+    # 1. Δοκιμή με Gemini API
+    if gemini_api_key:
         if HAS_GOOGLE_GENAI:
             try:
                 ai_client = genai.Client(api_key=gemini_api_key)
@@ -743,19 +746,21 @@ Answer clearly, politely, and professionally in the requested language (English 
                     config=types.GenerateContentConfig(system_instruction=system_instruction)
                 )
                 return response.text, "Gemini 2.5 Flash"
-            except Exception:
-                pass
+            except Exception as e:
+                errors.append(f"Gemini (google-genai): {e}")
+
         if HAS_LEGACY_GENAI:
             try:
                 legacy_genai.configure(api_key=gemini_api_key)
                 model = legacy_genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
                 response = model.generate_content(user_message)
                 return response.text, "Gemini 1.5 Flash"
-            except Exception:
-                pass
+            except Exception as e:
+                errors.append(f"Gemini (legacy): {e}")
 
+    # 2. Εφεδρική δοκιμή με ενεργά μοντέλα του Groq
     if client_groq:
-        for model in ["llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192"]:
+        for model in ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "gemma2-9b-it", "llama3-70b-8192"]:
             try:
                 completion = client_groq.chat.completions.create(
                     model=model,
@@ -767,10 +772,12 @@ Answer clearly, politely, and professionally in the requested language (English 
                     max_tokens=1000
                 )
                 return completion.choices[0].message.content, f"Groq / {model}"
-            except Exception:
+            except Exception as e:
+                errors.append(f"Groq ({model}): {e}")
                 continue
 
-    return "No AI model could answer. Please verify your API keys.", "Offline"
+    error_details = " | ".join(errors) if errors else "Δεν βρέθηκαν ενεργά κλειδιά στα secrets."
+    return f"Σφάλμα σύνδεσης: {error_details}", "Offline"
 
 
 # ---------------------------------------------------------------------------
@@ -800,10 +807,10 @@ except Exception as e:
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("**AI Service Status:**")
-if gemini_api_key and gemini_api_key.startswith("AIza"):
-    st.sidebar.success("✅ Gemini API Ready")
+if gemini_api_key:
+    st.sidebar.success("✅ Gemini Key Detected")
 else:
-    st.sidebar.info("ℹ️ Gemini Not Configured (Using Groq)")
+    st.sidebar.info("ℹ️ Gemini Not Configured")
 
 if client_groq:
     st.sidebar.success("✅ Groq API Ready")
