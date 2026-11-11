@@ -94,25 +94,17 @@ _SHEET_ID = base64.b64decode("MVo5VnV1cUNSRV9xY3k4OWFIZ3ptWTM0dXAwb1FTVUI0Zkx4ZU
 _SHEET_GID = "428894731"
 
 FALLBACK_STATIONS = [
+    {"Country": "United Arab Emirates", "Service Station Name": "Elcome International LLC (Dubai HQ)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno, JRC*, MacGregor*, Sperry Marine*, Yokogawa (YDK)*"},
+    {"Country": "United Arab Emirates", "Service Station Name": "Maritronics / Centena Group (Dubai HQ & Sharjah / Fujairah)", "Approved Makers": "Cobham SAILOR, Consilium, Danelec*, Furuno, Highlander*, Jotron, JRC, Sperry Marine*, Tokyo Keiki, Yokogawa (YDK)"},
+    {"Country": "United Arab Emirates", "Service Station Name": "Radio Holland Middle East (Sharjah / Dubai)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno*, JRC*, MacGregor*, Netwave*, Sperry Marine*, Tokyo Keiki*, Yokogawa (YDK)*"},
     {"Country": "China", "Service Station Name": "COSCO MEEC Shanghai", "Approved Makers": "Danelec, Furuno, JRC, Samsung*, Tokyo Keiki*, Yokogawa (YDK)*"},
-    {"Country": "China", "Service Station Name": "Hostmost (Shanghai) Ltd.", "Approved Makers": "Danelec, Furuno, JRC*, Netwave*, Samsung*, Yokogawa (YDK)"},
     {"Country": "China", "Service Station Name": "Mackay Marine (China) Ltd. (Shanghai, Ningbo, Shenzhen, Qingdao, Guangzhou, Tianjin)", "Approved Makers": "Danelec*, Furuno*, Jotron, JRC*, Netwave*, Sperry Marine*"},
-    {"Country": "China", "Service Station Name": "Radio Holland China (Shanghai)", "Approved Makers": "Danelec*, Furuno*, JRC*, MacGregor*, Netwave*, Sperry Marine*"},
     {"Country": "China", "Service Station Name": "Seven Seas Electronic Co., Ltd. (Shanghai, Qingdao, Guangzhou, Tianjin)", "Approved Makers": "Cobham SAILOR, Danelec, Highlander*, JRC"},
-    {"Country": "China", "Service Station Name": "Lantek Marine Limited (Guangzhou HQ)", "Approved Makers": "Danelec, JRC, Yokogawa (YDK)*"},
-    {"Country": "China", "Service Station Name": "Qingdao Chengxin Electronic Co., Ltd. (CEC)", "Approved Makers": "JRC, Tokyo Keiki*"},
-    {"Country": "China", "Service Station Name": "Xinde Marine Service Co., Ltd.", "Approved Makers": "Cobham SAILOR, Furuno, JRC"},
-    {"Country": "China", "Service Station Name": "Yobo Marine (Suzhou YOBO Marine Engineering Co., Ltd.)", "Approved Makers": "Highlander, JRC, Sperry Marine*"},
     {"Country": "Malta", "Service Station Name": "Aage Hempel Marine Electronics Malta Ltd (Valletta)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno*, JRC, Sperry Marine*"},
     {"Country": "Malta", "Service Station Name": "Medcomms Ltd (Malta)", "Approved Makers": "Cobham SAILOR, Furuno*, Garmin, Netwave*, Simrad"},
-    {"Country": "Malta", "Service Station Name": "Navicom Marine (Malta)", "Approved Makers": "Danelec, Furuno, JRC"},
-    {"Country": "Italy", "Service Station Name": "SIRM Italia S.r.l. (Genoa HQ & Naples)", "Approved Makers": "Cobham SAILOR, Danelec, Furuno, Highlander*, JRC, Sperry Marine*"},
-    {"Country": "Italy", "Service Station Name": "Tefin S.r.l. (Naples, Genoa, Venice, Ravenna)", "Approved Makers": "Anschütz*, Consilium, Danelec, Furuno, JRC, Sperry Marine*"},
     {"Country": "Cyprus", "Service Station Name": "Onetech Services Ltd (Limassol HQ)", "Approved Makers": "Consilium, Danelec*, Highlander*, Hyundai*, JRC, MacGregor*, Sperry Marine*"},
-    {"Country": "Cyprus", "Service Station Name": "Tototheo Maritime (Limassol HQ)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno, JRC*, Sperry Marine*"},
     {"Country": "Netherlands", "Service Station Name": "JRC / Alphatron Marine B.V. (Rotterdam HQ)", "Approved Makers": "Jotron, JRC / Alphatron Marine*, Wärtsilä*, Yokogawa (YDK)*"},
     {"Country": "Singapore", "Service Station Name": "Jason Electronics (Pte) Ltd (Singapore HQ)", "Approved Makers": "Cobham SAILOR*, Danelec*, Furuno, Highlander*, JRC*, Netwave*, Sperry Marine*"},
-    {"Country": "UAE", "Service Station Name": "Elcome International LLC (Dubai HQ)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno, JRC*, MacGregor*, Sperry Marine*, Yokogawa (YDK)*"},
 ]
 
 
@@ -190,7 +182,7 @@ def load_directory():
 # ---------------------------------------------------------------------------
 PORT_TO_COUNTRY = {
     "taicang": "CHINA", "qingdao": "CHINA", "shanghai": "CHINA", "ningbo": "CHINA",
-    "shenzhen": "CHINA", "guangzhou": "CHINA", "tianjin": "CHINA", "hong kong": "CHINA",
+    "shenzhen": "CHINA", "guangzhou": "CHINA", "tianjin": "CHINA", "hong kong": "HONG KONG",
     "dalian": "CHINA", "xiamen": "CHINA", "rizhao": "CHINA", "yingkou": "CHINA",
     "zhoushan": "CHINA", "nantong": "CHINA", "jiangyin": "CHINA", "caofeidian": "CHINA",
     "qinhuangdao": "CHINA", "tangshan": "CHINA", "yantai": "CHINA", "fangcheng": "CHINA",
@@ -222,8 +214,11 @@ PORT_TO_COUNTRY = {
     "hamburg": "GERMANY", "bremen": "GERMANY", "bremerhaven": "GERMANY", "wilhelmshaven": "GERMANY",
     "felixstowe": "UK", "southampton": "UK", "london": "UK", "immingham": "UK", "liverpool": "UK",
     "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE", "abu dhabi": "UAE", "khor fakkan": "UAE",
-    "sohar": "OMAN", "salalah": "OMAN", "dammam": "SAUDI ARABIA", "jeddah": "SAUDI ARABIA",
-    "doha": "QATAR", "bahrain": "BAHRAIN", "kuwait": "KUWAIT",
+    "sharjah": "UAE", "hamriyah": "UAE", "ras al khaimah": "UAE", "ruwais": "UAE",
+    "sohar": "OMAN", "salalah": "OMAN", "muscat": "OMAN", "duqm": "OMAN",
+    "dammam": "SAUDI ARABIA", "jeddah": "SAUDI ARABIA", "jubail": "SAUDI ARABIA", "yanbu": "SAUDI ARABIA",
+    "doha": "QATAR", "ras laffan": "QATAR", "mesaieed": "QATAR",
+    "bahrain": "BAHRAIN", "kuwait": "KUWAIT",
     "alexandria": "EGYPT", "port said": "EGYPT", "suez": "EGYPT", "suez canal": "EGYPT",
     "casablanca": "MOROCCO", "tanger med": "MOROCCO", "durban": "SOUTH AFRICA", "cape town": "SOUTH AFRICA",
     "houston": "USA", "new orleans": "USA", "new york": "USA", "los angeles": "USA",
@@ -232,10 +227,11 @@ PORT_TO_COUNTRY = {
 }
 
 NEIGHBORING_COUNTRIES = {
-    "china": ["south korea", "japan", "taiwan", "singapore", "vietnam", "philippines"],
+    "china": ["hong kong", "south korea", "japan", "taiwan", "singapore", "vietnam", "philippines"],
+    "hong kong": ["china", "taiwan", "singapore", "south korea", "philippines"],
     "south korea": ["china", "japan", "taiwan", "singapore"],
     "japan": ["south korea", "china", "taiwan"],
-    "taiwan": ["china", "south korea", "japan", "philippines"],
+    "taiwan": ["china", "hong kong", "south korea", "japan", "philippines"],
     "singapore": ["malaysia", "indonesia", "thailand", "vietnam", "china"],
     "malta": ["italy", "greece", "tunisia", "cyprus", "spain"],
     "italy": ["malta", "greece", "france", "croatia", "spain", "turkey"],
@@ -250,16 +246,35 @@ NEIGHBORING_COUNTRIES = {
     "netherlands": ["belgium", "germany", "uk", "france"],
     "belgium": ["netherlands", "germany", "france", "uk"],
     "germany": ["netherlands", "belgium", "denmark", "poland"],
+    "uk": ["netherlands", "belgium", "france", "ireland", "germany"],
     "uae": ["oman", "saudi arabia", "qatar", "bahrain", "kuwait"],
+    "oman": ["uae", "saudi arabia", "qatar", "bahrain", "kuwait"],
     "saudi arabia": ["uae", "bahrain", "qatar", "kuwait", "oman", "egypt"],
+    "qatar": ["uae", "bahrain", "saudi arabia", "oman", "kuwait"],
+    "bahrain": ["saudi arabia", "qatar", "uae", "kuwait", "oman"],
+    "kuwait": ["saudi arabia", "bahrain", "qatar", "uae", "oman"],
     "brazil": ["argentina", "uruguay", "chile", "panama"],
+    "usa": ["canada", "mexico", "panama", "bahamas"],
 }
 
 KNOWN_MAKERS = [
     "sperry marine", "sperry", "jrc", "alphatron", "furuno",
     "tokyo keiki", "anschutz", "raytheon", "yokogawa", "ydk",
     "macgregor", "danelec", "headway", "consilium", "highlander",
-    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad", "entel"
+    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad", "entel", "kelvin hughes"
+]
+
+# Αναγνώριση κατασκευαστή από κωδικούς ανταλλακτικών / μοντέλων
+PART_NUMBER_TO_MAKER = [
+    (r"(?i)\b(?:03p\d{4}|ru-\d{4}|far-\d{3,4}|fmd-\d{3,4}|vr-\d{4}|fe-\d{3}|gp-\d{2,3}|fs-\d{4}|felcom)\b", "FURUNO"),
+    (r"(?i)\b(?:jcy-\d{3,4}|ncr-\d{3}|jma-\d{3,4}|jhs-\d{3}|jax-\d{2}|jlr-\d{2,3}|jue-\d{2,3}|jan-\d{3,4})\b", "JRC"),
+    (r"(?i)\b(?:visionmaster|vmft|navigat\s*\d+|navipilot|naviknot|mk\s*37|658\d{2}|659\d{2})\b", "SPERRY MARINE"),
+    (r"(?i)\b(?:dm100|dm-100|vr5000)\b", "DANELEC"),
+    (r"(?i)\b(?:std\s*22|std-22|anschuetz)\b", "ANSCHUTZ"),
+    (r"(?i)\b(?:cmz\d{3}|pt\d{3}|uz\d{3})\b", "YOKOGAWA"),
+    (r"(?i)\b(?:tg-\d{4}|pr-\d{4}|es-\d{4})\b", "TOKYO KEIKI"),
+    (r"(?i)\b(?:tr-8000|tron\s*\d{2})\b", "JOTRON"),
+    (r"(?i)\b(?:sailor\s*\d{4}|tt-\d{4})\b", "COBHAM"),
 ]
 
 COUNTRY_ALIASES = {c.lower(): c for c in set(PORT_TO_COUNTRY.values())}
@@ -269,13 +284,30 @@ for _k, _v in NEIGHBORING_COUNTRIES.items():
         COUNTRY_ALIASES[_n.lower()] = _n.upper()
 
 COUNTRY_ALIASES.update({
-    "china": "CHINA", "prc": "CHINA", "κίνα": "CHINA", "κινα": "CHINA",
-    "uae": "UAE", "united arab emirates": "UAE", "usa": "USA", "united states": "USA",
-    "uk": "UK", "united kingdom": "UK", "south korea": "SOUTH KOREA", "korea": "SOUTH KOREA",
+    "china": "CHINA", "prc": "CHINA", "p.r.c.": "CHINA", "κίνα": "CHINA", "κινα": "CHINA",
+    "uae": "UAE", "u.a.e.": "UAE", "united arab emirates": "UAE",
+    "usa": "USA", "u.s.a.": "USA", "u.s.": "USA", "united states": "USA",
+    "united states (usa)": "USA", "united states of america": "USA",
+    "uk": "UK", "u.k.": "UK", "united kingdom": "UK", "great britain": "UK", "england": "UK",
+    "south korea": "SOUTH KOREA", "korea": "SOUTH KOREA", "republic of korea": "SOUTH KOREA",
     "hellas": "GREECE", "ελλάδα": "GREECE", "ελλαδα": "GREECE",
     "μάλτα": "MALTA", "μαλτα": "MALTA", "ρουμανία": "ROMANIA", "τουρκία": "TURKEY",
-    "türkiye": "TURKEY", "κύπρος": "CYPRUS", "brasil": "BRAZIL",
+    "türkiye": "TURKEY", "turkiye": "TURKEY", "κύπρος": "CYPRUS", "brasil": "BRAZIL",
+    "the netherlands": "NETHERLANDS", "holland": "NETHERLANDS",
 })
+
+
+def canonical_country(raw_value):
+    s = str(raw_value or "").strip().lower()
+    if not s or s in {"not specified", "n/a", "none", "null"}:
+        return ""
+    if s in COUNTRY_ALIASES:
+        return COUNTRY_ALIASES[s].lower()
+    s_clean = re.sub(r"\s*\(.*?\)\s*", "", s).strip()
+    if s_clean in COUNTRY_ALIASES:
+        return COUNTRY_ALIASES[s_clean].lower()
+    return s
+
 
 RESULT_DEFAULTS = {
     "vessel_name": "Not specified",
@@ -356,7 +388,7 @@ def clean_vessel_name(raw_name):
     text = re.sub(r"(?i)^(?:m/v|m/t|mv|mt|vessel|ship)\s*[:\-]?\s*", "", text)
     text = re.sub(r"(?i)\s*[\-–—]\s*(?:vdr|gmdss|annual|survey|radio|navtex|inspection|repair|radar|attendance|service|class|coc|imo|\/\/|@).*$", "", text)
     text = re.sub(r"(?i)\b(?:vdr|gmdss|annual|survey|radio|navtex|inspection|repair|attendance|service|coc|imo)\b.*$", "", text)
-    text = re.sub(r"(?i)\b(?:will|at|eta|port|call|calling|arr|arriving|due|to|for|is|and|the|in|on|sailing|during)\b.*$", "", text)
+    text = re.sub(r"(?i)\b(?:will|at|eta|port|call|calling|arr|arriving|due|to|for|is|and|the|in|on|sailing|during|while)\b.*$", "", text)
     text = re.sub(r"[@\/\(\)\<\>\[\]].*$", "", text)
     text = re.sub(r"(?i)\btbn\b", " / ", text)
     text = re.sub(r"\s+", " ", text).strip(" /-–—")
@@ -427,9 +459,16 @@ def choose_primary_port(text):
 def find_makers(text_lower, vessel_name=""):
     found = []
     vessel_lower = (vessel_name or "").lower()
+    raw = text_lower or ""
     for maker in KNOWN_MAKERS:
-        if re.search(rf"(?<![a-z0-9]){re.escape(maker)}(?![a-z0-9])", text_lower or "") and maker not in vessel_lower:
+        if re.search(rf"(?<![a-z0-9]){re.escape(maker)}(?![a-z0-9])", raw) and maker not in vessel_lower:
             found.append(maker.upper())
+
+    # Έλεγχος κωδικών ανταλλακτικών / μοντέλων (π.χ. 03P9335-66, RU-9427 -> FURUNO)
+    for pattern, inferred_maker in PART_NUMBER_TO_MAKER:
+        if re.search(pattern, raw):
+            found.append(inferred_maker)
+
     unique = []
     for m in sorted(set(found), key=len, reverse=True):
         if not any(m != o and m in o for o in unique):
@@ -546,6 +585,8 @@ def smart_local_parser(manual_override_text, files_text):
         scope_text = "Annual VDR & GMDSS Survey (incl. COC)"
     elif "navtex" in text_lower:
         scope_text = "NAVTEX Receiver Technical Attendance & Repair"
+    elif "radar" in text_lower:
+        scope_text = "Radar Technical Attendance & Spare Parts Supply"
     elif "annual" in text_lower:
         scope_text = "Annual Radio / VDR / Navigation Survey"
 
@@ -574,7 +615,7 @@ CRITICAL INSTRUCTIONS:
 1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH.
 2. EMAIL THREAD CHRONOLOGY: The email at the VERY TOP is the active instruction. If it updates the port (e.g. 'Taicang China instead of Qingdao China' or 'Malta instead of Genova'), use the NEW port and list the old port in discrepancies.
 3. VESSEL NAME: Strip 'MV', 'M/V', and scope words. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', vessel_name is strictly 'Seaduty'.
-4. MAKERS: Scan the full text for makers (e.g., JRC, Furuno, Sperry, Danelec).
+4. MAKERS & PART NUMBERS: Scan the full text for makers (e.g., JRC, Furuno, Sperry, Danelec). Also infer the maker from OEM part numbers: e.g., '03P9335-66' or 'RU-9427' or 'FAR-2137' is 'FURUNO'; 'JCY-1900' or 'NCR-333' is 'JRC'; 'DM100' is 'DANELEC'.
 5. DO NOT extract 'Piraeus' or 'Greece' from office signatures.
 
 MANUAL OVERRIDE:
@@ -650,9 +691,18 @@ def analyze_rfq(manual_override_text, files_text, image_files):
         res_json = smart_local_parser(manual_override_text, files_text)
         model_used = "Local Rule Engine"
 
+    # Cross-check with local parser & part-number detector
     local_check = smart_local_parser(manual_override_text, files_text)
-    if not res_json.get("makers") and local_check.get("makers"):
-        res_json["makers"] = local_check["makers"]
+    inferred_from_spares = find_makers(
+        f"{res_json.get('scope', '')} {res_json.get('spares_requested', '')}".lower(),
+        res_json.get("vessel_name", "")
+    )
+    combined_makers = list(res_json.get("makers") or [])
+    for m in (local_check.get("makers") or []) + inferred_from_spares:
+        if m not in combined_makers:
+            combined_makers.append(m)
+    res_json["makers"] = combined_makers
+
     if res_json.get("port") in ("Not specified", "") and local_check.get("port") != "Not specified":
         res_json["port"] = local_check["port"]
         res_json["country"] = local_check["country"]
@@ -782,7 +832,6 @@ with hdr_right:
     btn_type = "secondary" if st.session_state.copilot_open else "primary"
     st.button(btn_label, on_click=toggle_copilot, type=btn_type, use_container_width=True, help="Open or close the right-side AI Copilot panel")
 
-# Split screen when Copilot side panel is open (Google Sheets Gemini style)
 if st.session_state.copilot_open:
     main_col, copilot_col = st.columns([2.3, 1.1], gap="large")
 else:
@@ -802,7 +851,7 @@ with main_col:
         rfq_pasted_text = st.text_area(
             "Manual Override / Priority Info (Port, Vessel, Maker, etc.):",
             height=180,
-            placeholder="e.g. Maker JRC\nPort Taicang\nCountry China\nVessel Seaduty",
+            placeholder="e.g. Maker Furuno\nPort Fujairah\nCountry UAE\nVessel Zografia",
             key=f"manual_input_{curr_key}"
         )
 
@@ -881,10 +930,12 @@ with main_col:
             key=f"inc_non_approved_{curr_key}"
         )
 
-        target_country = str(parsed.get("country", "")).strip().lower()
+        target_country = canonical_country(parsed.get("country", ""))
         target_makers = [m.lower() for m in parsed.get("makers", [])]
 
         if not df.empty and target_country and target_country != "not specified":
+            df_norm_country = df["Country"].apply(canonical_country)
+
             def maker_filter(approved_str):
                 app_lower = str(approved_str).lower()
                 for m in target_makers:
@@ -899,24 +950,26 @@ with main_col:
                         lambda x: "✅ Maker Approved" if maker_filter(x) else "🔧 Non-Maker Approved"
                     )
                 else:
-                    out_df["Approval Status"] = "✅ General Station"
+                    out_df["Approval Status"] = "✅ Local Station"
                 cols = ["Country", "Service Station Name", "Approval Status", "Approved Makers"]
                 extra_cols = [c for c in out_df.columns if c not in cols]
                 return out_df[cols + extra_cols]
 
-            country_match = df[df["Country"].astype(str).str.strip().str.lower() == target_country].copy()
+            country_match = df[df_norm_country == target_country].copy()
             final_df = pd.DataFrame()
             matched_location_label = target_country.upper()
 
             if not country_match.empty:
                 annotated_local = annotate_df(country_match)
-                approved_local = annotated_local[annotated_local["Approval Status"] == "✅ Maker Approved"]
-
-                if include_non_approved:
-                    non_approved_local = annotated_local[annotated_local["Approval Status"] != "✅ Maker Approved"]
-                    final_df = pd.concat([approved_local, non_approved_local], ignore_index=True)
+                if target_makers:
+                    approved_local = annotated_local[annotated_local["Approval Status"] == "✅ Maker Approved"]
+                    if include_non_approved:
+                        non_approved_local = annotated_local[annotated_local["Approval Status"] != "✅ Maker Approved"]
+                        final_df = pd.concat([approved_local, non_approved_local], ignore_index=True)
+                    else:
+                        final_df = approved_local
                 else:
-                    final_df = approved_local if target_makers else annotated_local
+                    final_df = annotated_local
 
             need_neighbors = final_df.empty or (
                 include_non_approved
@@ -929,7 +982,8 @@ with main_col:
                 neighbor_matches = []
                 matched_neighbors = []
                 for neigh in neighbors:
-                    neigh_match = df[df["Country"].astype(str).str.strip().str.lower() == neigh].copy()
+                    neigh_canon = canonical_country(neigh)
+                    neigh_match = df[df_norm_country == neigh_canon].copy()
                     if not neigh_match.empty:
                         annotated_neigh = annotate_df(neigh_match)
                         if target_makers and not include_non_approved:
@@ -958,7 +1012,7 @@ with main_col:
 
             makers_formatted = ", ".join([m.upper() for m in target_makers]) if target_makers else "ALL"
             if not final_df.empty:
-                if include_non_approved:
+                if include_non_approved and target_makers:
                     st.info(
                         f"Showing **both Maker Approved and Non-Maker Approved** stations in **{matched_location_label}** "
                         f"(Target Maker: **{makers_formatted}**)."
@@ -1017,7 +1071,6 @@ if st.session_state.copilot_open and copilot_col is not None:
                         if chat.get("engine"):
                             st.caption(f"⚡ {chat['engine']}")
 
-            # Quick suggestion chips
             q_col1, q_col2 = st.columns(2)
             quick_prompt = None
             with q_col1:
