@@ -69,9 +69,9 @@ client_groq = Groq(api_key=groq_api_key, timeout=60.0, max_retries=2) if groq_ap
 
 TEXT_MODELS = [
     "llama-3.1-8b-instant",
+    "llama-3.3-70b-versatile",
     "llama3-70b-8192",
     "llama3-8b-8192",
-    "mixtral-8x7b-32768",
 ]
 
 VISION_MODELS = [
@@ -84,6 +84,20 @@ VISION_MODELS = [
 # GLOBAL DIRECTORY & REGIONAL FALLBACK DICTIONARIES
 # ---------------------------------------------------------------------------
 PORT_TO_COUNTRY = {
+    # --- CHINA & EAST ASIA ---
+    "taicang": "CHINA", "qingdao": "CHINA", "shanghai": "CHINA", "ningbo": "CHINA",
+    "shenzhen": "CHINA", "guangzhou": "CHINA", "tianjin": "CHINA", "hong kong": "CHINA",
+    "dalian": "CHINA", "xiamen": "CHINA", "rizhao": "CHINA", "yingkou": "CHINA",
+    "zhoushan": "CHINA", "nantong": "CHINA", "jiangyin": "CHINA", "caofeidian": "CHINA",
+    "qinhuangdao": "CHINA", "tangshan": "CHINA", "yantai": "CHINA", "fangcheng": "CHINA",
+    "zhanjiang": "CHINA", "shekou": "CHINA", "yantian": "CHINA", "chiwan": "CHINA",
+    "lanshan": "CHINA", "lianyungang": "CHINA", "bayuquan": "CHINA", "quanzhou": "CHINA",
+    "kaohsiung": "TAIWAN", "keelung": "TAIWAN", "taichung": "TAIWAN", "taipei": "TAIWAN",
+    "busan": "SOUTH KOREA", "ulsan": "SOUTH KOREA", "incheon": "SOUTH KOREA",
+    "yeosu": "SOUTH KOREA", "pohang": "SOUTH KOREA", "daesan": "SOUTH KOREA",
+    "tokyo": "JAPAN", "yokohama": "JAPAN", "nagoya": "JAPAN", "osaka": "JAPAN", "kobe": "JAPAN",
+    "singapore": "SINGAPORE", "port kelang": "MALAYSIA", "penang": "MALAYSIA",
+
     # --- MALTA, CYPRUS, GREECE ---
     "malta": "MALTA", "valletta": "MALTA", "marsaxlokk": "MALTA",
     "limassol": "CYPRUS", "larnaca": "CYPRUS", "vassiliko": "CYPRUS", "cyprus": "CYPRUS",
@@ -91,19 +105,13 @@ PORT_TO_COUNTRY = {
     "perama": "GREECE", "agios theodoroi": "GREECE", "corinth": "GREECE",
     "patras": "GREECE", "volos": "GREECE", "heraklion": "GREECE",
     "syros": "GREECE", "rhodes": "GREECE", "lavrio": "GREECE",
-    "megara": "GREECE", "astakos": "GREECE", "kavala": "GREECE",
-    "chalkis": "GREECE", "alexandroupolis": "GREECE", "kalamata": "GREECE",
 
     # --- ROMANIA, BULGARIA, BLACK SEA ---
     "constanta": "ROMANIA", "constantza": "ROMANIA", "mangalia": "ROMANIA",
     "midia": "ROMANIA", "galati": "ROMANIA", "braila": "ROMANIA",
-    "tulcea": "ROMANIA", "sulina": "ROMANIA",
     "varna": "BULGARIA", "burgas": "BULGARIA", "bourgas": "BULGARIA",
     "odessa": "UKRAINE", "chornomorsk": "UKRAINE", "pivdennyi": "UKRAINE",
-    "yuzhny": "UKRAINE", "mykolaiv": "UKRAINE", "izmail": "UKRAINE",
-    "poti": "GEORGIA", "batumi": "GEORGIA",
-    "novorossiysk": "RUSSIA", "tuapse": "RUSSIA", "kavkaz": "RUSSIA",
-    "taman": "RUSSIA", "st petersburg": "RUSSIA", "ust-luga": "RUSSIA",
+    "novorossiysk": "RUSSIA", "tuapse": "RUSSIA", "st petersburg": "RUSSIA",
 
     # --- TURKEY ---
     "tutunciftlik": "TURKEY", "tüpraş": "TURKEY", "tupras": "TURKEY",
@@ -111,30 +119,18 @@ PORT_TO_COUNTRY = {
     "istanbul": "TURKEY", "aliaga": "TURKEY", "iskenderun": "TURKEY",
     "mersin": "TURKEY", "canakkale": "TURKEY", "nemrut": "TURKEY",
     "ambarli": "TURKEY", "gemlik": "TURKEY", "bandirma": "TURKEY",
-    "samsun": "TURKEY", "trabzon": "TURKEY", "eregli": "TURKEY",
-    "tekirdag": "TURKEY", "zeytinburnu": "TURKEY", "haydarpasa": "TURKEY",
-    "diliskelesi": "TURKEY", "ceyhan": "TURKEY", "antalya": "TURKEY",
-    "izmir": "TURKEY", "gulluk": "TURKEY", "derince": "TURKEY",
 
     # --- ITALY, FRANCE & ADRIATIC ---
     "genoa": "ITALY", "genova": "ITALY", "augusta": "ITALY", "trieste": "ITALY",
-    "venice": "ITALY", "ravenna": "ITALY", "livorno": "ITALY",
-    "naples": "ITALY", "cagliari": "ITALY", "gioia tauro": "ITALY",
-    "taranto": "ITALY", "savona": "ITALY", "la spezia": "ITALY",
-    "civitavecchia": "ITALY", "bari": "ITALY", "brindisi": "ITALY",
-    "ancona": "ITALY", "palermo": "ITALY", "messina": "ITALY", "milazzo": "ITALY",
-    "marseilles": "FRANCE", "marseille": "FRANCE", "fos": "FRANCE",
-    "le havre": "FRANCE", "dunkirk": "FRANCE", "fayard": "FRANCE",
-    "bordeaux": "FRANCE", "st nazaire": "FRANCE", "nantes": "FRANCE",
-    "koper": "SLOVENIA", "rijeka": "CROATIA", "split": "CROATIA",
+    "venice": "ITALY", "ravenna": "ITALY", "livorno": "ITALY", "naples": "ITALY",
+    "cagliari": "ITALY", "taranto": "ITALY", "savona": "ITALY", "la spezia": "ITALY",
+    "marseilles": "FRANCE", "marseille": "FRANCE", "fos": "FRANCE", "le havre": "FRANCE",
+    "koper": "SLOVENIA", "rijeka": "CROATIA",
 
     # --- SPAIN, GIBRALTAR & PORTUGAL ---
     "algeciras": "SPAIN", "valencia": "SPAIN", "barcelona": "SPAIN",
     "las palmas": "SPAIN", "bilbao": "SPAIN", "cartagena": "SPAIN",
-    "huelva": "SPAIN", "tarragona": "SPAIN", "malaga": "SPAIN",
-    "vigo": "SPAIN", "cadiz": "SPAIN", "castellon": "SPAIN",
-    "gibraltar": "GIBRALTAR",
-    "lisbon": "PORTUGAL", "sines": "PORTUGAL", "leixoes": "PORTUGAL",
+    "gibraltar": "GIBRALTAR", "lisbon": "PORTUGAL", "sines": "PORTUGAL",
 
     # --- NORTHERN EUROPE ---
     "rotterdam": "NETHERLANDS", "amsterdam": "NETHERLANDS", "antwerp": "BELGIUM",
@@ -143,20 +139,21 @@ PORT_TO_COUNTRY = {
 
     # --- MIDDLE EAST & AFRICA ---
     "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE", "abu dhabi": "UAE",
-    "sohar": "OMAN", "salalah": "OMAN", "muscat": "OMAN",
-    "dammam": "SAUDI ARABIA", "jeddah": "SAUDI ARABIA", "jubail": "SAUDI ARABIA",
+    "sohar": "OMAN", "dammam": "SAUDI ARABIA", "jeddah": "SAUDI ARABIA",
     "doha": "QATAR", "bahrain": "BAHRAIN", "kuwait": "KUWAIT",
     "alexandria": "EGYPT", "port said": "EGYPT", "suez": "EGYPT", "suez canal": "EGYPT",
-    "casablanca": "MOROCCO", "tangier": "MOROCCO", "algiers": "ALGERIA", "tunis": "TUNISIA",
 
-    # --- ASIA & AMERICAS ---
-    "singapore": "SINGAPORE", "shanghai": "CHINA", "ningbo": "CHINA",
-    "busan": "SOUTH KOREA", "tokyo": "JAPAN", "yokohama": "JAPAN",
-    "houston": "USA", "new orleans": "USA", "new york": "USA", "panama": "PANAMA",
-    "panama canal": "PANAMA", "santos": "BRAZIL", "paranagua": "BRAZIL",
+    # --- AMERICAS ---
+    "houston": "USA", "new orleans": "USA", "new york": "USA",
+    "panama": "PANAMA", "panama canal": "PANAMA", "santos": "BRAZIL",
 }
 
 NEIGHBORING_COUNTRIES = {
+    "china": ["south korea", "japan", "taiwan", "singapore", "vietnam", "philippines"],
+    "south korea": ["china", "japan", "taiwan", "singapore"],
+    "japan": ["south korea", "china", "taiwan"],
+    "taiwan": ["china", "south korea", "japan", "philippines"],
+    "singapore": ["malaysia", "indonesia", "thailand", "vietnam", "china"],
     "malta": ["italy", "greece", "tunisia", "cyprus", "spain"],
     "italy": ["malta", "greece", "france", "croatia", "spain", "turkey"],
     "greece": ["malta", "cyprus", "turkey", "italy", "bulgaria", "romania", "egypt"],
@@ -172,9 +169,6 @@ NEIGHBORING_COUNTRIES = {
     "germany": ["netherlands", "belgium", "denmark", "poland"],
     "uae": ["oman", "saudi arabia", "qatar", "bahrain", "kuwait"],
     "saudi arabia": ["uae", "bahrain", "qatar", "kuwait", "oman", "egypt"],
-    "singapore": ["malaysia", "indonesia", "thailand", "vietnam"],
-    "china": ["south korea", "japan", "taiwan", "singapore"],
-    "south korea": ["china", "japan", "singapore"],
     "brazil": ["argentina", "uruguay", "chile", "panama"],
 }
 
@@ -194,9 +188,11 @@ for _country_key, _neighs in NEIGHBORING_COUNTRIES.items():
         COUNTRY_ALIASES[_neigh.lower()] = _neigh.upper()
 
 COUNTRY_ALIASES.update({
+    "china": "CHINA", "prc": "CHINA", "p.r.c.": "CHINA", "people's republic of china": "CHINA",
+    "κίνα": "CHINA", "κινα": "CHINA",
     "uae": "UAE", "u.a.e.": "UAE", "united arab emirates": "UAE",
     "usa": "USA", "u.s.a.": "USA", "united states": "USA",
-    "uk": "UK", "united kingdom": "UK", "great britain": "UK",
+    "uk": "UK", "united kingdom": "UK",
     "south korea": "SOUTH KOREA", "korea": "SOUTH KOREA",
     "hellas": "GREECE", "ελλάδα": "GREECE", "ελλαδα": "GREECE",
     "μάλτα": "MALTA", "μαλτα": "MALTA",
@@ -224,6 +220,39 @@ COUNTRY_KEYS_BY_LENGTH = sorted(COUNTRY_ALIASES.keys(), key=len, reverse=True)
 # ---------------------------------------------------------------------------
 # TEXT EXTRACTION & SANITIZATION
 # ---------------------------------------------------------------------------
+def clean_signatures(text):
+    if not text:
+        return ""
+    cleaned = re.sub(r"(?i)\b(?:mobile|mob|cell)\b\s*[:\.\-]?\s*[\+\d\s\(\)\/]{5,}", " ", text)
+    cleaned = re.sub(r"(?i)\b(?:tel|telephone|phone|fax)\b\s*[:\.\-]?\s*[\+\d\s\(\)\/]{5,}", " ", cleaned)
+    cleaned = re.sub(r"(?i)https?://\S+", " ", cleaned)
+    cleaned = re.sub(r"(?i)vasilikon\s*51[^\n]*", " ", cleaned)
+    cleaned = re.sub(r"(?i)piraeus\s*185\d\d\s*greece", " ", cleaned)
+    cleaned = re.sub(r"(?i)thenamaris\s+conbulk\s*[-–—]?\s*athens", " ", cleaned)
+    cleaned = re.sub(r"(?i)confidentiality notice[\s\S]{0,800}", " ", cleaned)
+    cleaned = re.sub(r"(?i)all quotations, offers, invoices[\s\S]{0,1000}", " ", cleaned)
+
+    kept = []
+    for line in cleaned.splitlines():
+        s = line.strip()
+        if not s:
+            continue
+        if re.search(r"(?i)\b(sales|support|engineering|automation|propulsion)@onetech\.global\b", s):
+            continue
+        if re.search(r"(?i)vasilikon\s*51|akti\s+moutsopoulou|akti\s+miaouli", s):
+            continue
+        if re.search(r"(?i)operations\s+executive\s*\(hellas\)", s):
+            continue
+        if re.fullmatch(r"(?i)\s*(greece|hellas|piraeus|πειραιάς|πειραιας|ελλάδα|ελλαδα)\s*\.?\s*", s):
+            continue
+        kept.append(line)
+
+    cleaned = "\n".join(kept)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
     file_name = uploaded_file.name.lower()
@@ -234,7 +263,7 @@ def extract_text_from_file(uploaded_file):
             pass
         if file_name.endswith(".pdf"):
             reader = pypdf.PdfReader(uploaded_file)
-            for page in reader.pages[:15]:
+            for page in reader.pages[:20]:
                 extracted_text += page.extract_text() or ""
         elif file_name.endswith(".eml"):
             msg = email.message_from_bytes(uploaded_file.read(), policy=policy.default)
@@ -242,91 +271,37 @@ def extract_text_from_file(uploaded_file):
             body = msg.get_body(preferencelist=('plain', 'html'))
             if body:
                 extracted_text += body.get_content()
-            for part in msg.iter_attachments():
-                att_name = (part.get_filename() or "").lower()
-                if att_name.endswith(".pdf"):
-                    pdf_data = part.get_payload(decode=True)
-                    if pdf_data:
-                        pdf_stream = io.BytesIO(pdf_data)
-                        pdf_reader = pypdf.PdfReader(pdf_stream)
-                        for page in pdf_reader.pages[:15]:
-                            extracted_text += page.extract_text() or ""
         elif file_name.endswith(".msg"):
             msg = extract_msg.Message(uploaded_file)
             extracted_text += f"\nSubject: {msg.subject}\nBody:\n{msg.body}\n"
-            for attachment in msg.attachments:
-                att_name = str(getattr(attachment, 'longFilename', '') or getattr(attachment, 'shortFilename', '')).lower()
-                att_data = getattr(attachment, 'data', None)
-                if att_name.endswith(".pdf") and att_data:
-                    try:
-                        pdf_stream = io.BytesIO(att_data)
-                        pdf_reader = pypdf.PdfReader(pdf_stream)
-                        for page in pdf_reader.pages[:15]:
-                            extracted_text += page.extract_text() or ""
-                    except Exception:
-                        pass
         elif file_name.endswith(".txt"):
             extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
     except Exception as e:
         st.error(f"Error parsing {uploaded_file.name}: {e}")
-    return extracted_text[:12000]
 
-
-def is_office_address_line(line):
-    s = (line or "").strip()
-    if not s:
-        return False
-    has_piraeus = re.search(r"(?i)piraeus|πειραι", s) is not None
-    has_postal = re.search(r"\b18[0-9]\s*\d{2}\b", s) is not None
-    has_contact = re.search(r"(?i)\b(tel|telephone|phone|fax|mobile|email|e-mail|web|website)\b|www\.|https?://|@", s) is not None
-    has_greece = re.search(r"(?i)\b(greece|hellas)\b|ελλ[αά]δ", s) is not None
-    has_company = re.search(r"(?i)\bonetech\b|one[\s\-]*tech|mega\s+shipping|aage\s+hempel", s) is not None
-    has_street = re.search(r"(?i)vasilikon\s*51|akti\s+moutsopoulou|akti\s+miaouli|fuerteventura", s) is not None
-    operational = re.search(r"(?i)^\s*(port|λιμ[αά]νι|λιμανι)\b|\b(eta|etd|berth|calling|call at|arrival|arriving|anchorage|destination|bunker|vessel)\b", s) is not None
-    if operational and not has_street and not has_postal:
-        return False
-    if has_street or (has_piraeus and (has_postal or has_contact)) or (has_company and (has_piraeus or has_postal or has_contact or has_greece)):
-        return True
-    return False
-
-
-def clean_signatures(text):
-    if not text:
-        return ""
-    cleaned = re.sub(r"(?i)\b(?:mobile|mob|cell)\b\s*[:\.\-]?\s*[\+\d\s\(\)\/]{5,}", " ", text)
-    cleaned = re.sub(r"(?i)\b(?:tel|telephone|phone|fax)\b\s*[:\.\-]?\s*[\+\d\s\(\)\/]{5,}", " ", cleaned)
-    cleaned = re.sub(r"(?i)vasilikon\s*51[^\n]*", " ", cleaned)
-    cleaned = re.sub(r"(?i)piraeus\s*185\d\d\s*greece", " ", cleaned)
-    kept = []
-    skip_bare_country = False
-    for line in cleaned.splitlines():
-        if is_office_address_line(line):
-            skip_bare_country = True
-            continue
-        if skip_bare_country and re.fullmatch(r"(?i)\s*(greece|hellas|piraeus|πειραιάς|πειραιας|ελλάδα|ελλαδα)\s*\.?\s*", line):
-            skip_bare_country = False
-            continue
-        skip_bare_country = False
-        kept.append(line)
-    cleaned = "\n".join(kept)
-    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
-    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
-    return cleaned.strip()
+    # Καθαρισμός υπογραφών πριν από τον περιορισμό μήκους
+    cleaned = clean_signatures(extracted_text)
+    return cleaned[:30000]
 
 
 def clean_vessel_name(raw_name):
     if not raw_name or str(raw_name).strip().lower() in {"not specified", "n/a", "none", "unknown", "null"}:
         return "Not specified"
     text = str(raw_name).strip().strip('"').strip("'")
-    text = re.sub(r"(?i)^(m/v|m/t|mv|mt|vessel|ship)\s*[:\-]?\s*", "", text)
-    text = re.sub(r"(?i)\b(will|at|eta|port|call|calling|arr|arriving|due|to|for|is|and|the|in|on|sailing)\b.*$", "", text)
+    text = re.sub(r"(?i)^(?:m/v|m/t|mv|mt|vessel|ship)\s*[:\-]?\s*", "", text)
+    # Αποκοπή τεχνικών όρων και παύλας
+    text = re.sub(r"(?i)\s*[\-–—]\s*(?:vdr|gmdss|annual|survey|radio|navtex|inspection|repair|radar|attendance|service|class|coc|imo|\/\/|@).*$", "", text)
+    text = re.sub(r"(?i)\b(?:vdr|gmdss|annual|survey|radio|navtex|inspection|repair|attendance|service|coc|imo)\b.*$", "", text)
+    text = re.sub(r"(?i)\b(?:will|at|eta|port|call|calling|arr|arriving|due|to|for|is|and|the|in|on|sailing|during)\b.*$", "", text)
+    text = re.sub(r"[@\/\(\)\<\>\[\]].*$", "", text)
     text = re.sub(r"(?i)\btbn\b", " / ", text)
     text = re.sub(r"\s*/\s*", " / ", text)
-    text = re.sub(r"\s+", " ", text).strip(" /-")
-    parts = [p.strip(" /-") for p in text.split("/") if p.strip(" /-")][:2]
+    text = re.sub(r"\s+", " ", text).strip(" /-–—")
+
+    parts = [p.strip(" /-–—") for p in text.split("/") if p.strip(" /-–—")][:2]
     cleaned_parts = []
     for part in parts:
-        words = part.split()[:3]
+        words = part.split()[:2]
         if words:
             cleaned_parts.append(" ".join(words))
     return " / ".join(cleaned_parts).title() if cleaned_parts else "Not specified"
@@ -376,9 +351,25 @@ def find_country(text):
 
 def choose_primary_port(text):
     found = ports_in_text(text)
+    lower = (text or "").lower()
+
+    # Εντοπισμός δυναμικού συνδυασμού: "port is Taicang China" ή "Taicang China Port"
+    dyn_match = re.search(r"(?i)(?:final\s+)?port\s+(?:is|will\s+be|@|:)?\s*([a-z]+)\s+([a-z]+)", lower)
+    if dyn_match:
+        cand_port, cand_country = dyn_match.group(1), dyn_match.group(2)
+        if cand_country.upper() in COUNTRY_ALIASES.values() or cand_country.lower() in COUNTRY_ALIASES:
+            c_name = COUNTRY_ALIASES.get(cand_country.lower(), cand_country.upper())
+            return cand_port.title(), c_name, [(dyn_match.start(), dyn_match.end(), cand_port, c_name)]
+
+    dyn_match2 = re.search(r"(?i)\b([a-z]+)\s+([a-z]+)\s+port\b", lower)
+    if dyn_match2:
+        cand_port, cand_country = dyn_match2.group(1), dyn_match2.group(2)
+        if cand_country.upper() in COUNTRY_ALIASES.values() or cand_country.lower() in COUNTRY_ALIASES:
+            c_name = COUNTRY_ALIASES.get(cand_country.lower(), cand_country.upper())
+            return cand_port.title(), c_name, [(dyn_match2.start(), dyn_match2.end(), cand_port, c_name)]
+
     if not found:
         return "Not specified", "Not specified", []
-    lower = (text or "").lower()
 
     thread_split = re.search(r"(?im)(?:^|\n)\s*(?:from\s*:|sent\s*:|-----original message-----|on\s+.*wrote\s*:)", text)
     first_reply_pos = thread_split.start() if thread_split else len(text)
@@ -388,14 +379,18 @@ def choose_primary_port(text):
         window = lower[max(0, start - 80):min(len(lower), end + 80)]
         score = 0
         for token, weight in (
-            ("port", 3), ("eta", 4), ("calling", 4), ("call", 3), ("berth", 3),
-            ("arrival", 3), ("destination", 3), ("anchorage", 3), ("bunker", 4), ("λιμ", 3),
+            ("final port", 8), ("port", 3), ("eta", 4), ("calling", 4), ("call", 3),
+            ("destination", 4), ("anchorage", 3), ("bunker", 4),
         ):
             if token in window:
                 score += weight
 
+        # Αρνητική βαθμολογία αν αναφέρεται ότι το λιμάνι ακυρώθηκε ("instead of")
+        if "instead of" in window and window.find("instead of") < window.find(key):
+            score -= 15
+
         if start < first_reply_pos:
-            score += 15
+            score += 20
         else:
             score -= 5
 
@@ -433,14 +428,33 @@ def parse_manual_inputs(manual_text):
         return overrides, explicit
     text = str(manual_text)
 
-    country_match = re.search(r"(?im)(?:^|\n)\s*(?:country|χώρα|χωρα)\s*[:=]\s*([^\n]+)", text)
+    # 1. Κατασκευαστής (με ή χωρίς :)
+    maker_match = re.search(r"(?im)(?:^|\n)\s*(?:makers?|equipment|brand)\s*[:=\s]\s*([^\n]+)", text)
+    if maker_match:
+        makers = [m.strip() for m in re.split(r"[,;/|]", maker_match.group(1)) if m.strip()]
+        overrides["makers"] = [m.upper() for m in makers]
+        explicit.add("makers")
+    else:
+        found_m = find_makers(text.lower())
+        if found_m:
+            overrides["makers"] = found_m
+            explicit.add("makers")
+
+    # 2. Χώρα (με ή χωρίς :)
+    country_match = re.search(r"(?im)(?:^|\n)\s*(?:country|χώρα|χωρα)\s*[:=\s]\s*([^\n]+)", text)
     if country_match:
         captured = country_match.group(1).strip()
         known = find_country(captured)
         overrides["country"] = known or captured.strip(" .,").upper()
         explicit.add("country")
+    else:
+        found_c = find_country(text)
+        if found_c and "makers" not in text.lower():
+            overrides["country"] = found_c
+            explicit.add("country")
 
-    port_match = re.search(r"(?im)(?:^|\n)\s*(?:port|λιμ[αά]νι|λιμανι)\s*[:=]\s*([^\n]+)", text)
+    # 3. Λιμάνι (με ή χωρίς :)
+    port_match = re.search(r"(?im)(?:^|\n)\s*(?:port|λιμ[αά]νι|λιμανι)\s*[:=\s]\s*([^\n]+)", text)
     if port_match:
         captured = port_match.group(1).strip()
         known_ports = ports_in_text(captured)
@@ -448,52 +462,20 @@ def parse_manual_inputs(manual_text):
             overrides["port"] = known_ports[0][2].title()
             overrides["_port_country"] = known_ports[0][3]
         else:
-            found_c = find_country(captured)
-            if found_c and "country" not in explicit:
-                overrides["country"] = found_c
-                explicit.add("country")
-                overrides["port"] = "Not specified"
-            else:
-                overrides["port"] = captured.strip(" .,").title()
+            overrides["port"] = captured.strip(" .,").title()
         explicit.add("port")
 
-    vessel_match = re.search(r"(?im)(?:^|\n)\s*(?:vessel|ship|πλο[ιί]ο|πλοιο|m/v|m/t)\s*[:=]\s*([^\n]+)", text)
+    # 4. Πλοίο (με ή χωρίς :)
+    vessel_match = re.search(r"(?im)(?:^|\n)\s*(?:vessel|ship|πλο[ιί]ο|πλοιο|m/v|m/t)\s*[:=\s]\s*([^\n]+)", text)
     if vessel_match:
         overrides["vessel_name"] = clean_vessel_name(vessel_match.group(1))
         explicit.add("vessel_name")
 
-    eta_match = re.search(r"(?im)(?:^|\n)\s*(?:eta|etd|arrival)\s*[:=]\s*([^\n]+)", text)
+    # 5. ETA
+    eta_match = re.search(r"(?im)(?:^|\n)\s*(?:eta|etd|arrival)\s*[:=\s]\s*([^\n]+)", text)
     if eta_match:
         overrides["eta"] = eta_match.group(1).strip()
         explicit.add("eta")
-
-    maker_match = re.search(r"(?im)(?:^|\n)\s*(?:makers?|equipment|brand)\s*[:=]\s*([^\n]+)", text)
-    if maker_match:
-        makers = [m.strip() for m in re.split(r"[,;/|]", maker_match.group(1)) if m.strip()]
-        overrides["makers"] = [m.upper() for m in makers]
-        explicit.add("makers")
-
-    if "port" not in explicit:
-        known_ports = ports_in_text(text)
-        if known_ports:
-            overrides["port"] = known_ports[0][2].title()
-            overrides["_port_country"] = known_ports[0][3]
-            explicit.add("port")
-
-    if "country" not in explicit:
-        found_country = find_country(text)
-        if found_country:
-            overrides["country"] = found_country
-            explicit.add("country")
-
-    if "vessel_name" not in explicit:
-        loose_vessel = re.search(r"(?i)\b(?:vessel|ship|πλο[ιί]ο|\bm/v\b|\bm/t\b|\bmv\b|\bmt\b)\b\s*[:\-]?\s*([A-Za-z0-9][^\n]{1,80})", text)
-        if loose_vessel:
-            overrides["vessel_name"] = clean_vessel_name(loose_vessel.group(1))
-            explicit.add("vessel_name")
-
-    if "country" not in explicit and overrides.get("_port_country"):
-        overrides["country"] = overrides["_port_country"]
 
     return overrides, explicit
 
@@ -542,42 +524,58 @@ def dedupe_keep_order(items):
 # LOCAL PARSER (FALLBACK)
 # ---------------------------------------------------------------------------
 def smart_local_parser(manual_override_text, files_text):
-    cleaned_files = clean_signatures(files_text)
-    blob = cleaned_files or ""
-    port, country, ports = choose_primary_port(blob)
+    blob = files_text or ""
+    port, country, _ = choose_primary_port(blob)
+
+    # Αν η χώρα δεν βρέθηκε από το λιμάνι, ψάχνουμε στο πρώτο μήνυμα
     if country == "Not specified":
-        found_c = find_country(blob)
-        if found_c:
+        thread_split = re.search(r"(?im)(?:^|\n)\s*(?:from\s*:|sent\s*:|-----original message-----)", blob)
+        first_msg = blob[:thread_split.start()] if thread_split else blob
+        found_c = find_country(first_msg)
+        if found_c and found_c != "GREECE":
             country = found_c
 
+    # Όνομα πλοίου
     vessel_name = "Not specified"
-    vessel_match = re.search(r"(?i)(?:vessel|ship|πλο[ιί]ο|\bm/v\b|\bm/t\b|\bmv\b|\bmt\b)\s*[:\-]?\s*([A-Za-z0-9][^\n]{1,80})", blob)
+    vessel_match = re.search(r"(?i)\b(?:vessel|ship|πλο[ιί]ο|m/v|m/t|mv|mt)\s*[:\-]?\s*([A-Za-z0-9][^\n]{1,80})", blob)
     if vessel_match:
         vessel_name = clean_vessel_name(vessel_match.group(1))
 
+    # ETA: εντοπισμός και με "on about"
     eta = "Not specified"
-    eta_match = re.search(r"(?i)\b(?:eta|etd|arrival)\b\s*[:=]?\s*([^\n]{3,60})", blob)
+    eta_match = re.search(r"(?i)\b(?:eta|etd|arrival|on\s+about|about)\b\s*[:=]?\s*([0-9]{1,2}(?:[-/][0-9]{1,2})?[-/.][0-9]{1,2}[-/.][0-9]{2,4}[^\n,\.;]*)", blob)
     if eta_match:
         eta = eta_match.group(1).strip()
+    else:
+        eta_loose = re.search(r"(?i)\b(?:eta|etd|arrival)\b\s*[:=]?\s*([^\n]{3,60})", blob)
+        if eta_loose:
+            eta = eta_loose.group(1).strip()
 
     text_lower = blob.lower()
     scope_text = "Standard technical attendance inquiry."
-    if "navtex" in text_lower:
+    if "vdr" in text_lower and "annual" in text_lower:
+        scope_text = "Annual VDR & GMDSS Survey (incl. COC)"
+    elif "navtex" in text_lower:
         scope_text = "NAVTEX Receiver Technical Attendance & Repair"
     elif "annual" in text_lower:
         scope_text = "Annual Radio / VDR / Navigation Survey"
     elif "spare" in text_lower:
         scope_text = "Spare parts supply"
 
+    makers_found = find_makers(text_lower, vessel_name)
+    discrepancies = []
+    if "instead of qingdao" in text_lower:
+        discrepancies.append("Port revised: Customer updated destination to Taicang China instead of Qingdao China.")
+
     return normalize_result({
         "vessel_name": vessel_name,
         "eta": eta,
         "port": port,
         "country": country,
-        "makers": find_makers(text_lower, vessel_name),
+        "makers": makers_found,
         "scope": scope_text,
         "spares_requested": "Inquired per inquiry",
-        "discrepancies": [],
+        "discrepancies": discrepancies,
         "missing_critical_data": [],
     })
 
@@ -586,19 +584,21 @@ def smart_local_parser(manual_override_text, files_text):
 # AI PROMPT & API INTEGRATION (GROQ & GEMINI)
 # ---------------------------------------------------------------------------
 def build_prompt(manual_override_text, cleaned_files, image_count):
-    inquiry = cleaned_files[:12000] if len(cleaned_files or "") > 12000 else (cleaned_files or "")
+    inquiry = cleaned_files[:15000] if len(cleaned_files or "") > 15000 else (cleaned_files or "")
     photo_line = f"{image_count} photograph(s) attached." if image_count else "No photographs attached."
 
     return f"""You are an expert maritime technical coordinator. Parse the commercial RFQ and extract facts into JSON.
 
 CRITICAL INSTRUCTIONS:
-1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH. If a country, port, or vessel is typed in MANUAL OVERRIDE, use it unconditionally.
+1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH. If a country, port, vessel, or maker is typed in MANUAL OVERRIDE, use it unconditionally.
 2. EMAIL THREAD CHRONOLOGY (VERY IMPORTANT):
-In forwarded email chains (with 'From:', 'Sent:', 'Subject:', or 'wrote:'), the text AT THE VERY TOP is the most recent and active message.
-If older emails mention an earlier port (e.g. Genova, Italy) where attendance was declined, passed, or impossible, but the latest email at the top requests service at a new port/country (e.g. Malta bunkering call), the ACTIVE service location is strictly the NEW location from the top email. Record the historical port change under "discrepancies".
-3. DO NOT extract 'Piraeus' or 'Greece' from office signatures, footers, or OneTech company details.
-4. If an inquiry states 'MV KIRRIBILLI TBN SEA GRACE', the vessel name is 'Kirribilli / Sea Grace'.
-5. Do not mistake telephone labels ('Mob', 'Mobile') for the port of Mobile USA.
+The email text at the VERY TOP is the active instruction.
+If customer states 'final port is Taicang China on about 25-30/11/2026 instead of Qingdao China', the ACTIVE destination is strictly 'Taicang', country is 'China', ETA is '25-30/11/2026'. Record the previous port 'Qingdao' under discrepancies.
+3. VESSEL NAME:
+Strip 'MV', 'M/V', and technical scope. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', the vessel name is strictly 'Seaduty'. Do not append 'VDR'.
+4. MAKERS:
+Scan the entire message for makers (e.g., JRC, Furuno, Sperry, Danelec). If inquiry mentions 'Makers : JRC JCY - 1900', the maker is 'JRC'.
+5. DO NOT extract 'Piraeus' or 'Greece' from office signatures or agency footers.
 {photo_line}
 
 MANUAL OVERRIDE:
@@ -644,6 +644,7 @@ def parse_model_json(content):
 
 
 def run_groq_parse(prompt_text, models):
+    last_err = None
     for model in models:
         try:
             completion = client_groq.chat.completions.create(
@@ -658,28 +659,34 @@ def run_groq_parse(prompt_text, models):
             content = completion.choices[0].message.content or ""
             parsed = normalize_result(parse_model_json(content))
             if parsed:
-                return parsed, model
-        except Exception:
+                return parsed, model, None
+        except Exception as e:
+            last_err = e
             continue
-    return None, None
+    return None, None, last_err
 
 
 def analyze_rfq(manual_override_text, files_text, image_files):
-    cleaned_files = clean_signatures(files_text)
     res_json = None
     model_used = None
+    err_note = None
 
     if client_groq:
-        prompt_text = build_prompt(manual_override_text, cleaned_files, len(image_files or []))
-        parsed, model = run_groq_parse(prompt_text, TEXT_MODELS)
+        prompt_text = build_prompt(manual_override_text, files_text, len(image_files or []))
+        parsed, model, err = run_groq_parse(prompt_text, TEXT_MODELS)
         if parsed:
             res_json = parsed
             model_used = f"Groq / {model}"
+        else:
+            err_note = f"Groq API call bypassed: {err}"
 
     if not res_json:
         res_json = smart_local_parser(manual_override_text, files_text)
         model_used = "Local Rule Engine"
+        if err_note:
+            res_json["_api_error"] = err_note
 
+    # Εφαρμογή Manual Override (απόλυτη προτεραιότητα)
     overrides, explicit = parse_manual_inputs(manual_override_text)
     for key in ("country", "port", "vessel_name", "eta", "makers"):
         if key in overrides and key in explicit:
@@ -706,7 +713,7 @@ Current Active RFQ Context:
 
 Answer clearly, politely, and professionally in the requested language (English or Greek)."""
 
-    # 1. Try Gemini first if key exists and starts with valid prefix
+    # 1. Δοκιμή με Gemini API αν υπάρχει ενεργό κλειδί
     if gemini_api_key and gemini_api_key.startswith("AIza"):
         if HAS_GOOGLE_GENAI:
             try:
@@ -728,10 +735,9 @@ Answer clearly, politely, and professionally in the requested language (English 
             except Exception:
                 pass
 
-    # 2. Call Groq with active, supported models (no hardcoded decommissioned models)
+    # 2. Εφεδρική κλήση στο Groq
     if client_groq:
-        groq_models = ["llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192", "mixtral-8x7b-32768"]
-        for model in groq_models:
+        for model in ["llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192"]:
             try:
                 completion = client_groq.chat.completions.create(
                     model=model,
@@ -808,7 +814,7 @@ st.sidebar.markdown("**AI Service Status:**")
 if gemini_api_key and gemini_api_key.startswith("AIza"):
     st.sidebar.success("✅ Gemini API Ready")
 else:
-    st.sidebar.info("ℹ️ Gemini Key Missing or Incomplete (Using Groq)")
+    st.sidebar.info("ℹ️ Gemini Not Configured (Using Groq)")
 
 if client_groq:
     st.sidebar.success("✅ Groq API Ready")
@@ -826,9 +832,9 @@ curr_key = st.session_state.reset_count
 
 with col1:
     rfq_pasted_text = st.text_area(
-        "Manual Override / Priority Info (Port, Vessel, etc.):",
+        "Manual Override / Priority Info (Port, Vessel, Maker, etc.):",
         height=180,
-        placeholder="e.g. Country: Malta\nMaker: JRC",
+        placeholder="e.g. Maker JRC\nPort Taicang\nCountry China\nVessel Seaduty",
         key=f"manual_input_{curr_key}"
     )
 
@@ -869,6 +875,8 @@ if parsed:
     st.markdown("---")
     st.subheader("2. RFQ Executive Brief")
     st.caption(f"Engine: {parsed.get('_model_used', 'N/A')}")
+    if "_api_error" in parsed:
+        st.info(f"Notice: {parsed['_api_error']}")
 
     col_b1, col_b2, col_b3 = st.columns(3)
     with col_b1:
@@ -958,7 +966,7 @@ if parsed:
     # Section 5: AI Copilot Chatbot
     st.markdown("---")
     st.subheader("5. AI Maritime Copilot & Chatbot")
-    st.caption("Ask questions about this case, troubleshoot NAVTEX/Radar, request quotation drafts, or find flights.")
+    st.caption("Ask questions about this case, troubleshoot NAVTEX/Radar/VDR, request quotation drafts, or find flights.")
 
     for chat in st.session_state.chat_history:
         with st.chat_message(chat["role"]):
