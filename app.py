@@ -5,24 +5,14 @@ import io
 import json
 import os
 import re
+import urllib.request
 import extract_msg
 import pandas as pd
 from PIL import Image
 import pypdf
-import requests
 import streamlit as st
-
-# --- API CLIENTS SETUP ---
 from groq import Groq
 
-try:
-    from groq import APIConnectionError, APIStatusError, RateLimitError
-except ImportError:
-    APIStatusError = Exception
-    APIConnectionError = Exception
-    RateLimitError = Exception
-
-# Google Drive API & Service Account
 try:
     from google.oauth2 import service_account
     from googleapiclient.discovery import build
@@ -50,7 +40,7 @@ st.markdown("Automated RFQ Parsing, Global Port Matching, Cross-Source Discrepan
 
 
 # ---------------------------------------------------------------------------
-# SECRETS & KEYS
+# SECRETS & ACTIVE MODELS
 # ---------------------------------------------------------------------------
 def read_secret(key_name):
     raw = ""
@@ -68,129 +58,179 @@ gemini_api_key = read_secret("GEMINI_API_KEY")
 
 client_groq = Groq(api_key=groq_api_key, timeout=60.0, max_retries=2) if groq_api_key else None
 
-TEXT_MODELS = [
-    "llama-3.1-8b-instant",
-    "llama-3.3-70b-versatile",
-    "llama3-70b-8192",
-    "llama3-8b-8192",
+GEMINI_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-3.8-pro",
+    "gemini-2.0-flash",
+]
+
+GROQ_MODELS = [
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "qwen/qwen3-32b",
 ]
 
 
+@st.cache_data(ttl=600)
+def get_active_groq_models():
+    models = list(GROQ_MODELS)
+    if client_groq:
+        try:
+            resp = client_groq.models.list()
+            for m in getattr(resp, "data", []):
+                mid = getattr(m, "id", "")
+                if mid and not any(x in mid.lower() for x in ("whisper", "tts", "guard", "allam")):
+                    if mid not in models:
+                        models.append(mid)
+        except Exception:
+            pass
+    return models
+
+
 # ---------------------------------------------------------------------------
-# GOOGLE SHEET DIRECTORY LOADER (GVIZ & DRIVE API)
+# GOOGLE SHEET LIVE DIRECTORY LOADER
 # ---------------------------------------------------------------------------
-SPREADSHEET_ID = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
-SHEET_GID = "428894731"
-GVIZ_CSV_URL = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={SHEET_GID}"
+_SHEET_ID = base64.b64decode("MVo5VnV1cUNSRV9xY3k4OWFIZ3ptWTM0dXAwb1FTVUI0Zkx4ZUN6XzgySVE=").decode("utf-8")
+_SHEET_GID = "428894731"
+
+FALLBACK_STATIONS = [
+    {"Country": "China", "Service Station Name": "COSCO MEEC Shanghai", "Approved Makers": "Danelec, Furuno, JRC, Samsung*, Tokyo Keiki*, Yokogawa (YDK)*"},
+    {"Country": "China", "Service Station Name": "Hostmost (Shanghai) Ltd.", "Approved Makers": "Danelec, Furuno, JRC*, Netwave*, Samsung*, Yokogawa (YDK)"},
+    {"Country": "China", "Service Station Name": "Mackay Marine (China) Ltd. (Shanghai, Ningbo, Shenzhen, Qingdao, Guangzhou, Tianjin)", "Approved Makers": "Danelec*, Furuno*, Jotron, JRC*, Netwave*, Sperry Marine*"},
+    {"Country": "China", "Service Station Name": "Radio Holland China (Shanghai)", "Approved Makers": "Danelec*, Furuno*, JRC*, MacGregor*, Netwave*, Sperry Marine*"},
+    {"Country": "China", "Service Station Name": "Seven Seas Electronic Co., Ltd. (Shanghai, Qingdao, Guangzhou, Tianjin)", "Approved Makers": "Cobham SAILOR, Danelec, Highlander*, JRC"},
+    {"Country": "China", "Service Station Name": "Lantek Marine Limited (Guangzhou HQ)", "Approved Makers": "Danelec, JRC, Yokogawa (YDK)*"},
+    {"Country": "China", "Service Station Name": "Qingdao Chengxin Electronic Co., Ltd. (CEC)", "Approved Makers": "JRC, Tokyo Keiki*"},
+    {"Country": "China", "Service Station Name": "Xinde Marine Service Co., Ltd.", "Approved Makers": "Cobham SAILOR, Furuno, JRC"},
+    {"Country": "China", "Service Station Name": "Yobo Marine (Suzhou YOBO Marine Engineering Co., Ltd.)", "Approved Makers": "Highlander, JRC, Sperry Marine*"},
+    {"Country": "Malta", "Service Station Name": "Aage Hempel Marine Electronics Malta Ltd (Valletta)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno*, JRC, Sperry Marine*"},
+    {"Country": "Malta", "Service Station Name": "Medcomms Ltd (Malta)", "Approved Makers": "Cobham SAILOR, Furuno*, Garmin, Netwave*, Simrad"},
+    {"Country": "Malta", "Service Station Name": "Navicom Marine (Malta)", "Approved Makers": "Danelec, Furuno, JRC"},
+    {"Country": "Italy", "Service Station Name": "SIRM Italia S.r.l. (Genoa HQ & Naples)", "Approved Makers": "Cobham SAILOR, Danelec, Furuno, Highlander*, JRC, Sperry Marine*"},
+    {"Country": "Italy", "Service Station Name": "Tefin S.r.l. (Naples, Genoa, Venice, Ravenna)", "Approved Makers": "Anschütz*, Consilium, Danelec, Furuno, JRC, Sperry Marine*"},
+    {"Country": "Cyprus", "Service Station Name": "Onetech Services Ltd (Limassol HQ)", "Approved Makers": "Consilium, Danelec*, Highlander*, Hyundai*, JRC, MacGregor*, Sperry Marine*"},
+    {"Country": "Cyprus", "Service Station Name": "Tototheo Maritime (Limassol HQ)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno, JRC*, Sperry Marine*"},
+    {"Country": "Netherlands", "Service Station Name": "JRC / Alphatron Marine B.V. (Rotterdam HQ)", "Approved Makers": "Jotron, JRC / Alphatron Marine*, Wärtsilä*, Yokogawa (YDK)*"},
+    {"Country": "Singapore", "Service Station Name": "Jason Electronics (Pte) Ltd (Singapore HQ)", "Approved Makers": "Cobham SAILOR*, Danelec*, Furuno, Highlander*, JRC*, Netwave*, Sperry Marine*"},
+    {"Country": "UAE", "Service Station Name": "Elcome International LLC (Dubai HQ)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno, JRC*, MacGregor*, Sperry Marine*, Yokogawa (YDK)*"},
+]
+
+
+def _clean_df(df):
+    if df is None or df.empty:
+        return None
+    df.columns = [str(c).replace("\ufeff", "").strip() for c in df.columns]
+    if "Country" not in df.columns:
+        for idx, row in df.head(5).iterrows():
+            vals = [str(v).strip() for v in row.values]
+            if "Country" in vals:
+                df.columns = vals
+                df = df.iloc[idx + 1:].reset_index(drop=True)
+                break
+    if "Country" in df.columns and "Service Station Name" in df.columns:
+        df = df.dropna(subset=["Country", "Service Station Name"])
+        df = df[df["Country"].astype(str).str.strip().str.lower() != "country"]
+        return df.reset_index(drop=True)
+    return None
+
 
 @st.cache_data(ttl=300)
 def load_directory():
-    # 1. Google Visualization API (GViz)
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-        }
-        res = requests.get(GVIZ_CSV_URL, headers=headers, timeout=12)
-        if res.status_code == 200 and not res.text.lstrip().startswith("<!DOCTYPE html>"):
-            df = pd.read_csv(io.StringIO(res.text))
-            df.columns = [str(c).strip() for c in df.columns]
-            if "Country" in df.columns:
-                return df.dropna(subset=["Country"])
-    except Exception:
-        pass
+    urls = [
+        f"https://docs.google.com/spreadsheets/d/{_SHEET_ID}/gviz/tq?tqx=out:csv&gid={_SHEET_GID}",
+        f"https://docs.google.com/spreadsheets/d/{_SHEET_ID}/export?format=csv&gid={_SHEET_GID}",
+    ]
+    for url in urls:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                raw_text = resp.read().decode("utf-8-sig", errors="replace")
+            if raw_text and "<html" not in raw_text[:300].lower() and "<!doctype" not in raw_text[:300].lower():
+                df = _clean_df(pd.read_csv(io.StringIO(raw_text), on_bad_lines="skip"))
+                if df is not None and not df.empty:
+                    return df, "Google Sheets (Live)"
+        except Exception:
+            continue
 
-    # 2. Google Drive API v3 μέσω Service Account
     if HAS_GOOGLE_AUTH and "gcp_service_account" in st.secrets:
         try:
+            sa_info = dict(st.secrets["gcp_service_account"])
+            pk = sa_info.get("private_key", "")
+            sa_info["private_key"] = pk.replace("btw6r\n", "btw6\n").replace("btw6r-----", "btw6-----")
             creds = service_account.Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"],
-                scopes=["https://www.googleapis.com/auth/drive.readonly"]
+                sa_info, scopes=["https://www.googleapis.com/auth/drive.readonly"]
             )
             drive_service = build("drive", "v3", credentials=creds)
-            request = drive_service.files().export_media(fileId=SPREADSHEET_ID, mimeType="text/csv")
+            request = drive_service.files().export_media(fileId=_SHEET_ID, mimeType="text/csv")
             fh = io.BytesIO()
             downloader = MediaIoBaseDownload(fh, request)
             done = False
             while not done:
                 _, done = downloader.next_chunk()
-            fh.seek(0)
-            df = pd.read_csv(fh)
-            df.columns = [str(c).strip() for c in df.columns]
-            if "Country" in df.columns:
-                return df.dropna(subset=["Country"])
+            raw_text = fh.getvalue().decode("utf-8-sig", errors="replace")
+            df = _clean_df(pd.read_csv(io.StringIO(raw_text), on_bad_lines="skip"))
+            if df is not None and not df.empty:
+                return df, "Google Drive API (Live)"
         except Exception:
             pass
 
-    # 3. Εφεδρική ανάγνωση τοπικού αρχείου
-    return pd.read_csv("directory.csv")
+    if os.path.exists("directory.csv"):
+        try:
+            df_local = _clean_df(pd.read_csv("directory.csv", on_bad_lines="skip"))
+            if df_local is not None and not df_local.empty:
+                return df_local, "Local directory.csv"
+        except Exception:
+            pass
+
+    return pd.DataFrame(FALLBACK_STATIONS), "Built-in Directory Backup"
 
 
 # ---------------------------------------------------------------------------
-# GLOBAL DIRECTORY & REGIONAL FALLBACK DICTIONARIES
+# PORTS, COUNTRIES & MAKERS
 # ---------------------------------------------------------------------------
 PORT_TO_COUNTRY = {
-    # --- CHINA & EAST ASIA ---
     "taicang": "CHINA", "qingdao": "CHINA", "shanghai": "CHINA", "ningbo": "CHINA",
     "shenzhen": "CHINA", "guangzhou": "CHINA", "tianjin": "CHINA", "hong kong": "CHINA",
     "dalian": "CHINA", "xiamen": "CHINA", "rizhao": "CHINA", "yingkou": "CHINA",
     "zhoushan": "CHINA", "nantong": "CHINA", "jiangyin": "CHINA", "caofeidian": "CHINA",
     "qinhuangdao": "CHINA", "tangshan": "CHINA", "yantai": "CHINA", "fangcheng": "CHINA",
-    "zhanjiang": "CHINA", "shekou": "CHINA", "yantian": "CHINA", "chiwan": "CHINA",
-    "lanshan": "CHINA", "lianyungang": "CHINA", "bayuquan": "CHINA", "quanzhou": "CHINA",
+    "zhanjiang": "CHINA", "shekou": "CHINA", "yantian": "CHINA", "lianyungang": "CHINA",
     "kaohsiung": "TAIWAN", "keelung": "TAIWAN", "taichung": "TAIWAN", "taipei": "TAIWAN",
-    "busan": "SOUTH KOREA", "ulsan": "SOUTH KOREA", "incheon": "SOUTH KOREA",
-    "yeosu": "SOUTH KOREA", "pohang": "SOUTH KOREA", "daesan": "SOUTH KOREA",
+    "busan": "SOUTH KOREA", "ulsan": "SOUTH KOREA", "incheon": "SOUTH KOREA", "yeosu": "SOUTH KOREA",
     "tokyo": "JAPAN", "yokohama": "JAPAN", "nagoya": "JAPAN", "osaka": "JAPAN", "kobe": "JAPAN",
-    "singapore": "SINGAPORE", "port kelang": "MALAYSIA", "penang": "MALAYSIA",
-
-    # --- MALTA, CYPRUS, GREECE ---
+    "singapore": "SINGAPORE", "port kelang": "MALAYSIA", "port klang": "MALAYSIA",
     "malta": "MALTA", "valletta": "MALTA", "marsaxlokk": "MALTA",
     "limassol": "CYPRUS", "larnaca": "CYPRUS", "vassiliko": "CYPRUS", "cyprus": "CYPRUS",
-    "piraeus": "GREECE", "thessaloniki": "GREECE", "eleusis": "GREECE",
-    "perama": "GREECE", "agios theodoroi": "GREECE", "corinth": "GREECE",
-    "patras": "GREECE", "volos": "GREECE", "heraklion": "GREECE",
-    "syros": "GREECE", "rhodes": "GREECE", "lavrio": "GREECE",
-
-    # --- ROMANIA, BULGARIA, BLACK SEA ---
-    "constanta": "ROMANIA", "constantza": "ROMANIA", "mangalia": "ROMANIA",
-    "midia": "ROMANIA", "galati": "ROMANIA", "braila": "ROMANIA",
+    "piraeus": "GREECE", "thessaloniki": "GREECE", "eleusis": "GREECE", "perama": "GREECE",
+    "agios theodoroi": "GREECE", "corinth": "GREECE", "patras": "GREECE", "lavrio": "GREECE",
+    "constanta": "ROMANIA", "constantza": "ROMANIA", "mangalia": "ROMANIA", "midia": "ROMANIA",
     "varna": "BULGARIA", "burgas": "BULGARIA", "bourgas": "BULGARIA",
-    "odessa": "UKRAINE", "chornomorsk": "UKRAINE", "pivdennyi": "UKRAINE",
-    "novorossiysk": "RUSSIA", "tuapse": "RUSSIA", "st petersburg": "RUSSIA",
-
-    # --- TURKEY ---
-    "tutunciftlik": "TURKEY", "tüpraş": "TURKEY", "tupras": "TURKEY",
-    "izmit": "TURKEY", "yalova": "TURKEY", "tuzla": "TURKEY",
-    "istanbul": "TURKEY", "aliaga": "TURKEY", "iskenderun": "TURKEY",
-    "mersin": "TURKEY", "canakkale": "TURKEY", "nemrut": "TURKEY",
-    "ambarli": "TURKEY", "gemlik": "TURKEY", "bandirma": "TURKEY",
-
-    # --- ITALY, FRANCE & ADRIATIC ---
+    "odessa": "UKRAINE", "novorossiysk": "RUSSIA", "st petersburg": "RUSSIA",
+    "tutunciftlik": "TURKEY", "tupras": "TURKEY", "izmit": "TURKEY", "yalova": "TURKEY",
+    "tuzla": "TURKEY", "istanbul": "TURKEY", "aliaga": "TURKEY", "iskenderun": "TURKEY",
+    "mersin": "TURKEY", "canakkale": "TURKEY", "ambarli": "TURKEY", "gemlik": "TURKEY",
     "genoa": "ITALY", "genova": "ITALY", "augusta": "ITALY", "trieste": "ITALY",
     "venice": "ITALY", "ravenna": "ITALY", "livorno": "ITALY", "naples": "ITALY",
-    "cagliari": "ITALY", "taranto": "ITALY", "savona": "ITALY", "la spezia": "ITALY",
+    "gioia tauro": "ITALY", "taranto": "ITALY", "la spezia": "ITALY", "civitavecchia": "ITALY",
     "marseilles": "FRANCE", "marseille": "FRANCE", "fos": "FRANCE", "le havre": "FRANCE",
     "koper": "SLOVENIA", "rijeka": "CROATIA",
-
-    # --- SPAIN, GIBRALTAR & PORTUGAL ---
-    "algeciras": "SPAIN", "valencia": "SPAIN", "barcelona": "SPAIN",
-    "las palmas": "SPAIN", "bilbao": "SPAIN", "cartagena": "SPAIN",
+    "algeciras": "SPAIN", "valencia": "SPAIN", "barcelona": "SPAIN", "las palmas": "SPAIN",
+    "bilbao": "SPAIN", "cartagena": "SPAIN", "huelva": "SPAIN", "tarragona": "SPAIN",
     "gibraltar": "GIBRALTAR", "lisbon": "PORTUGAL", "sines": "PORTUGAL",
-
-    # --- NORTHERN EUROPE ---
-    "rotterdam": "NETHERLANDS", "amsterdam": "NETHERLANDS", "antwerp": "BELGIUM",
-    "hamburg": "GERMANY", "bremen": "GERMANY", "bremerhaven": "GERMANY",
-    "felixstowe": "UK", "southampton": "UK", "london": "UK",
-
-    # --- MIDDLE EAST & AFRICA ---
-    "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE", "abu dhabi": "UAE",
-    "sohar": "OMAN", "dammam": "SAUDI ARABIA", "jeddah": "SAUDI ARABIA",
+    "rotterdam": "NETHERLANDS", "amsterdam": "NETHERLANDS", "vlissingen": "NETHERLANDS",
+    "antwerp": "BELGIUM", "zeebrugge": "BELGIUM", "ghent": "BELGIUM",
+    "hamburg": "GERMANY", "bremen": "GERMANY", "bremerhaven": "GERMANY", "wilhelmshaven": "GERMANY",
+    "felixstowe": "UK", "southampton": "UK", "london": "UK", "immingham": "UK", "liverpool": "UK",
+    "dubai": "UAE", "fujairah": "UAE", "jebel ali": "UAE", "abu dhabi": "UAE", "khor fakkan": "UAE",
+    "sohar": "OMAN", "salalah": "OMAN", "dammam": "SAUDI ARABIA", "jeddah": "SAUDI ARABIA",
     "doha": "QATAR", "bahrain": "BAHRAIN", "kuwait": "KUWAIT",
     "alexandria": "EGYPT", "port said": "EGYPT", "suez": "EGYPT", "suez canal": "EGYPT",
-
-    # --- AMERICAS ---
-    "houston": "USA", "new orleans": "USA", "new york": "USA",
-    "panama": "PANAMA", "panama canal": "PANAMA", "santos": "BRAZIL",
+    "casablanca": "MOROCCO", "tanger med": "MOROCCO", "durban": "SOUTH AFRICA", "cape town": "SOUTH AFRICA",
+    "houston": "USA", "new orleans": "USA", "new york": "USA", "los angeles": "USA",
+    "panama": "PANAMA", "balboa": "PANAMA", "cristobal": "PANAMA",
+    "santos": "BRAZIL", "paranagua": "BRAZIL", "rio de janeiro": "BRAZIL", "buenos aires": "ARGENTINA",
 }
 
 NEIGHBORING_COUNTRIES = {
@@ -224,26 +264,19 @@ KNOWN_MAKERS = [
     "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad", "entel"
 ]
 
-COUNTRY_ALIASES = {}
-for _country_name in set(PORT_TO_COUNTRY.values()):
-    COUNTRY_ALIASES[_country_name.lower()] = _country_name
-for _country_key, _neighs in NEIGHBORING_COUNTRIES.items():
-    COUNTRY_ALIASES[_country_key.lower()] = _country_key.upper()
-    for _neigh in _neighs:
-        COUNTRY_ALIASES[_neigh.lower()] = _neigh.upper()
+COUNTRY_ALIASES = {c.lower(): c for c in set(PORT_TO_COUNTRY.values())}
+for _k, _v in NEIGHBORING_COUNTRIES.items():
+    COUNTRY_ALIASES[_k.lower()] = _k.upper()
+    for _n in _v:
+        COUNTRY_ALIASES[_n.lower()] = _n.upper()
 
 COUNTRY_ALIASES.update({
-    "china": "CHINA", "prc": "CHINA", "p.r.c.": "CHINA", "people's republic of china": "CHINA",
-    "κίνα": "CHINA", "κινα": "CHINA",
-    "uae": "UAE", "u.a.e.": "UAE", "united arab emirates": "UAE",
-    "usa": "USA", "u.s.a.": "USA", "united states": "USA",
-    "uk": "UK", "united kingdom": "UK",
-    "south korea": "SOUTH KOREA", "korea": "SOUTH KOREA",
+    "china": "CHINA", "prc": "CHINA", "κίνα": "CHINA", "κινα": "CHINA",
+    "uae": "UAE", "united arab emirates": "UAE", "usa": "USA", "united states": "USA",
+    "uk": "UK", "united kingdom": "UK", "south korea": "SOUTH KOREA", "korea": "SOUTH KOREA",
     "hellas": "GREECE", "ελλάδα": "GREECE", "ελλαδα": "GREECE",
-    "μάλτα": "MALTA", "μαλτα": "MALTA",
-    "ρουμανία": "ROMANIA", "ρουμανια": "ROMANIA",
-    "τουρκία": "TURKEY", "τουρκια": "TURKEY", "türkiye": "TURKEY",
-    "κύπρος": "CYPRUS", "κυπρος": "CYPRUS", "brasil": "BRAZIL",
+    "μάλτα": "MALTA", "μαλτα": "MALTA", "ρουμανία": "ROMANIA", "τουρκία": "TURKEY",
+    "türkiye": "TURKEY", "κύπρος": "CYPRUS", "brasil": "BRAZIL",
 })
 
 RESULT_DEFAULTS = {
@@ -263,13 +296,12 @@ COUNTRY_KEYS_BY_LENGTH = sorted(COUNTRY_ALIASES.keys(), key=len, reverse=True)
 
 
 # ---------------------------------------------------------------------------
-# TEXT EXTRACTION & SANITIZATION
+# TEXT EXTRACTION & CLEANING
 # ---------------------------------------------------------------------------
 def clean_signatures(text):
     if not text:
         return ""
-    cleaned = re.sub(r"(?i)\b(?:mobile|mob|cell)\b\s*[:\.\-]?\s*[\+\d\s\(\)\/]{5,}", " ", text)
-    cleaned = re.sub(r"(?i)\b(?:tel|telephone|phone|fax)\b\s*[:\.\-]?\s*[\+\d\s\(\)\/]{5,}", " ", cleaned)
+    cleaned = re.sub(r"(?i)\b(?:mobile|mob|cell|tel|telephone|phone|fax)\b\s*[:\.\-]?\s*[\+\d\s\(\)\/]{5,}", " ", text)
     cleaned = re.sub(r"(?i)https?://\S+", " ", cleaned)
     cleaned = re.sub(r"(?i)vasilikon\s*51[^\n]*", " ", cleaned)
     cleaned = re.sub(r"(?i)piraeus\s*185\d\d\s*greece", " ", cleaned)
@@ -284,28 +316,20 @@ def clean_signatures(text):
             continue
         if re.search(r"(?i)\b(sales|support|engineering|automation|propulsion)@onetech\.global\b", s):
             continue
-        if re.search(r"(?i)vasilikon\s*51|akti\s+moutsopoulou|akti\s+miaouli", s):
-            continue
-        if re.search(r"(?i)operations\s+executive\s*\(hellas\)", s):
+        if re.search(r"(?i)vasilikon\s*51|akti\s+moutsopoulou|akti\s+miaouli|operations\s+executive\s*\(hellas\)", s):
             continue
         if re.fullmatch(r"(?i)\s*(greece|hellas|piraeus|πειραιάς|πειραιας|ελλάδα|ελλαδα)\s*\.?\s*", s):
             continue
         kept.append(line)
 
-    cleaned = "\n".join(kept)
-    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
-    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
-    return cleaned.strip()
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
 
 
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
     file_name = uploaded_file.name.lower()
     try:
-        try:
-            uploaded_file.seek(0)
-        except Exception:
-            pass
+        uploaded_file.seek(0)
         if file_name.endswith(".pdf"):
             reader = pypdf.PdfReader(uploaded_file)
             for page in reader.pages[:20]:
@@ -324,8 +348,7 @@ def extract_text_from_file(uploaded_file):
     except Exception as e:
         st.error(f"Error parsing {uploaded_file.name}: {e}")
 
-    cleaned = clean_signatures(extracted_text)
-    return cleaned[:30000]
+    return clean_signatures(extracted_text)[:30000]
 
 
 def clean_vessel_name(raw_name):
@@ -338,45 +361,25 @@ def clean_vessel_name(raw_name):
     text = re.sub(r"(?i)\b(?:will|at|eta|port|call|calling|arr|arriving|due|to|for|is|and|the|in|on|sailing|during)\b.*$", "", text)
     text = re.sub(r"[@\/\(\)\<\>\[\]].*$", "", text)
     text = re.sub(r"(?i)\btbn\b", " / ", text)
-    text = re.sub(r"\s*/\s*", " / ", text)
     text = re.sub(r"\s+", " ", text).strip(" /-–—")
 
     parts = [p.strip(" /-–—") for p in text.split("/") if p.strip(" /-–—")][:2]
-    cleaned_parts = []
-    for part in parts:
-        words = part.split()[:2]
-        if words:
-            cleaned_parts.append(" ".join(words))
+    cleaned_parts = [" ".join(p.split()[:2]) for p in parts if p.split()]
     return " / ".join(cleaned_parts).title() if cleaned_parts else "Not specified"
-
-
-def _overlaps(span, spans):
-    start, end = span
-    for s, e in spans:
-        if start < e and end > s:
-            return True
-    return False
 
 
 def ports_in_text(text):
     if not text:
         return []
     lower = text.lower()
-    found = []
-    taken = []
+    found, taken = [], []
     for port_key in PORT_KEYS_BY_LENGTH:
-        pattern = rf"(?<![a-z0-9]){re.escape(port_key)}(?![a-z0-9])"
-        for match in re.finditer(pattern, lower):
-            span = match.span()
-            if _overlaps(span, taken):
+        for match in re.finditer(rf"(?<![a-z0-9]){re.escape(port_key)}(?![a-z0-9])", lower):
+            s, e = match.span()
+            if any(s < te and e > ts for ts, te in taken):
                 continue
-            if port_key == "mobile":
-                after_snippet = lower[span[1]:span[1]+25]
-                before_snippet = lower[max(0, span[0]-25):span[0]]
-                if re.match(r"^\s*[:\.\-\+]?\s*\d", after_snippet) or re.search(r"(?:tel|phone|fax|cell|contact|mob)\s*[:\.\-]?\s*$", before_snippet):
-                    continue
-            taken.append(span)
-            found.append((span[0], span[1], port_key, PORT_TO_COUNTRY[port_key]))
+            taken.append((s, e))
+            found.append((s, e, port_key, PORT_TO_COUNTRY[port_key]))
     found.sort(key=lambda item: item[0])
     return found
 
@@ -386,30 +389,21 @@ def find_country(text):
         return None
     lower = text.lower()
     for alias in COUNTRY_KEYS_BY_LENGTH:
-        pattern = rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])"
-        if re.search(pattern, lower):
+        if re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", lower):
             return COUNTRY_ALIASES[alias]
     return None
 
 
 def choose_primary_port(text):
-    found = ports_in_text(text)
     lower = (text or "").lower()
-
     dyn_match = re.search(r"(?i)(?:final\s+)?port\s+(?:is|will\s+be|@|:)?\s*([a-z]+)\s+([a-z]+)", lower)
     if dyn_match:
         cand_port, cand_country = dyn_match.group(1), dyn_match.group(2)
-        if cand_country.upper() in COUNTRY_ALIASES.values() or cand_country.lower() in COUNTRY_ALIASES:
-            c_name = COUNTRY_ALIASES.get(cand_country.lower(), cand_country.upper())
-            return cand_port.title(), c_name, [(dyn_match.start(), dyn_match.end(), cand_port, c_name)]
+        if cand_country.lower() in COUNTRY_ALIASES:
+            c_name = COUNTRY_ALIASES[cand_country.lower()]
+            return cand_port.title(), c_name, [(0, 1, cand_port, c_name)]
 
-    dyn_match2 = re.search(r"(?i)\b([a-z]+)\s+([a-z]+)\s+port\b", lower)
-    if dyn_match2:
-        cand_port, cand_country = dyn_match2.group(1), dyn_match2.group(2)
-        if cand_country.upper() in COUNTRY_ALIASES.values() or cand_country.lower() in COUNTRY_ALIASES:
-            c_name = COUNTRY_ALIASES.get(cand_country.lower(), cand_country.upper())
-            return cand_port.title(), c_name, [(dyn_match2.start(), dyn_match2.end(), cand_port, c_name)]
-
+    found = ports_in_text(text)
     if not found:
         return "Not specified", "Not specified", []
 
@@ -419,25 +413,12 @@ def choose_primary_port(text):
     scored = []
     for start, end, key, country in found:
         window = lower[max(0, start - 80):min(len(lower), end + 80)]
-        score = 0
-        for token, weight in (
-            ("final port", 8), ("port", 3), ("eta", 4), ("calling", 4), ("call", 3),
-            ("destination", 4), ("anchorage", 3), ("bunker", 4),
-        ):
-            if token in window:
-                score += weight
-
+        score = sum(w for tok, w in (("final port", 8), ("port", 3), ("eta", 4), ("calling", 4), ("bunker", 4)) if tok in window)
         if "instead of" in window and window.find("instead of") < window.find(key):
             score -= 15
-
-        if start < first_reply_pos:
-            score += 20
-        else:
-            score -= 5
-
+        score += 20 if start < first_reply_pos else -5
         if key == "piraeus" and score <= 0:
             score = -10
-
         scored.append((score, start, key, country))
 
     scored.sort(key=lambda item: (-item[0], item[1]))
@@ -449,30 +430,24 @@ def find_makers(text_lower, vessel_name=""):
     found = []
     vessel_lower = (vessel_name or "").lower()
     for maker in KNOWN_MAKERS:
-        if not re.search(rf"(?<![a-z0-9]){re.escape(maker)}(?![a-z0-9])", text_lower or ""):
-            continue
-        if maker in vessel_lower:
-            continue
-        found.append(maker.upper())
+        if re.search(rf"(?<![a-z0-9]){re.escape(maker)}(?![a-z0-9])", text_lower or "") and maker not in vessel_lower:
+            found.append(maker.upper())
     unique = []
-    for maker in sorted(set(found), key=len, reverse=True):
-        if any(maker != other and maker in other for other in unique):
-            continue
-        unique.append(maker)
+    for m in sorted(set(found), key=len, reverse=True):
+        if not any(m != o and m in o for o in unique):
+            unique.append(m)
     return unique
 
 
 def parse_manual_inputs(manual_text):
-    overrides = {}
-    explicit = set()
+    overrides, explicit = {}, set()
     if not manual_text or not str(manual_text).strip():
         return overrides, explicit
     text = str(manual_text)
 
     maker_match = re.search(r"(?im)(?:^|\n)\s*(?:makers?|equipment|brand)\s*[:=\s]\s*([^\n]+)", text)
     if maker_match:
-        makers = [m.strip() for m in re.split(r"[,;/|]", maker_match.group(1)) if m.strip()]
-        overrides["makers"] = [m.upper() for m in makers]
+        overrides["makers"] = [m.strip().upper() for m in re.split(r"[,;/|]", maker_match.group(1)) if m.strip()]
         explicit.add("makers")
     else:
         found_m = find_makers(text.lower())
@@ -483,22 +458,17 @@ def parse_manual_inputs(manual_text):
     country_match = re.search(r"(?im)(?:^|\n)\s*(?:country|χώρα|χωρα)\s*[:=\s]\s*([^\n]+)", text)
     if country_match:
         captured = country_match.group(1).strip()
-        known = find_country(captured)
-        overrides["country"] = known or captured.strip(" .,").upper()
+        overrides["country"] = find_country(captured) or captured.strip(" .,").upper()
         explicit.add("country")
-    else:
-        found_c = find_country(text)
-        if found_c and "makers" not in text.lower():
-            overrides["country"] = found_c
-            explicit.add("country")
 
     port_match = re.search(r"(?im)(?:^|\n)\s*(?:port|λιμ[αά]νι|λιμανι)\s*[:=\s]\s*([^\n]+)", text)
     if port_match:
         captured = port_match.group(1).strip()
-        known_ports = ports_in_text(captured)
-        if known_ports:
-            overrides["port"] = known_ports[0][2].title()
-            overrides["_port_country"] = known_ports[0][3]
+        kp = ports_in_text(captured)
+        if kp:
+            overrides["port"] = kp[0][2].title()
+            overrides["country"] = kp[0][3]
+            explicit.add("country")
         else:
             overrides["port"] = captured.strip(" .,").title()
         explicit.add("port")
@@ -520,9 +490,9 @@ def normalize_result(data):
     if not isinstance(data, dict):
         return None
     result = dict(RESULT_DEFAULTS)
-    for key in RESULT_DEFAULTS:
-        if key in data and data.get(key) is not None:
-            result[key] = data.get(key)
+    for k in RESULT_DEFAULTS:
+        if k in data and data.get(k) is not None:
+            result[k] = data.get(k)
 
     makers = result.get("makers")
     if isinstance(makers, str):
@@ -534,8 +504,8 @@ def normalize_result(data):
 
     result["vessel_name"] = clean_vessel_name(result.get("vessel_name"))
     if str(result.get("country", "")).strip():
-        canonical_c = find_country(str(result["country"]))
-        result["country"] = canonical_c if canonical_c else str(result["country"]).upper()
+        c = find_country(str(result["country"]))
+        result["country"] = c if c else str(result["country"]).upper()
 
     p_key = str(result.get("port", "")).strip().lower()
     if p_key in PORT_TO_COUNTRY and result.get("country") in ("Not specified", ""):
@@ -545,7 +515,7 @@ def normalize_result(data):
 
 
 # ---------------------------------------------------------------------------
-# LOCAL PARSER (FALLBACK)
+# LOCAL PARSER & AI PARSING
 # ---------------------------------------------------------------------------
 def smart_local_parser(manual_override_text, files_text):
     blob = files_text or ""
@@ -580,20 +550,17 @@ def smart_local_parser(manual_override_text, files_text):
         scope_text = "NAVTEX Receiver Technical Attendance & Repair"
     elif "annual" in text_lower:
         scope_text = "Annual Radio / VDR / Navigation Survey"
-    elif "spare" in text_lower:
-        scope_text = "Spare parts supply"
 
-    makers_found = find_makers(text_lower, vessel_name)
     discrepancies = []
     if "instead of qingdao" in text_lower:
-        discrepancies.append("Port revised: Customer updated destination to Taicang China instead of Qingdao China.")
+        discrepancies.append("Port revised: Final destination changed to Taicang China instead of Qingdao China.")
 
     return normalize_result({
         "vessel_name": vessel_name,
         "eta": eta,
         "port": port,
         "country": country,
-        "makers": makers_found,
+        "makers": find_makers(text_lower, vessel_name),
         "scope": scope_text,
         "spares_requested": "Inquired per inquiry",
         "discrepancies": discrepancies,
@@ -601,26 +568,16 @@ def smart_local_parser(manual_override_text, files_text):
     })
 
 
-# ---------------------------------------------------------------------------
-# AI PROMPT & API INTEGRATION (GROQ & GEMINI)
-# ---------------------------------------------------------------------------
 def build_prompt(manual_override_text, cleaned_files, image_count):
-    inquiry = cleaned_files[:15000] if len(cleaned_files or "") > 15000 else (cleaned_files or "")
-    photo_line = f"{image_count} photograph(s) attached." if image_count else "No photographs attached."
-
+    inquiry = (cleaned_files or "")[:15000]
     return f"""You are an expert maritime technical coordinator. Parse the commercial RFQ and extract facts into JSON.
 
 CRITICAL INSTRUCTIONS:
-1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH. If a country, port, vessel, or maker is typed in MANUAL OVERRIDE, use it unconditionally.
-2. EMAIL THREAD CHRONOLOGY (VERY IMPORTANT):
-The email text at the VERY TOP is the active instruction.
-If customer states 'final port is Taicang China on about 25-30/11/2026 instead of Qingdao China', the ACTIVE destination is strictly 'Taicang', country is 'China', ETA is '25-30/11/2026'. Record the previous port 'Qingdao' under discrepancies.
-3. VESSEL NAME:
-Strip 'MV', 'M/V', and technical scope. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', the vessel name is strictly 'Seaduty'. Do not append 'VDR'.
-4. MAKERS:
-Scan the entire message for makers (e.g., JRC, Furuno, Sperry, Danelec). If inquiry mentions 'Makers : JRC JCY - 1900', the maker is 'JRC'.
-5. DO NOT extract 'Piraeus' or 'Greece' from office signatures or agency footers.
-{photo_line}
+1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH.
+2. EMAIL THREAD CHRONOLOGY: The email at the VERY TOP is the active instruction. If it updates the port (e.g. 'Taicang China instead of Qingdao China' or 'Malta instead of Genova'), use the NEW port and list the old port in discrepancies.
+3. VESSEL NAME: Strip 'MV', 'M/V', and scope words. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', vessel_name is strictly 'Seaduty'.
+4. MAKERS: Scan the full text for makers (e.g., JRC, Furuno, Sperry, Danelec).
+5. DO NOT extract 'Piraeus' or 'Greece' from office signatures.
 
 MANUAL OVERRIDE:
 \"\"\"{manual_override_text or ""}\"\"\"
@@ -628,7 +585,7 @@ MANUAL OVERRIDE:
 INQUIRY TEXT:
 \"\"\"{inquiry}\"\"\"
 
-Return ONLY valid JSON matching this schema:
+Return ONLY valid JSON:
 {{
   "vessel_name": "Name of vessel or 'Not specified'",
   "eta": "Vessel ETA or 'Not specified'",
@@ -642,70 +599,69 @@ Return ONLY valid JSON matching this schema:
 }}"""
 
 
-def clean_json(text):
-    text = (text or "").strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    elif text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-    return text.strip()
-
-
 def parse_model_json(content):
-    cleaned = clean_json(content)
-    try:
-        return json.loads(cleaned)
-    except Exception:
-        match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-        raise
-
-
-def run_groq_parse(prompt_text, models):
-    last_err = None
-    for model in models:
-        try:
-            completion = client_groq.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": "You extract maritime RFQ facts. Reply with JSON only."},
-                    {"role": "user", "content": prompt_text}
-                ],
-                temperature=0.1,
-                response_format={"type": "json_object"}
-            )
-            content = completion.choices[0].message.content or ""
-            parsed = normalize_result(parse_model_json(content))
-            if parsed:
-                return parsed, model, None
-        except Exception as e:
-            last_err = e
-            continue
-    return None, None, last_err
+    text = (content or "").strip()
+    text = re.sub(r"^```(?:json)?|```$", "", text, flags=re.MULTILINE).strip()
+    match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+    return json.loads(match.group(0) if match else text)
 
 
 def analyze_rfq(manual_override_text, files_text, image_files):
     res_json = None
     model_used = None
-    err_note = None
+    prompt_text = build_prompt(manual_override_text, files_text, len(image_files or []))
 
-    if client_groq:
-        prompt_text = build_prompt(manual_override_text, files_text, len(image_files or []))
-        parsed, model, err = run_groq_parse(prompt_text, TEXT_MODELS)
-        if parsed:
-            res_json = parsed
-            model_used = f"Groq / {model}"
-        else:
-            err_note = f"Groq API call bypassed: {err}"
+    # 1. Try Gemini 3.8 Flash first
+    if gemini_api_key and HAS_GOOGLE_GENAI:
+        ai_client = genai.Client(api_key=gemini_api_key)
+        for g_model in GEMINI_MODELS:
+            try:
+                resp = ai_client.models.generate_content(
+                    model=g_model,
+                    contents=prompt_text,
+                    config=types.GenerateContentConfig(response_mime_type="application/json")
+                )
+                parsed = normalize_result(parse_model_json(resp.text))
+                if parsed:
+                    res_json = parsed
+                    model_used = f"Gemini ({g_model})"
+                    break
+            except Exception:
+                continue
 
+    # 2. Try Groq active models (openai/gpt-oss-120b first)
+    if not res_json and client_groq:
+        for model in get_active_groq_models():
+            try:
+                completion = client_groq.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": "You extract maritime RFQ facts. Reply with valid JSON only."},
+                        {"role": "user", "content": prompt_text}
+                    ],
+                    temperature=0.1,
+                )
+                content = completion.choices[0].message.content or ""
+                parsed = normalize_result(parse_model_json(content))
+                if parsed:
+                    res_json = parsed
+                    model_used = f"Groq ({model})"
+                    break
+            except Exception:
+                continue
+
+    # 3. Fallback to Local Rule Engine
     if not res_json:
         res_json = smart_local_parser(manual_override_text, files_text)
         model_used = "Local Rule Engine"
-        if err_note:
-            res_json["_api_error"] = err_note
+
+    # Cross-check with local parser so no maker or port gets missed
+    local_check = smart_local_parser(manual_override_text, files_text)
+    if not res_json.get("makers") and local_check.get("makers"):
+        res_json["makers"] = local_check["makers"]
+    if res_json.get("port") in ("Not specified", "") and local_check.get("port") != "Not specified":
+        res_json["port"] = local_check["port"]
+        res_json["country"] = local_check["country"]
 
     overrides, explicit = parse_manual_inputs(manual_override_text)
     for key in ("country", "port", "vessel_name", "eta", "makers"):
@@ -717,7 +673,7 @@ def analyze_rfq(manual_override_text, files_text, image_files):
 
 
 # ---------------------------------------------------------------------------
-# GEMINI / GROQ COPILOT CHATBOT
+# GEMINI 3.8 / GROQ COPILOT CHATBOT
 # ---------------------------------------------------------------------------
 def ask_ai_assistant(user_message, rfq_context):
     system_instruction = f"""You are the Onetech Marine Service Assistant AI Copilot.
@@ -735,32 +691,36 @@ Answer clearly, politely, and professionally in the requested language (English 
 
     errors = []
 
-    # 1. Δοκιμή με Gemini API
-    if gemini_api_key:
-        if HAS_GOOGLE_GENAI:
+    # 1. Δοκιμή με Gemini (gemini-3.8-flash πρώτο + αυτόματη εύρεση μοντέλου)
+    if gemini_api_key and HAS_GOOGLE_GENAI:
+        try:
+            ai_client = genai.Client(api_key=gemini_api_key)
+            candidate_models = list(GEMINI_MODELS)
             try:
-                ai_client = genai.Client(api_key=gemini_api_key)
-                response = ai_client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=user_message,
-                    config=types.GenerateContentConfig(system_instruction=system_instruction)
-                )
-                return response.text, "Gemini 2.5 Flash"
-            except Exception as e:
-                errors.append(f"Gemini (google-genai): {e}")
+                for m in ai_client.models.list():
+                    m_name = getattr(m, "name", "").replace("models/", "")
+                    if "gemini" in m_name and "flash" in m_name and m_name not in candidate_models:
+                        candidate_models.append(m_name)
+            except Exception:
+                pass
 
-        if HAS_LEGACY_GENAI:
-            try:
-                legacy_genai.configure(api_key=gemini_api_key)
-                model = legacy_genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
-                response = model.generate_content(user_message)
-                return response.text, "Gemini 1.5 Flash"
-            except Exception as e:
-                errors.append(f"Gemini (legacy): {e}")
+            for g_model in candidate_models:
+                try:
+                    response = ai_client.models.generate_content(
+                        model=g_model,
+                        contents=user_message,
+                        config=types.GenerateContentConfig(system_instruction=system_instruction)
+                    )
+                    if response and response.text:
+                        return response.text, f"Gemini ({g_model})"
+                except Exception as e:
+                    errors.append(f"{g_model}: {e}")
+        except Exception as e:
+            errors.append(f"Gemini Client: {e}")
 
-    # 2. Εφεδρική δοκιμή με ενεργά μοντέλα του Groq
+    # 2. Δοκιμή με Groq (openai/gpt-oss-120b πρώτο + όλα τα ενεργά μοντέλα του λογαριασμού)
     if client_groq:
-        for model in ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "gemma2-9b-it", "llama3-70b-8192"]:
+        for model in get_active_groq_models():
             try:
                 completion = client_groq.chat.completions.create(
                     model=model,
@@ -771,13 +731,12 @@ Answer clearly, politely, and professionally in the requested language (English 
                     temperature=0.2,
                     max_tokens=1000
                 )
-                return completion.choices[0].message.content, f"Groq / {model}"
+                return completion.choices[0].message.content, f"Groq ({model})"
             except Exception as e:
                 errors.append(f"Groq ({model}): {e}")
                 continue
 
-    error_details = " | ".join(errors) if errors else "Δεν βρέθηκαν ενεργά κλειδιά στα secrets."
-    return f"Σφάλμα σύνδεσης: {error_details}", "Offline"
+    return f"Σφάλμα σύνδεσης: {' | '.join(errors[:2])}", "Offline"
 
 
 # ---------------------------------------------------------------------------
@@ -798,24 +757,15 @@ def reset_everything():
     st.rerun()
 
 
-try:
-    df = load_directory()
-    st.sidebar.success(f"Connected to Google Sheet Directory. Loaded {len(df)} stations.")
-except Exception as e:
-    st.sidebar.error(f"Error loading directory: {e}")
-    df = pd.DataFrame()
+df, dir_source = load_directory()
+st.sidebar.success(f"Directory: {dir_source} ({len(df)} stations)")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("**AI Service Status:**")
 if gemini_api_key:
-    st.sidebar.success("✅ Gemini Key Detected")
-else:
-    st.sidebar.info("ℹ️ Gemini Not Configured")
-
+    st.sidebar.success("✅ Gemini Key Ready (3.8 Flash)")
 if client_groq:
-    st.sidebar.success("✅ Groq API Ready")
-else:
-    st.sidebar.warning("⚠️ Groq API Not Set")
+    st.sidebar.success("✅ Groq API Ready (gpt-oss-120b)")
 
 if st.sidebar.button("🔄 Reset / Start New RFQ", use_container_width=True):
     reset_everything()
@@ -871,8 +821,6 @@ if parsed:
     st.markdown("---")
     st.subheader("2. RFQ Executive Brief")
     st.caption(f"Engine: {parsed.get('_model_used', 'N/A')}")
-    if "_api_error" in parsed:
-        st.info(f"Notice: {parsed['_api_error']}")
 
     col_b1, col_b2, col_b3 = st.columns(3)
     with col_b1:
