@@ -35,8 +35,6 @@ except ImportError:
     HAS_LEGACY_GENAI = False
 
 st.set_page_config(page_title="Onetech Service Station Router & Discrepancy Audit", layout="wide")
-st.title("Onetech Marine Service Assistant & Discrepancy Audit")
-st.markdown("Automated RFQ Parsing, Global Port Matching, Cross-Source Discrepancy Detection & AI Copilot.")
 
 
 # ---------------------------------------------------------------------------
@@ -611,7 +609,6 @@ def analyze_rfq(manual_override_text, files_text, image_files):
     model_used = None
     prompt_text = build_prompt(manual_override_text, files_text, len(image_files or []))
 
-    # 1. Try Gemini 3.8 Flash first
     if gemini_api_key and HAS_GOOGLE_GENAI:
         ai_client = genai.Client(api_key=gemini_api_key)
         for g_model in GEMINI_MODELS:
@@ -629,7 +626,6 @@ def analyze_rfq(manual_override_text, files_text, image_files):
             except Exception:
                 continue
 
-    # 2. Try Groq active models (openai/gpt-oss-120b first)
     if not res_json and client_groq:
         for model in get_active_groq_models():
             try:
@@ -650,12 +646,10 @@ def analyze_rfq(manual_override_text, files_text, image_files):
             except Exception:
                 continue
 
-    # 3. Fallback to Local Rule Engine
     if not res_json:
         res_json = smart_local_parser(manual_override_text, files_text)
         model_used = "Local Rule Engine"
 
-    # Cross-check with local parser so no maker or port gets missed
     local_check = smart_local_parser(manual_override_text, files_text)
     if not res_json.get("makers") and local_check.get("makers"):
         res_json["makers"] = local_check["makers"]
@@ -676,22 +670,22 @@ def analyze_rfq(manual_override_text, files_text, image_files):
 # GEMINI 3.8 / GROQ COPILOT CHATBOT
 # ---------------------------------------------------------------------------
 def ask_ai_assistant(user_message, rfq_context):
+    ctx = rfq_context or RESULT_DEFAULTS
     system_instruction = f"""You are the Onetech Marine Service Assistant AI Copilot.
 You assist maritime technical coordinators with RFQs, service attendances, maker authorizations, and spare parts.
 Current Active RFQ Context:
-- Vessel Name: {rfq_context.get('vessel_name', 'Not specified')}
-- Port & Country: {rfq_context.get('port', 'Not specified')} ({rfq_context.get('country', 'Not specified')})
-- ETA: {rfq_context.get('eta', 'Not specified')}
-- Makers: {', '.join(rfq_context.get('makers', [])) or 'None detected'}
-- Scope: {rfq_context.get('scope', 'Standard')}
-- Spares: {rfq_context.get('spares_requested', 'None')}
-- Discrepancies: {'; '.join(rfq_context.get('discrepancies', [])) or 'None'}
+- Vessel Name: {ctx.get('vessel_name', 'Not specified')}
+- Port & Country: {ctx.get('port', 'Not specified')} ({ctx.get('country', 'Not specified')})
+- ETA: {ctx.get('eta', 'Not specified')}
+- Makers: {', '.join(ctx.get('makers', [])) or 'None detected'}
+- Scope: {ctx.get('scope', 'Standard')}
+- Spares: {ctx.get('spares_requested', 'None')}
+- Discrepancies: {'; '.join(ctx.get('discrepancies', [])) or 'None'}
 
 Answer clearly, politely, and professionally in the requested language (English or Greek)."""
 
     errors = []
 
-    # 1. Δοκιμή με Gemini (gemini-3.8-flash πρώτο + αυτόματη εύρεση μοντέλου)
     if gemini_api_key and HAS_GOOGLE_GENAI:
         try:
             ai_client = genai.Client(api_key=gemini_api_key)
@@ -718,7 +712,6 @@ Answer clearly, politely, and professionally in the requested language (English 
         except Exception as e:
             errors.append(f"Gemini Client: {e}")
 
-    # 2. Δοκιμή με Groq (openai/gpt-oss-120b πρώτο + όλα τα ενεργά μοντέλα του λογαριασμού)
     if client_groq:
         for model in get_active_groq_models():
             try:
@@ -748,6 +741,8 @@ if "parsed_data" not in st.session_state:
     st.session_state.parsed_data = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+if "copilot_open" not in st.session_state:
+    st.session_state.copilot_open = False
 
 
 def reset_everything():
@@ -755,6 +750,10 @@ def reset_everything():
     st.session_state.parsed_data = None
     st.session_state.chat_history = []
     st.rerun()
+
+
+def toggle_copilot():
+    st.session_state.copilot_open = not st.session_state.copilot_open
 
 
 df, dir_source = load_directory()
@@ -770,164 +769,280 @@ if client_groq:
 if st.sidebar.button("🔄 Reset / Start New RFQ", use_container_width=True):
     reset_everything()
 
-# Section 1: Ingestion
-st.subheader("1. Ingestion & Manual Override")
-col1, col2 = st.columns([1, 1])
+# ---------------------------------------------------------------------------
+# TOP HEADER BAR WITH RIGHT-SIDE GEMINI COPILOT TOGGLE BUTTON
+# ---------------------------------------------------------------------------
+hdr_left, hdr_right = st.columns([4.2, 1])
+with hdr_left:
+    st.title("Onetech Marine Service Assistant & Discrepancy Audit")
+    st.markdown("Automated RFQ Parsing, Global Port Matching, Cross-Source Discrepancy Detection & AI Copilot.")
+with hdr_right:
+    st.write("")
+    btn_label = "✖ Close Copilot" if st.session_state.copilot_open else "✨ AI Copilot"
+    btn_type = "secondary" if st.session_state.copilot_open else "primary"
+    st.button(btn_label, on_click=toggle_copilot, type=btn_type, use_container_width=True, help="Open or close the right-side AI Copilot panel")
 
-curr_key = st.session_state.reset_count
+# Split screen when Copilot side panel is open (Google Sheets Gemini style)
+if st.session_state.copilot_open:
+    main_col, copilot_col = st.columns([2.3, 1.1], gap="large")
+else:
+    main_col = st.container()
+    copilot_col = None
 
-with col1:
-    rfq_pasted_text = st.text_area(
-        "Manual Override / Priority Info (Port, Vessel, Maker, etc.):",
-        height=180,
-        placeholder="e.g. Maker JRC\nPort Taicang\nCountry China\nVessel Seaduty",
-        key=f"manual_input_{curr_key}"
-    )
+# ---------------------------------------------------------------------------
+# MAIN WORKSPACE (LEFT / FULL AREA)
+# ---------------------------------------------------------------------------
+with main_col:
+    st.subheader("1. Ingestion & Manual Override")
+    col1, col2 = st.columns([1, 1])
 
-with col2:
-    uploaded_files = st.file_uploader(
-        "Upload customer files & photos (PDF, EML, MSG, TXT, JPG, PNG):",
-        type=["pdf", "eml", "msg", "txt", "jpg", "jpeg", "png"],
-        accept_multiple_files=True,
-        key=f"file_uploader_{curr_key}"
-    )
+    curr_key = st.session_state.reset_count
 
-doc_files = [f for f in uploaded_files if not f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
-image_files = [f for f in uploaded_files if f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
+    with col1:
+        rfq_pasted_text = st.text_area(
+            "Manual Override / Priority Info (Port, Vessel, Maker, etc.):",
+            height=180,
+            placeholder="e.g. Maker JRC\nPort Taicang\nCountry China\nVessel Seaduty",
+            key=f"manual_input_{curr_key}"
+        )
 
-files_combined_text = ""
-if doc_files:
-    for f in doc_files:
-        files_combined_text += f"\n--- Content from {f.name} ---\n"
-        files_combined_text += extract_text_from_file(f)
+    with col2:
+        uploaded_files = st.file_uploader(
+            "Upload customer files & photos (PDF, EML, MSG, TXT, JPG, PNG):",
+            type=["pdf", "eml", "msg", "txt", "jpg", "jpeg", "png"],
+            accept_multiple_files=True,
+            key=f"file_uploader_{curr_key}"
+        )
 
-col_btn1, col_btn2 = st.columns([2, 1])
-with col_btn1:
-    process_pressed = st.button("🚀 Process RFQ & Audit Discrepancies", type="primary", use_container_width=True)
-with col_btn2:
-    st.button("🗑️ Reset All", on_click=reset_everything, use_container_width=True)
+    doc_files = [f for f in uploaded_files if not f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
+    image_files = [f for f in uploaded_files if f.name.lower().endswith(('jpg', 'jpeg', 'png'))] if uploaded_files else []
 
-if process_pressed:
-    if not rfq_pasted_text.strip() and not uploaded_files:
-        st.warning("Please provide manual text or upload at least one file/email.")
-    else:
-        with st.spinner("Analyzing email thread, stripping signatures, and auditing stations..."):
-            st.session_state.parsed_data = analyze_rfq(rfq_pasted_text, files_combined_text, image_files)
+    files_combined_text = ""
+    if doc_files:
+        for f in doc_files:
+            files_combined_text += f"\n--- Content from {f.name} ---\n"
+            files_combined_text += extract_text_from_file(f)
 
-parsed = st.session_state.parsed_data
+    col_btn1, col_btn2 = st.columns([2, 1])
+    with col_btn1:
+        process_pressed = st.button("🚀 Process RFQ & Audit Discrepancies", type="primary", use_container_width=True)
+    with col_btn2:
+        st.button("🗑️ Reset All", on_click=reset_everything, use_container_width=True)
 
-# Section 2, 3, 4: Display Results
-if parsed:
-    st.markdown("---")
-    st.subheader("2. RFQ Executive Brief")
-    st.caption(f"Engine: {parsed.get('_model_used', 'N/A')}")
+    if process_pressed:
+        if not rfq_pasted_text.strip() and not uploaded_files:
+            st.warning("Please provide manual text or upload at least one file/email.")
+        else:
+            with st.spinner("Analyzing email thread, stripping signatures, and auditing stations..."):
+                st.session_state.parsed_data = analyze_rfq(rfq_pasted_text, files_combined_text, image_files)
 
-    col_b1, col_b2, col_b3 = st.columns(3)
-    with col_b1:
-        st.info(f"**Vessel Name:** {parsed.get('vessel_name')}")
-        st.info(f"**Vessel ETA:** {parsed.get('eta')}")
-    with col_b2:
-        port_disp = parsed.get('port')
-        country_disp = parsed.get('country')
-        st.info(f"**Active Port / Destination:** {port_disp} ({country_disp})")
-        makers_str = ", ".join(parsed.get('makers', [])) or "None detected"
-        st.warning(f"**Maker Detected:** {makers_str}")
-    with col_b3:
-        st.warning(f"**Scope of Work:** {parsed.get('scope')}")
-        st.warning(f"**Spares Inquired:** {parsed.get('spares_requested')}")
+    parsed = st.session_state.parsed_data
 
-    st.markdown("---")
-    st.subheader("3. Discrepancy & Conflict Audit (Cross-Source Check)")
-    discrepancies = parsed.get("discrepancies", [])
-    if discrepancies:
-        st.error("Discrepancies / Historical Changes Detected Across Sources:")
-        for d in discrepancies:
-            st.warning(f"- {d}")
-    else:
-        st.success("No discrepancies detected between active instructions and attachments.")
+    # Section 2, 3, 4: Display Results
+    if parsed:
+        st.markdown("---")
+        st.subheader("2. RFQ Executive Brief")
+        st.caption(f"Engine: {parsed.get('_model_used', 'N/A')}")
 
-    missing = parsed.get("missing_critical_data") or []
-    if missing:
-        st.info("Missing critical data: " + "; ".join(missing))
+        col_b1, col_b2, col_b3 = st.columns(3)
+        with col_b1:
+            st.info(f"**Vessel Name:** {parsed.get('vessel_name')}")
+            st.info(f"**Vessel ETA:** {parsed.get('eta')}")
+        with col_b2:
+            port_disp = parsed.get('port')
+            country_disp = parsed.get('country')
+            st.info(f"**Active Port / Destination:** {port_disp} ({country_disp})")
+            makers_str = ", ".join(parsed.get('makers', [])) or "None detected"
+            st.warning(f"**Maker Detected:** {makers_str}")
+        with col_b3:
+            st.warning(f"**Scope of Work:** {parsed.get('scope')}")
+            st.warning(f"**Spares Inquired:** {parsed.get('spares_requested')}")
 
-    st.markdown("---")
-    st.subheader("4. Recommended Service Stations")
-    target_country = str(parsed.get("country", "")).strip().lower()
-    target_makers = [m.lower() for m in parsed.get("makers", [])]
+        st.markdown("---")
+        st.subheader("3. Discrepancy & Conflict Audit (Cross-Source Check)")
+        discrepancies = parsed.get("discrepancies", [])
+        if discrepancies:
+            st.error("Discrepancies / Historical Changes Detected Across Sources:")
+            for d in discrepancies:
+                st.warning(f"- {d}")
+        else:
+            st.success("No discrepancies detected between active instructions and attachments.")
 
-    if not df.empty and target_country and target_country != "not specified":
-        country_match = df[df["Country"].astype(str).str.strip().str.lower() == target_country]
-        final_df = pd.DataFrame()
-        matched_location_label = target_country.upper()
+        missing = parsed.get("missing_critical_data") or []
+        if missing:
+            st.info("Missing critical data: " + "; ".join(missing))
 
-        def maker_filter(approved_str):
-            app_lower = str(approved_str).lower()
-            for m in target_makers:
-                if m in app_lower or (len(m.split()) > 0 and len(m.split()[0]) >= 3 and m.split()[0] in app_lower):
-                    return True
-            return False
+        st.markdown("---")
+        st.subheader("4. Recommended Service Stations")
 
-        if not country_match.empty:
-            if target_makers:
-                filtered = country_match[country_match["Approved Makers"].apply(maker_filter)]
-                if not filtered.empty:
-                    final_df = filtered
-            else:
-                final_df = country_match
+        include_non_approved = st.checkbox(
+            "☑️ Include Non-Maker Approved Stations (for general repairs, radar troubleshooting & non-class jobs)",
+            value=False,
+            key=f"inc_non_approved_{curr_key}"
+        )
 
-        if final_df.empty and target_country in NEIGHBORING_COUNTRIES:
-            neighbors = NEIGHBORING_COUNTRIES[target_country]
-            neighbor_matches = []
-            matched_neighbors = []
-            for neigh in neighbors:
-                neigh_match = df[df["Country"].astype(str).str.strip().str.lower() == neigh]
-                if not neigh_match.empty:
-                    if target_makers:
-                        filtered_neigh = neigh_match[neigh_match["Approved Makers"].apply(maker_filter)]
+        target_country = str(parsed.get("country", "")).strip().lower()
+        target_makers = [m.lower() for m in parsed.get("makers", [])]
+
+        if not df.empty and target_country and target_country != "not specified":
+            def maker_filter(approved_str):
+                app_lower = str(approved_str).lower()
+                for m in target_makers:
+                    if m in app_lower or (len(m.split()) > 0 and len(m.split()[0]) >= 3 and m.split()[0] in app_lower):
+                        return True
+                return False
+
+            def annotate_df(sub_df):
+                out_df = sub_df.copy()
+                if target_makers:
+                    out_df["Approval Status"] = out_df["Approved Makers"].apply(
+                        lambda x: "✅ Maker Approved" if maker_filter(x) else "🔧 Non-Maker Approved"
+                    )
+                else:
+                    out_df["Approval Status"] = "✅ General Station"
+                cols = ["Country", "Service Station Name", "Approval Status", "Approved Makers"]
+                extra_cols = [c for c in out_df.columns if c not in cols]
+                return out_df[cols + extra_cols]
+
+            country_match = df[df["Country"].astype(str).str.strip().str.lower() == target_country].copy()
+            final_df = pd.DataFrame()
+            matched_location_label = target_country.upper()
+
+            if not country_match.empty:
+                annotated_local = annotate_df(country_match)
+                approved_local = annotated_local[annotated_local["Approval Status"] == "✅ Maker Approved"]
+
+                if include_non_approved:
+                    non_approved_local = annotated_local[annotated_local["Approval Status"] != "✅ Maker Approved"]
+                    final_df = pd.concat([approved_local, non_approved_local], ignore_index=True)
+                else:
+                    final_df = approved_local if target_makers else annotated_local
+
+            need_neighbors = final_df.empty or (
+                include_non_approved
+                and target_makers
+                and "✅ Maker Approved" not in final_df.get("Approval Status", pd.Series(dtype=str)).values
+            )
+
+            if need_neighbors and target_country in NEIGHBORING_COUNTRIES:
+                neighbors = NEIGHBORING_COUNTRIES[target_country]
+                neighbor_matches = []
+                matched_neighbors = []
+                for neigh in neighbors:
+                    neigh_match = df[df["Country"].astype(str).str.strip().str.lower() == neigh].copy()
+                    if not neigh_match.empty:
+                        annotated_neigh = annotate_df(neigh_match)
+                        if target_makers and not include_non_approved:
+                            filtered_neigh = annotated_neigh[annotated_neigh["Approval Status"] == "✅ Maker Approved"]
+                        elif target_makers and include_non_approved and not final_df.empty:
+                            filtered_neigh = annotated_neigh[annotated_neigh["Approval Status"] == "✅ Maker Approved"]
+                        else:
+                            app_n = annotated_neigh[annotated_neigh["Approval Status"] == "✅ Maker Approved"]
+                            non_n = annotated_neigh[annotated_neigh["Approval Status"] != "✅ Maker Approved"]
+                            filtered_neigh = pd.concat([app_n, non_n], ignore_index=True)
+
                         if not filtered_neigh.empty:
                             neighbor_matches.append(filtered_neigh)
                             matched_neighbors.append(neigh.upper())
+                            if not target_makers:
+                                break
+
+                if neighbor_matches:
+                    neigh_df = pd.concat(neighbor_matches, ignore_index=True)
+                    if final_df.empty:
+                        final_df = neigh_df
+                        matched_location_label = f"{', '.join(matched_neighbors)} (Neighboring Countries to {target_country.upper()})"
                     else:
-                        neighbor_matches.append(neigh_match)
-                        matched_neighbors.append(neigh.upper())
-                        break
-            if neighbor_matches:
-                final_df = pd.concat(neighbor_matches, ignore_index=True)
-                matched_location_label = f"{', '.join(matched_neighbors)} (Neighboring Countries to {target_country.upper()})"
+                        final_df = pd.concat([final_df, neigh_df], ignore_index=True)
+                        matched_location_label = f"{target_country.upper()} (All Stations) + {', '.join(matched_neighbors)} (Neighboring Approved)"
 
-        makers_formatted = ', '.join([m.upper() for m in target_makers]) if target_makers else "ALL"
-        if not final_df.empty:
-            if matched_location_label != target_country.upper():
-                st.info(f"No approved station in **{target_country.upper()}** supports **{makers_formatted}**. Showing approved stations in neighboring countries:")
-            st.success(f"Matched stations in **{matched_location_label}** for makers: {makers_formatted}")
-            st.dataframe(final_df, use_container_width=True)
+            makers_formatted = ", ".join([m.upper() for m in target_makers]) if target_makers else "ALL"
+            if not final_df.empty:
+                if include_non_approved:
+                    st.info(
+                        f"Showing **both Maker Approved and Non-Maker Approved** stations in **{matched_location_label}** "
+                        f"(Target Maker: **{makers_formatted}**)."
+                    )
+                elif matched_location_label != target_country.upper():
+                    st.info(
+                        f"No approved station in **{target_country.upper()}** supports **{makers_formatted}**. "
+                        f"Showing approved stations in neighboring countries:"
+                    )
+                st.success(f"Matched {len(final_df)} station(s) in **{matched_location_label}**")
+                st.dataframe(final_df, use_container_width=True)
+            else:
+                st.warning(
+                    f"No approved stations found for **{makers_formatted}** in {target_country.upper()} or neighboring regions. "
+                    f"Tick the checkbox above to view non-maker approved stations."
+                )
+                st.dataframe(df, use_container_width=True)
         else:
-            st.warning(f"No approved stations found for **{makers_formatted}** in {target_country.upper()} or neighboring regions.")
-            st.dataframe(df, use_container_width=True)
-    else:
-        st.warning("Target country is not specified or no stations matched.")
+            st.warning("Target country is not specified or no stations matched.")
 
-    # Section 5: AI Copilot Chatbot
-    st.markdown("---")
-    st.subheader("5. AI Maritime Copilot & Chatbot")
-    st.caption("Ask questions about this case, troubleshoot NAVTEX/Radar/VDR, request quotation drafts, or find flights.")
+        with st.expander("Show Parsed Raw Data"):
+            st.json(parsed)
 
-    for chat in st.session_state.chat_history:
-        with st.chat_message(chat["role"]):
-            st.markdown(chat["content"])
 
-    user_query = st.chat_input("Ask about this RFQ, equipment, or station...")
-    if user_query:
-        st.session_state.chat_history.append({"role": "user", "content": user_query})
-        with st.chat_message("user"):
-            st.markdown(user_query)
+# ---------------------------------------------------------------------------
+# RIGHT-SIDE COLLAPSIBLE AI COPILOT PANEL (GOOGLE SHEETS GEMINI STYLE)
+# ---------------------------------------------------------------------------
+if st.session_state.copilot_open and copilot_col is not None:
+    with copilot_col:
+        with st.container(border=True):
+            top_c1, top_c2 = st.columns([4, 1])
+            with top_c1:
+                st.markdown("### ✨ AI Maritime Copilot")
+            with top_c2:
+                if st.button("🗑️", help="Clear chat history", key="clear_side_chat"):
+                    st.session_state.chat_history = []
+                    st.rerun()
 
-        with st.chat_message("assistant"):
-            with st.spinner("AI Copilot analyzing..."):
-                reply, engine_used = ask_ai_assistant(user_query, parsed)
-                st.markdown(reply)
-                st.caption(f"Powered by: {engine_used}")
-                st.session_state.chat_history.append({"role": "assistant", "content": reply})
+            if st.session_state.parsed_data:
+                p_info = st.session_state.parsed_data
+                st.caption(
+                    f"**Active Case:** {p_info.get('vessel_name')} | "
+                    f"{p_info.get('port')} ({p_info.get('country')}) | "
+                    f"Maker: {', '.join(p_info.get('makers', [])) or 'N/A'}"
+                )
+            else:
+                st.caption("Ask about any vessel, maker, spare part, or upload an RFQ on the left.")
 
-    with st.expander("Show Parsed Raw Data"):
-        st.json(parsed)
+            chat_box = st.container(height=480)
+            with chat_box:
+                if not st.session_state.chat_history:
+                    st.info("👋 Hello! Click a quick action below or type your question about VDRs, NAVTEX, Radars, or service stations.")
+                for chat in st.session_state.chat_history:
+                    with st.chat_message(chat["role"]):
+                        st.markdown(chat["content"])
+                        if chat.get("engine"):
+                            st.caption(f"⚡ {chat['engine']}")
+
+            # Quick suggestion chips
+            q_col1, q_col2 = st.columns(2)
+            quick_prompt = None
+            with q_col1:
+                if st.button("✉️ Draft Quote Email", use_container_width=True, key="q_draft"):
+                    quick_prompt = "Draft a concise commercial email reply for this RFQ."
+            with q_col2:
+                if st.button("🔍 Check Equipment", use_container_width=True, key="q_obsolete"):
+                    quick_prompt = "Check if the requested equipment/model is obsolete and suggest replacement or spares."
+
+            user_query = st.chat_input("Ask Gemini Copilot...", key="side_copilot_input")
+            active_prompt = quick_prompt or user_query
+
+            if active_prompt:
+                st.session_state.chat_history.append({"role": "user", "content": active_prompt})
+                with chat_box:
+                    with st.chat_message("user"):
+                        st.markdown(active_prompt)
+                    with st.chat_message("assistant"):
+                        with st.spinner("Thinking..."):
+                            reply, engine_used = ask_ai_assistant(active_prompt, st.session_state.parsed_data)
+                            st.markdown(reply)
+                            st.caption(f"⚡ {engine_used}")
+                            st.session_state.chat_history.append({
+                                "role": "assistant",
+                                "content": reply,
+                                "engine": engine_used
+                            })
+                st.rerun()
