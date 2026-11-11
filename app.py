@@ -9,6 +9,7 @@ import extract_msg
 import pandas as pd
 from PIL import Image
 import pypdf
+import requests
 import streamlit as st
 
 # --- API CLIENTS SETUP ---
@@ -21,10 +22,11 @@ except ImportError:
     APIConnectionError = Exception
     RateLimitError = Exception
 
-# Google APIs
+# Google Drive API & Service Account
 try:
     from google.oauth2 import service_account
-    from google.auth.transport.requests import AuthorizedSession
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaIoBaseDownload
     HAS_GOOGLE_AUTH = True
 except ImportError:
     HAS_GOOGLE_AUTH = False
@@ -75,41 +77,51 @@ TEXT_MODELS = [
 
 
 # ---------------------------------------------------------------------------
-# GOOGLE SHEET DIRECTORY LOADER
+# GOOGLE SHEET DIRECTORY LOADER (GVIZ & DRIVE API)
 # ---------------------------------------------------------------------------
-EXPORT_CSV_URL = "https://docs.google.com/spreadsheets/d/1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ/export?format=csv&gid=428894731"
+SPREADSHEET_ID = "1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ"
+SHEET_GID = "428894731"
+GVIZ_CSV_URL = f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={SHEET_GID}"
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=300)
 def load_directory():
-    # 1. Προσπάθεια ανάγνωσης με πιστοποίηση Service Account
+    # Μέθοδος 1: Google Visualization API (GViz) με ταυτότητα κανονικού φυλλομετρητή
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        }
+        res = requests.get(GVIZ_CSV_URL, headers=headers, timeout=12)
+        if res.status_code == 200 and not res.text.lstrip().startswith("<!DOCTYPE html>"):
+            df = pd.read_csv(io.StringIO(res.text))
+            df.columns = [str(c).strip() for c in df.columns]
+            if "Country" in df.columns:
+                return df.dropna(subset=["Country"])
+    except Exception:
+        pass
+
+    # Μέθοδος 2: Επίσημο Google Drive API v3 μέσω Service Account
     if HAS_GOOGLE_AUTH and "gcp_service_account" in st.secrets:
         try:
             creds = service_account.Credentials.from_service_account_info(
                 st.secrets["gcp_service_account"],
                 scopes=["https://www.googleapis.com/auth/drive.readonly"]
             )
-            session = AuthorizedSession(creds)
-            response = session.get(EXPORT_CSV_URL, timeout=15)
-            if response.status_code == 200 and len(response.text) > 100:
-                df = pd.read_csv(io.StringIO(response.text))
-                df.columns = [str(c).strip() for c in df.columns]
-                if "Country" in df.columns:
-                    df = df.dropna(subset=["Country"])
-                return df
+            drive_service = build("drive", "v3", credentials=creds)
+            request = drive_service.files().export_media(fileId=SPREADSHEET_ID, mimeType="text/csv")
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            fh.seek(0)
+            df = pd.read_csv(fh)
+            df.columns = [str(c).strip() for c in df.columns]
+            if "Country" in df.columns:
+                return df.dropna(subset=["Country"])
         except Exception:
             pass
 
-    # 2. Απευθείας ανάγνωση μέσω του συνδέσμου εξαγωγής
-    try:
-        df = pd.read_csv(EXPORT_CSV_URL, timeout=15)
-        df.columns = [str(c).strip() for c in df.columns]
-        if "Country" in df.columns:
-            df = df.dropna(subset=["Country"])
-        return df
-    except Exception:
-        pass
-
-    # 3. Εφεδρική ανάγνωση τοπικού αρχείου
+    # Μέθοδος 3: Εφεδρική ανάγνωση τοπικού αρχείου
     return pd.read_csv("directory.csv")
 
 
@@ -781,7 +793,7 @@ def reset_everything():
 
 try:
     df = load_directory()
-    st.sidebar.success(f"Connected to Directory. Loaded {len(df)} stations.")
+    st.sidebar.success(f"Connected to Google Sheet Directory. Loaded {len(df)} stations.")
 except Exception as e:
     st.sidebar.error(f"Error loading directory: {e}")
     df = pd.DataFrame()
