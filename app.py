@@ -21,14 +21,13 @@ except ImportError:
     APIConnectionError = Exception
     RateLimitError = Exception
 
-# Optional Google APIs
+# Google APIs
 try:
     from google.oauth2 import service_account
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaIoBaseDownload
-    HAS_GOOGLE_DRIVE = True
+    from google.auth.transport.requests import AuthorizedSession
+    HAS_GOOGLE_AUTH = True
 except ImportError:
-    HAS_GOOGLE_DRIVE = False
+    HAS_GOOGLE_AUTH = False
 
 try:
     from google import genai
@@ -74,10 +73,44 @@ TEXT_MODELS = [
     "llama3-8b-8192",
 ]
 
-VISION_MODELS = [
-    "llama-3.2-11b-vision-preview",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-]
+
+# ---------------------------------------------------------------------------
+# GOOGLE SHEET DIRECTORY LOADER
+# ---------------------------------------------------------------------------
+EXPORT_CSV_URL = "https://docs.google.com/spreadsheets/d/1Z9VuuqCRE_qcy89aHgzmY34up0oQSUB4fLxeCz_82IQ/export?format=csv&gid=428894731"
+
+@st.cache_data(ttl=600)
+def load_directory():
+    # 1. Προσπάθεια ανάγνωσης με πιστοποίηση Service Account
+    if HAS_GOOGLE_AUTH and "gcp_service_account" in st.secrets:
+        try:
+            creds = service_account.Credentials.from_service_account_info(
+                st.secrets["gcp_service_account"],
+                scopes=["https://www.googleapis.com/auth/drive.readonly"]
+            )
+            session = AuthorizedSession(creds)
+            response = session.get(EXPORT_CSV_URL, timeout=15)
+            if response.status_code == 200 and len(response.text) > 100:
+                df = pd.read_csv(io.StringIO(response.text))
+                df.columns = [str(c).strip() for c in df.columns]
+                if "Country" in df.columns:
+                    df = df.dropna(subset=["Country"])
+                return df
+        except Exception:
+            pass
+
+    # 2. Απευθείας ανάγνωση μέσω του συνδέσμου εξαγωγής
+    try:
+        df = pd.read_csv(EXPORT_CSV_URL, timeout=15)
+        df.columns = [str(c).strip() for c in df.columns]
+        if "Country" in df.columns:
+            df = df.dropna(subset=["Country"])
+        return df
+    except Exception:
+        pass
+
+    # 3. Εφεδρική ανάγνωση τοπικού αρχείου
+    return pd.read_csv("directory.csv")
 
 
 # ---------------------------------------------------------------------------
@@ -279,7 +312,6 @@ def extract_text_from_file(uploaded_file):
     except Exception as e:
         st.error(f"Error parsing {uploaded_file.name}: {e}")
 
-    # Καθαρισμός υπογραφών πριν από τον περιορισμό μήκους
     cleaned = clean_signatures(extracted_text)
     return cleaned[:30000]
 
@@ -289,7 +321,6 @@ def clean_vessel_name(raw_name):
         return "Not specified"
     text = str(raw_name).strip().strip('"').strip("'")
     text = re.sub(r"(?i)^(?:m/v|m/t|mv|mt|vessel|ship)\s*[:\-]?\s*", "", text)
-    # Αποκοπή τεχνικών όρων και παύλας
     text = re.sub(r"(?i)\s*[\-–—]\s*(?:vdr|gmdss|annual|survey|radio|navtex|inspection|repair|radar|attendance|service|class|coc|imo|\/\/|@).*$", "", text)
     text = re.sub(r"(?i)\b(?:vdr|gmdss|annual|survey|radio|navtex|inspection|repair|attendance|service|coc|imo)\b.*$", "", text)
     text = re.sub(r"(?i)\b(?:will|at|eta|port|call|calling|arr|arriving|due|to|for|is|and|the|in|on|sailing|during)\b.*$", "", text)
@@ -353,7 +384,6 @@ def choose_primary_port(text):
     found = ports_in_text(text)
     lower = (text or "").lower()
 
-    # Εντοπισμός δυναμικού συνδυασμού: "port is Taicang China" ή "Taicang China Port"
     dyn_match = re.search(r"(?i)(?:final\s+)?port\s+(?:is|will\s+be|@|:)?\s*([a-z]+)\s+([a-z]+)", lower)
     if dyn_match:
         cand_port, cand_country = dyn_match.group(1), dyn_match.group(2)
@@ -385,7 +415,6 @@ def choose_primary_port(text):
             if token in window:
                 score += weight
 
-        # Αρνητική βαθμολογία αν αναφέρεται ότι το λιμάνι ακυρώθηκε ("instead of")
         if "instead of" in window and window.find("instead of") < window.find(key):
             score -= 15
 
@@ -428,7 +457,6 @@ def parse_manual_inputs(manual_text):
         return overrides, explicit
     text = str(manual_text)
 
-    # 1. Κατασκευαστής (με ή χωρίς :)
     maker_match = re.search(r"(?im)(?:^|\n)\s*(?:makers?|equipment|brand)\s*[:=\s]\s*([^\n]+)", text)
     if maker_match:
         makers = [m.strip() for m in re.split(r"[,;/|]", maker_match.group(1)) if m.strip()]
@@ -440,7 +468,6 @@ def parse_manual_inputs(manual_text):
             overrides["makers"] = found_m
             explicit.add("makers")
 
-    # 2. Χώρα (με ή χωρίς :)
     country_match = re.search(r"(?im)(?:^|\n)\s*(?:country|χώρα|χωρα)\s*[:=\s]\s*([^\n]+)", text)
     if country_match:
         captured = country_match.group(1).strip()
@@ -453,7 +480,6 @@ def parse_manual_inputs(manual_text):
             overrides["country"] = found_c
             explicit.add("country")
 
-    # 3. Λιμάνι (με ή χωρίς :)
     port_match = re.search(r"(?im)(?:^|\n)\s*(?:port|λιμ[αά]νι|λιμανι)\s*[:=\s]\s*([^\n]+)", text)
     if port_match:
         captured = port_match.group(1).strip()
@@ -465,13 +491,11 @@ def parse_manual_inputs(manual_text):
             overrides["port"] = captured.strip(" .,").title()
         explicit.add("port")
 
-    # 4. Πλοίο (με ή χωρίς :)
     vessel_match = re.search(r"(?im)(?:^|\n)\s*(?:vessel|ship|πλο[ιί]ο|πλοιο|m/v|m/t)\s*[:=\s]\s*([^\n]+)", text)
     if vessel_match:
         overrides["vessel_name"] = clean_vessel_name(vessel_match.group(1))
         explicit.add("vessel_name")
 
-    # 5. ETA
     eta_match = re.search(r"(?im)(?:^|\n)\s*(?:eta|etd|arrival)\s*[:=\s]\s*([^\n]+)", text)
     if eta_match:
         overrides["eta"] = eta_match.group(1).strip()
@@ -508,18 +532,6 @@ def normalize_result(data):
     return result
 
 
-def dedupe_keep_order(items):
-    seen = set()
-    out = []
-    for item in items:
-        text = str(item).strip()
-        if not text or text.lower() in seen:
-            continue
-        seen.add(text.lower())
-        out.append(text)
-    return out
-
-
 # ---------------------------------------------------------------------------
 # LOCAL PARSER (FALLBACK)
 # ---------------------------------------------------------------------------
@@ -527,7 +539,6 @@ def smart_local_parser(manual_override_text, files_text):
     blob = files_text or ""
     port, country, _ = choose_primary_port(blob)
 
-    # Αν η χώρα δεν βρέθηκε από το λιμάνι, ψάχνουμε στο πρώτο μήνυμα
     if country == "Not specified":
         thread_split = re.search(r"(?im)(?:^|\n)\s*(?:from\s*:|sent\s*:|-----original message-----)", blob)
         first_msg = blob[:thread_split.start()] if thread_split else blob
@@ -535,13 +546,11 @@ def smart_local_parser(manual_override_text, files_text):
         if found_c and found_c != "GREECE":
             country = found_c
 
-    # Όνομα πλοίου
     vessel_name = "Not specified"
     vessel_match = re.search(r"(?i)\b(?:vessel|ship|πλο[ιί]ο|m/v|m/t|mv|mt)\s*[:\-]?\s*([A-Za-z0-9][^\n]{1,80})", blob)
     if vessel_match:
         vessel_name = clean_vessel_name(vessel_match.group(1))
 
-    # ETA: εντοπισμός και με "on about"
     eta = "Not specified"
     eta_match = re.search(r"(?i)\b(?:eta|etd|arrival|on\s+about|about)\b\s*[:=]?\s*([0-9]{1,2}(?:[-/][0-9]{1,2})?[-/.][0-9]{1,2}[-/.][0-9]{2,4}[^\n,\.;]*)", blob)
     if eta_match:
@@ -686,7 +695,6 @@ def analyze_rfq(manual_override_text, files_text, image_files):
         if err_note:
             res_json["_api_error"] = err_note
 
-    # Εφαρμογή Manual Override (απόλυτη προτεραιότητα)
     overrides, explicit = parse_manual_inputs(manual_override_text)
     for key in ("country", "port", "vessel_name", "eta", "makers"):
         if key in overrides and key in explicit:
@@ -713,7 +721,6 @@ Current Active RFQ Context:
 
 Answer clearly, politely, and professionally in the requested language (English or Greek)."""
 
-    # 1. Δοκιμή με Gemini API αν υπάρχει ενεργό κλειδί
     if gemini_api_key and gemini_api_key.startswith("AIza"):
         if HAS_GOOGLE_GENAI:
             try:
@@ -735,7 +742,6 @@ Answer clearly, politely, and professionally in the requested language (English 
             except Exception:
                 pass
 
-    # 2. Εφεδρική κλήση στο Groq
     if client_groq:
         for model in ["llama-3.1-8b-instant", "llama3-70b-8192", "llama3-8b-8192"]:
             try:
@@ -771,35 +777,6 @@ def reset_everything():
     st.session_state.parsed_data = None
     st.session_state.chat_history = []
     st.rerun()
-
-
-@st.cache_data(ttl=600)
-def load_directory():
-    sheet_title = "Global Marine Service Station Directory - Verified Service Providers (Final Master 200)"
-    if HAS_GOOGLE_DRIVE and "gcp_service_account" in st.secrets:
-        try:
-            creds = service_account.Credentials.from_service_account_info(
-                st.secrets["gcp_service_account"],
-                scopes=["[https://www.googleapis.com/auth/drive.readonly](https://www.googleapis.com/auth/drive.readonly)"]
-            )
-            drive_service = build("drive", "v3", credentials=creds)
-            query = f"name = '{sheet_title}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false"
-            results = drive_service.files().list(q=query, fields="files(id, name)").execute()
-            files = results.get("files", [])
-            if files:
-                file_id = files[0]["id"]
-                request = drive_service.files().export_media(fileId=file_id, mimeType="text/csv")
-                fh = io.BytesIO()
-                downloader = MediaIoBaseDownload(fh, request)
-                done = False
-                while not done:
-                    _, done = downloader.next_chunk()
-                fh.seek(0)
-                return pd.read_csv(fh)
-        except Exception:
-            pass
-
-    return pd.read_csv("directory.csv")
 
 
 try:
