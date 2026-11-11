@@ -94,9 +94,10 @@ _SHEET_ID = base64.b64decode("MVo5VnV1cUNSRV9xY3k4OWFIZ3ptWTM0dXAwb1FTVUI0Zkx4ZU
 _SHEET_GID = "428894731"
 
 FALLBACK_STATIONS = [
-    {"Country": "United Arab Emirates", "Service Station Name": "Elcome International LLC (Dubai HQ)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno, JRC*, MacGregor*, Sperry Marine*, Yokogawa (YDK)*"},
-    {"Country": "United Arab Emirates", "Service Station Name": "Maritronics / Centena Group (Dubai HQ & Sharjah / Fujairah)", "Approved Makers": "Cobham SAILOR, Consilium, Danelec*, Furuno, Highlander*, Jotron, JRC, Sperry Marine*, Tokyo Keiki, Yokogawa (YDK)"},
-    {"Country": "United Arab Emirates", "Service Station Name": "Radio Holland Middle East (Sharjah / Dubai)", "Approved Makers": "Anschütz*, Cobham SAILOR*, Danelec*, Furuno*, JRC*, MacGregor*, Netwave*, Sperry Marine*, Tokyo Keiki*, Yokogawa (YDK)*"},
+    {"Country": "United Arab Emirates", "Service Station Name": "Radio Holland Middle East LLC (Dubai)", "Approved Makers": "Danelec*, Furuno*, JRC*, Sperry Marine*, Yokogawa (YDK)*"},
+    {"Country": "United Arab Emirates", "Service Station Name": "Master Systems LLC (Dubai)", "Approved Makers": "Danelec, Furuno, Highlander*, JRC, MacGregor*, Yokogawa (YDK)*"},
+    {"Country": "United Arab Emirates", "Service Station Name": "Marintel FZC / Oceanic Marine LLC (UAE)", "Approved Makers": "AMI, Danelec, Furuno, JRC, Netwave, Samsung*, Sperry Marine*, Totem Plus"},
+    {"Country": "United Arab Emirates", "Service Station Name": "Alfa Marine Electronics FZC", "Approved Makers": "Furuno, Highlander, JRC, Yokogawa (YDK)"},
     {"Country": "China", "Service Station Name": "COSCO MEEC Shanghai", "Approved Makers": "Danelec, Furuno, JRC, Samsung*, Tokyo Keiki*, Yokogawa (YDK)*"},
     {"Country": "China", "Service Station Name": "Mackay Marine (China) Ltd. (Shanghai, Ningbo, Shenzhen, Qingdao, Guangzhou, Tianjin)", "Approved Makers": "Danelec*, Furuno*, Jotron, JRC*, Netwave*, Sperry Marine*"},
     {"Country": "China", "Service Station Name": "Seven Seas Electronic Co., Ltd. (Shanghai, Qingdao, Guangzhou, Tianjin)", "Approved Makers": "Cobham SAILOR, Danelec, Highlander*, JRC"},
@@ -261,10 +262,10 @@ KNOWN_MAKERS = [
     "sperry marine", "sperry", "jrc", "alphatron", "furuno",
     "tokyo keiki", "anschutz", "raytheon", "yokogawa", "ydk",
     "macgregor", "danelec", "headway", "consilium", "highlander",
-    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad", "entel", "kelvin hughes"
+    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad", "entel", "kelvin hughes",
+    "samsung", "totem plus", "ami", "hyundai", "garmin"
 ]
 
-# Αναγνώριση κατασκευαστή από κωδικούς ανταλλακτικών / μοντέλων
 PART_NUMBER_TO_MAKER = [
     (r"(?i)\b(?:03p\d{4}|ru-\d{4}|far-\d{3,4}|fmd-\d{3,4}|vr-\d{4}|fe-\d{3}|gp-\d{2,3}|fs-\d{4}|felcom)\b", "FURUNO"),
     (r"(?i)\b(?:jcy-\d{3,4}|ncr-\d{3}|jma-\d{3,4}|jhs-\d{3}|jax-\d{2}|jlr-\d{2,3}|jue-\d{2,3}|jan-\d{3,4})\b", "JRC"),
@@ -307,6 +308,54 @@ def canonical_country(raw_value):
     if s_clean in COUNTRY_ALIASES:
         return COUNTRY_ALIASES[s_clean].lower()
     return s
+
+
+def _norm_maker_str(s):
+    s = str(s or "").lower()
+    return s.replace("ü", "u").replace("ä", "a").replace("ö", "o")
+
+
+def evaluate_station_maker_status(approved_str, target_makers):
+    """
+    Ελέγχει κάθε μάρκα ξεχωριστά στη στήλη Approved Makers:
+    - Επιστρέφει '✅ Maker Approved' ΜΟΝΟ αν η ζητούμενη μάρκα έχει αστερίσκο (*), π.χ. Furuno*
+    - Επιστρέφει '🔧 Non-Maker Approved' αν η ζητούμενη μάρκα αναφέρεται ΧΩΡΙΣ αστερίσκο, π.χ. Furuno
+    - Επιστρέφει '🔧 Non-Maker Approved (Other Brands)' αν ο σταθμός δεν αναφέρει τη μάρκα
+    """
+    if not target_makers:
+        return "✅ Local Station"
+
+    tokens = [t.strip() for t in re.split(r"[,;]", str(approved_str or "")) if t.strip()]
+    has_star_approval = False
+    has_unstarred_brand = False
+
+    for m in target_makers:
+        m_norm = _norm_maker_str(m).replace("*", "").strip()
+        if not m_norm:
+            continue
+        m_first = m_norm.split()[0] if m_norm.split() else m_norm
+
+        for tok in tokens:
+            tok_has_star = "*" in tok
+            tok_clean = _norm_maker_str(tok).replace("*", "").strip()
+
+            matched = False
+            if re.search(rf"(?<![a-z0-9]){re.escape(m_norm)}(?![a-z0-9])", tok_clean):
+                matched = True
+            elif len(m_first) >= 3 and re.search(rf"(?<![a-z0-9]){re.escape(m_first)}(?![a-z0-9])", tok_clean):
+                matched = True
+
+            if matched:
+                if tok_has_star:
+                    has_star_approval = True
+                else:
+                    has_unstarred_brand = True
+
+    if has_star_approval:
+        return "✅ Maker Approved"
+    if has_unstarred_brand:
+        return "🔧 Non-Maker Approved"
+    return "🔧 Non-Maker Approved (Other Brands)"
 
 
 RESULT_DEFAULTS = {
@@ -464,7 +513,6 @@ def find_makers(text_lower, vessel_name=""):
         if re.search(rf"(?<![a-z0-9]){re.escape(maker)}(?![a-z0-9])", raw) and maker not in vessel_lower:
             found.append(maker.upper())
 
-    # Έλεγχος κωδικών ανταλλακτικών / μοντέλων (π.χ. 03P9335-66, RU-9427 -> FURUNO)
     for pattern, inferred_maker in PART_NUMBER_TO_MAKER:
         if re.search(pattern, raw):
             found.append(inferred_maker)
@@ -691,7 +739,6 @@ def analyze_rfq(manual_override_text, files_text, image_files):
         res_json = smart_local_parser(manual_override_text, files_text)
         model_used = "Local Rule Engine"
 
-    # Cross-check with local parser & part-number detector
     local_check = smart_local_parser(manual_override_text, files_text)
     inferred_from_spares = find_makers(
         f"{res_json.get('scope', '')} {res_json.get('spares_requested', '')}".lower(),
@@ -923,6 +970,7 @@ with main_col:
 
         st.markdown("---")
         st.subheader("4. Recommended Service Stations")
+        st.caption("Note: Only makers marked with an asterisk (*) in the directory are treated as ✅ Maker Approved. Unmarked makers are treated as 🔧 Non-Maker Approved.")
 
         include_non_approved = st.checkbox(
             "☑️ Include Non-Maker Approved Stations (for general repairs, radar troubleshooting & non-class jobs)",
@@ -936,21 +984,11 @@ with main_col:
         if not df.empty and target_country and target_country != "not specified":
             df_norm_country = df["Country"].apply(canonical_country)
 
-            def maker_filter(approved_str):
-                app_lower = str(approved_str).lower()
-                for m in target_makers:
-                    if m in app_lower or (len(m.split()) > 0 and len(m.split()[0]) >= 3 and m.split()[0] in app_lower):
-                        return True
-                return False
-
             def annotate_df(sub_df):
                 out_df = sub_df.copy()
-                if target_makers:
-                    out_df["Approval Status"] = out_df["Approved Makers"].apply(
-                        lambda x: "✅ Maker Approved" if maker_filter(x) else "🔧 Non-Maker Approved"
-                    )
-                else:
-                    out_df["Approval Status"] = "✅ Local Station"
+                out_df["Approval Status"] = out_df["Approved Makers"].apply(
+                    lambda x: evaluate_station_maker_status(x, target_makers)
+                )
                 cols = ["Country", "Service Station Name", "Approval Status", "Approved Makers"]
                 extra_cols = [c for c in out_df.columns if c not in cols]
                 return out_df[cols + extra_cols]
@@ -963,13 +1001,24 @@ with main_col:
                 annotated_local = annotate_df(country_match)
                 if target_makers:
                     approved_local = annotated_local[annotated_local["Approval Status"] == "✅ Maker Approved"]
+                    non_approved_brand = annotated_local[annotated_local["Approval Status"] == "🔧 Non-Maker Approved"]
+                    non_approved_other = annotated_local[annotated_local["Approval Status"] == "🔧 Non-Maker Approved (Other Brands)"]
+
                     if include_non_approved:
-                        non_approved_local = annotated_local[annotated_local["Approval Status"] != "✅ Maker Approved"]
-                        final_df = pd.concat([approved_local, non_approved_local], ignore_index=True)
+                        final_df = pd.concat([approved_local, non_approved_brand, non_approved_other], ignore_index=True)
                     else:
                         final_df = approved_local
                 else:
-                    final_df = annotated_local
+                    if include_non_approved:
+                        final_df = annotated_local
+                    else:
+                        # Όταν δεν έχει εντοπιστεί συγκεκριμένος κατασκευαστής, δείχνουμε πρώτα όσους έχουν τουλάχιστον μία επίσημη έγκριση (*)
+                        has_any_star = annotated_local["Approved Makers"].astype(str).str.contains(r"\*", regex=True)
+                        annotated_local.loc[has_any_star, "Approval Status"] = "✅ Maker Approved (Has *)"
+                        annotated_local.loc[~has_any_star, "Approval Status"] = "🔧 Non-Maker Approved"
+                        final_df = annotated_local[has_any_star] if not include_non_approved else pd.concat(
+                            [annotated_local[has_any_star], annotated_local[~has_any_star]], ignore_index=True
+                        )
 
             need_neighbors = final_df.empty or (
                 include_non_approved
@@ -986,14 +1035,12 @@ with main_col:
                     neigh_match = df[df_norm_country == neigh_canon].copy()
                     if not neigh_match.empty:
                         annotated_neigh = annotate_df(neigh_match)
-                        if target_makers and not include_non_approved:
-                            filtered_neigh = annotated_neigh[annotated_neigh["Approval Status"] == "✅ Maker Approved"]
-                        elif target_makers and include_non_approved and not final_df.empty:
+                        if target_makers:
                             filtered_neigh = annotated_neigh[annotated_neigh["Approval Status"] == "✅ Maker Approved"]
                         else:
-                            app_n = annotated_neigh[annotated_neigh["Approval Status"] == "✅ Maker Approved"]
-                            non_n = annotated_neigh[annotated_neigh["Approval Status"] != "✅ Maker Approved"]
-                            filtered_neigh = pd.concat([app_n, non_n], ignore_index=True)
+                            has_star_n = annotated_neigh["Approved Makers"].astype(str).str.contains(r"\*", regex=True)
+                            annotated_neigh.loc[has_star_n, "Approval Status"] = "✅ Maker Approved (Has *)"
+                            filtered_neigh = annotated_neigh[has_star_n]
 
                         if not filtered_neigh.empty:
                             neighbor_matches.append(filtered_neigh)
@@ -1008,28 +1055,27 @@ with main_col:
                         matched_location_label = f"{', '.join(matched_neighbors)} (Neighboring Countries to {target_country.upper()})"
                     else:
                         final_df = pd.concat([final_df, neigh_df], ignore_index=True)
-                        matched_location_label = f"{target_country.upper()} (All Stations) + {', '.join(matched_neighbors)} (Neighboring Approved)"
+                        matched_location_label = f"{target_country.upper()} (Local) + {', '.join(matched_neighbors)} (Neighboring Approved)"
 
-            makers_formatted = ", ".join([m.upper() for m in target_makers]) if target_makers else "ALL"
+            makers_formatted = ", ".join([m.upper() for m in target_makers]) if target_makers else "ALL (*)"
             if not final_df.empty:
-                if include_non_approved and target_makers:
+                if include_non_approved:
                     st.info(
-                        f"Showing **both Maker Approved and Non-Maker Approved** stations in **{matched_location_label}** "
+                        f"Showing **Maker Approved (*)** and **Non-Maker Approved** stations in **{matched_location_label}** "
                         f"(Target Maker: **{makers_formatted}**)."
                     )
                 elif matched_location_label != target_country.upper():
                     st.info(
-                        f"No approved station in **{target_country.upper()}** supports **{makers_formatted}**. "
-                        f"Showing approved stations in neighboring countries:"
+                        f"No official Maker Approved (*) station in **{target_country.upper()}** supports **{makers_formatted}**. "
+                        f"Showing official Maker Approved (*) stations in neighboring countries:"
                     )
                 st.success(f"Matched {len(final_df)} station(s) in **{matched_location_label}**")
                 st.dataframe(final_df, use_container_width=True)
             else:
                 st.warning(
-                    f"No approved stations found for **{makers_formatted}** in {target_country.upper()} or neighboring regions. "
-                    f"Tick the checkbox above to view non-maker approved stations."
+                    f"No official Maker Approved (*) stations found for **{makers_formatted}** in {target_country.upper()} or neighboring regions. "
+                    f"Tick the checkbox above to view Non-Maker Approved stations."
                 )
-                st.dataframe(df, use_container_width=True)
         else:
             st.warning("Target country is not specified or no stations matched.")
 
