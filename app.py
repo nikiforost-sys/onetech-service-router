@@ -539,7 +539,7 @@ COUNTRY_KEYS_BY_LENGTH = sorted(COUNTRY_ALIASES.keys(), key=len, reverse=True)
 
 
 # ---------------------------------------------------------------------------
-# TEXT EXTRACTION & CLEANING
+# TEXT EXTRACTION & CLEANING (PDF, EML, MSG, TXT, XLSX, XLS, CSV)
 # ---------------------------------------------------------------------------
 def clean_signatures(text):
     if not text:
@@ -588,6 +588,16 @@ def extract_text_from_file(uploaded_file):
             extracted_text += f"\nSubject: {msg.subject}\nBody:\n{msg.body}\n"
         elif file_name.endswith(".txt"):
             extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
+        elif file_name.endswith((".xlsx", ".xls")):
+            excel_sheets = pd.read_excel(uploaded_file, sheet_name=None)
+            for sheet_name, sheet_df in excel_sheets.items():
+                if sheet_df is not None and not sheet_df.empty:
+                    extracted_text += f"\n--- Excel Sheet: {sheet_name} ---\n"
+                    extracted_text += sheet_df.fillna("").to_string(index=False) + "\n"
+        elif file_name.endswith(".csv"):
+            csv_df = pd.read_csv(uploaded_file)
+            if csv_df is not None and not csv_df.empty:
+                extracted_text += csv_df.fillna("").to_string(index=False) + "\n"
     except Exception as e:
         st.error(f"Error parsing {uploaded_file.name}: {e}")
 
@@ -836,7 +846,7 @@ CRITICAL INSTRUCTIONS:
 1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH.
 2. EMAIL THREAD CHRONOLOGY: The email at the VERY TOP is the active instruction. If it updates the port (e.g. 'Taicang China instead of Qingdao China' or 'Malta instead of Genova'), use the NEW port and list the old port in discrepancies.
 3. VESSEL NAME: Strip 'MV', 'M/V', and scope words. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', vessel_name is strictly 'Seaduty'.
-4. MAKERS & PART NUMBERS: Scan the full text for makers (e.g., JRC, Furuno, Sperry, Danelec). Also infer the maker from OEM part numbers: e.g., '03P9335-66' or 'RU-9427' or 'FAR-2137' is 'FURUNO'; 'JCY-1900' or 'NCR-333' is 'JRC'; 'DM100' is 'DANELEC'.
+4. MAKERS & PART NUMBERS: Scan the full text (including Excel requisition tables) for makers (e.g., JRC, Furuno, Sperry, Danelec). Also infer the maker from OEM part numbers: e.g., '03P9335-66' or 'RU-9427' or 'FAR-2137' is 'FURUNO'; 'JCY-1900' or 'NCR-333' is 'JRC'; 'DM100' is 'DANELEC'.
 5. DO NOT extract 'Piraeus' or 'Greece' from office signatures.
 
 MANUAL OVERRIDE:
@@ -1234,6 +1244,8 @@ CURRENT PARSED BRIEF:
 # ---------------------------------------------------------------------------
 # SESSION STATE & THREE-WAY SYNCED CHECKBOX CALLBACKS
 # ---------------------------------------------------------------------------
+if "reset_count" not in st.session_state:
+    st.session_state.reset_count = 0
 if "parsed_data" not in st.session_state:
     st.session_state.parsed_data = dict(RESULT_DEFAULTS)
 if "raw_inquiry_text" not in st.session_state:
@@ -1256,7 +1268,7 @@ if "copilot_messages" not in st.session_state:
             "role": "assistant",
             "content": (
                 "Welcome to **Onetech AI Copilot** ⚓\n\n"
-                "Upload an RFQ email/PDF or enter a Manual Override on the left. "
+                "Upload an RFQ email, PDF, or Excel file on the left. "
                 "I can audit discrepancies, verify `*` Maker Approvals, or draft vendor follow-ups."
             ),
         }
@@ -1287,6 +1299,19 @@ def _sync_non_maker_from_main():
 def _toggle_copilot():
     st.session_state.show_copilot = not st.session_state.show_copilot
 
+
+def _reset_all_fields():
+    st.session_state.reset_count += 1
+    st.session_state.parsed_data = dict(RESULT_DEFAULTS)
+    st.session_state.raw_inquiry_text = ""
+    st.session_state.last_used_engine = "Ready"
+    st.session_state.include_non_maker_approved = False
+    st.session_state.chk_non_maker_sidebar = False
+    st.session_state.chk_non_maker_step1 = False
+    st.session_state.chk_non_maker_main = False
+
+
+rc = st.session_state.reset_count
 
 df_directory, directory_source = load_directory()
 total_stations_count = len(df_directory) if df_directory is not None else 0
@@ -1341,9 +1366,7 @@ with st.sidebar:
             st.rerun()
     with sb_c2:
         if st.button("🗑️ Reset All", use_container_width=True):
-            st.session_state.parsed_data = dict(RESULT_DEFAULTS)
-            st.session_state.raw_inquiry_text = ""
-            st.session_state.last_used_engine = "Ready"
+            _reset_all_fields()
             st.rerun()
 
     with st.expander("🔎 Browse Full Station Directory", expanded=False):
@@ -1401,27 +1424,30 @@ with col_main:
                 <span class="ot-step-badge">STEP 01</span>
                 <h3 class="clean-header">Inquiry Ingestion &amp; Ground-Truth Override</h3>
             </div>
-            <span class="ot-section-caption">Supports PDF, EML, MSG, TXT &amp; Equipment Nameplate Photos</span>
+            <span class="ot-section-caption">Supports PDF, EML, MSG, TXT, Excel (XLSX/XLS/CSV) &amp; Photos</span>
         </div>
         """, unsafe_allow_html=True)
 
         ing_col1, ing_col2 = st.columns([1.15, 1.0], gap="medium")
         with ing_col1:
             uploaded_files = st.file_uploader(
-                "Upload Client RFQ Emails, PDFs, or Equipment Images",
-                type=["pdf", "eml", "msg", "txt", "png", "jpg", "jpeg"],
+                "Upload Client RFQ Emails, PDFs, Excel Lists, or Equipment Images",
+                type=["pdf", "eml", "msg", "txt", "xlsx", "xls", "csv", "png", "jpg", "jpeg"],
                 accept_multiple_files=True,
+                key=f"rfq_file_uploader_{rc}",
             )
             pasted_inquiry = st.text_area(
                 "Or Paste Raw Email Thread / Inquiry Text",
                 height=110,
                 placeholder="Paste raw email thread here (top-most message is treated as latest chronological instruction)...",
+                key=f"pasted_inquiry_box_{rc}",
             )
         with ing_col2:
             manual_override_input = st.text_area(
                 "Manual Ground-Truth Override (Highest Priority)",
                 height=192,
                 placeholder="Optional: Force specific values (overrides AI & email text):\nVessel: MV Seaduty\nPort: Taicang\nCountry: China\nETA: 22-24 Nov 2026\nMaker: Furuno, JRC",
+                key=f"manual_override_box_{rc}",
             )
 
         st.checkbox(
@@ -1431,11 +1457,17 @@ with col_main:
             help="Synced filter: Enable before or after analysis to include stations without an asterisk (*) for the target maker.",
         )
 
-        act_col1, act_col2 = st.columns([3, 1])
+        act_col1, act_col2, act_col3 = st.columns([2.6, 1.0, 0.8])
         with act_col1:
             run_analysis_btn = st.button("⚡ Analyze Inquiry & Route Approved Service Stations", type="primary", use_container_width=True)
         with act_col2:
             load_sample_btn = st.button("🧪 Load Sample RFQ", use_container_width=True)
+        with act_col3:
+            clear_step1_btn = st.button("🗑️ Reset", use_container_width=True, help="Clear all text boxes, attachments, and results")
+
+        if clear_step1_btn:
+            _reset_all_fields()
+            st.rerun()
 
         if load_sample_btn:
             sample_thread = (
@@ -1546,26 +1578,26 @@ with col_main:
 
         eb_c1, eb_c2, eb_c3, eb_c4 = st.columns([1.1, 1.0, 1.0, 1.1], gap="small")
         with eb_c1:
-            new_vessel = st.text_input("Vessel Name", value=v_disp)
+            new_vessel = st.text_input("Vessel Name", value=v_disp, key=f"eb_vessel_{rc}")
         with eb_c2:
-            new_port = st.text_input("Service Port", value=p_disp)
+            new_port = st.text_input("Service Port", value=p_disp, key=f"eb_port_{rc}")
         with eb_c3:
             inferred_country = c_disp
             if new_port.strip().lower() != p_disp.strip().lower():
                 p_lookup = PORT_TO_COUNTRY.get(new_port.strip().lower())
                 if p_lookup:
                     inferred_country = p_lookup
-            new_country = st.text_input("Service Country", value=inferred_country)
+            new_country = st.text_input("Service Country", value=inferred_country, key=f"eb_country_{rc}")
         with eb_c4:
-            new_eta = st.text_input("ETA / Schedule", value=e_disp)
+            new_eta = st.text_input("ETA / Schedule", value=e_disp, key=f"eb_eta_{rc}")
 
         eb_c5, eb_c6, eb_c7 = st.columns([1.1, 1.2, 1.1], gap="small")
         with eb_c5:
-            new_makers_raw = st.text_input("Target Makers (comma-separated)", value=", ".join(m_list))
+            new_makers_raw = st.text_input("Target Makers (comma-separated)", value=", ".join(m_list), key=f"eb_makers_{rc}")
         with eb_c6:
-            new_scope = st.text_input("Scope of Work", value=cur.get("scope") or "")
+            new_scope = st.text_input("Scope of Work", value=cur.get("scope") or "", key=f"eb_scope_{rc}")
         with eb_c7:
-            new_spares = st.text_input("Spares / Parts Requested", value=cur.get("spares_requested") or "")
+            new_spares = st.text_input("Spares / Parts Requested", value=cur.get("spares_requested") or "", key=f"eb_spares_{rc}")
 
         updated_makers = [m.strip().upper() for m in re.split(r"[,;/|]", new_makers_raw) if m.strip()]
         st.session_state.parsed_data.update({
@@ -1637,7 +1669,7 @@ with col_main:
                         default=True,
                     )
                 },
-                key="primary_stations_editor",
+                key=f"primary_stations_editor_{rc}",
             )
             selected_primary_df = edited_primary_df[edited_primary_df["Select"] == True].drop(
                 columns=["Select"], errors="ignore"
@@ -1667,7 +1699,7 @@ with col_main:
                             default=True,
                         )
                     },
-                    key="neighbor_stations_editor",
+                    key=f"neighbor_stations_editor_{rc}",
                 )
                 selected_neighbor_df = edited_neighbor_df[edited_neighbor_df["Select"] == True].drop(
                     columns=["Select"], errors="ignore"
