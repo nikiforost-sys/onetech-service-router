@@ -589,13 +589,24 @@ def extract_text_from_file(uploaded_file):
         elif file_name.endswith(".txt"):
             extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
         elif file_name.endswith((".xlsx", ".xls")):
-            excel_sheets = pd.read_excel(uploaded_file, sheet_name=None)
-            for sheet_name, sheet_df in excel_sheets.items():
-                if sheet_df is not None and not sheet_df.empty:
-                    extracted_text += f"\n--- Excel Sheet: {sheet_name} ---\n"
-                    extracted_text += sheet_df.fillna("").to_string(index=False) + "\n"
+            raw_bytes = uploaded_file.read()
+            try:
+                excel_sheets = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=None)
+                for sheet_name, sheet_df in excel_sheets.items():
+                    if sheet_df is not None and not sheet_df.empty:
+                        extracted_text += f"\n--- Excel Sheet: {sheet_name} ---\n"
+                        extracted_text += sheet_df.fillna("").to_string(index=False) + "\n"
+            except Exception:
+                try:
+                    html_tables = pd.read_html(io.BytesIO(raw_bytes))
+                    for idx, tbl_df in enumerate(html_tables, 1):
+                        if tbl_df is not None and not tbl_df.empty:
+                            extracted_text += f"\n--- Table {idx} ---\n"
+                            extracted_text += tbl_df.fillna("").to_string(index=False) + "\n"
+                except Exception:
+                    extracted_text += re.sub(r"<[^>]+>", " ", raw_bytes.decode("utf-8", errors="ignore"))
         elif file_name.endswith(".csv"):
-            csv_df = pd.read_csv(uploaded_file)
+            csv_df = pd.read_csv(uploaded_file, on_bad_lines="skip")
             if csv_df is not None and not csv_df.empty:
                 extracted_text += csv_df.fillna("").to_string(index=False) + "\n"
     except Exception as e:
@@ -1041,6 +1052,10 @@ def route_service_stations(df_dir, target_country, target_makers, include_non_ma
     if df_dir is None or df_dir.empty:
         return pd.DataFrame(), pd.DataFrame(), []
 
+    target_canon = canonical_country(target_country)
+    if not target_canon:
+        return pd.DataFrame(), pd.DataFrame(), []
+
     maker_col = get_approved_makers_col(df_dir)
     work_df = df_dir.copy()
     work_df["_canon_country"] = work_df["Country"].apply(canonical_country)
@@ -1050,8 +1065,7 @@ def route_service_stations(df_dir, target_country, target_makers, include_non_ma
         lambda st_txt: 0 if st_txt.startswith("✅") else (1 if st_txt == "🔧 Non-Maker Approved" else 2)
     )
 
-    target_canon = canonical_country(target_country)
-    primary_pool = work_df[work_df["_canon_country"] == target_canon].copy() if target_canon else work_df.copy()
+    primary_pool = work_df[work_df["_canon_country"] == target_canon].copy()
 
     if not include_non_maker:
         primary_matched = primary_pool[primary_pool["Approval Status"].str.startswith("✅")].copy()
@@ -1060,7 +1074,7 @@ def route_service_stations(df_dir, target_country, target_makers, include_non_ma
 
     primary_matched = primary_matched.sort_values(by=["_sort_rank", "Country", "Service Station Name"]).reset_index(drop=True)
 
-    neighbors = NEIGHBORING_COUNTRIES.get(target_canon, []) if target_canon else []
+    neighbors = NEIGHBORING_COUNTRIES.get(target_canon, [])
     neighbor_matched = pd.DataFrame()
     if neighbors:
         neighbor_pool = work_df[work_df["_canon_country"].isin(neighbors)].copy()
@@ -1246,6 +1260,8 @@ CURRENT PARSED BRIEF:
 # ---------------------------------------------------------------------------
 if "reset_count" not in st.session_state:
     st.session_state.reset_count = 0
+if "brief_version" not in st.session_state:
+    st.session_state.brief_version = 0
 if "parsed_data" not in st.session_state:
     st.session_state.parsed_data = dict(RESULT_DEFAULTS)
 if "raw_inquiry_text" not in st.session_state:
@@ -1302,6 +1318,7 @@ def _toggle_copilot():
 
 def _reset_all_fields():
     st.session_state.reset_count += 1
+    st.session_state.brief_version += 1
     st.session_state.parsed_data = dict(RESULT_DEFAULTS)
     st.session_state.raw_inquiry_text = ""
     st.session_state.last_used_engine = "Ready"
@@ -1312,6 +1329,7 @@ def _reset_all_fields():
 
 
 rc = st.session_state.reset_count
+bv = st.session_state.brief_version
 
 df_directory, directory_source = load_directory()
 total_stations_count = len(df_directory) if df_directory is not None else 0
@@ -1487,6 +1505,7 @@ with col_main:
                 parsed, eng = analyze_inquiry("", sample_thread, [], selected_engine)
                 st.session_state.parsed_data = parsed
                 st.session_state.last_used_engine = eng
+                st.session_state.brief_version += 1
             st.rerun()
 
         if run_analysis_btn:
@@ -1517,6 +1536,7 @@ with col_main:
                     parsed, eng = analyze_inquiry(manual_override_input, full_cleaned_text, pil_images, selected_engine)
                     st.session_state.parsed_data = parsed
                     st.session_state.last_used_engine = eng
+                    st.session_state.brief_version += 1
                 st.rerun()
 
         if st.session_state.raw_inquiry_text:
@@ -1578,26 +1598,27 @@ with col_main:
 
         eb_c1, eb_c2, eb_c3, eb_c4 = st.columns([1.1, 1.0, 1.0, 1.1], gap="small")
         with eb_c1:
-            new_vessel = st.text_input("Vessel Name", value=v_disp, key=f"eb_vessel_{rc}")
+            new_vessel = st.text_input("Vessel Name", value=v_disp, key=f"eb_vessel_{rc}_{bv}")
         with eb_c2:
-            new_port = st.text_input("Service Port", value=p_disp, key=f"eb_port_{rc}")
+            new_port = st.text_input("Service Port", value=p_disp, key=f"eb_port_{rc}_{bv}")
         with eb_c3:
             inferred_country = c_disp
             if new_port.strip().lower() != p_disp.strip().lower():
                 p_lookup = PORT_TO_COUNTRY.get(new_port.strip().lower())
                 if p_lookup:
                     inferred_country = p_lookup
-            new_country = st.text_input("Service Country", value=inferred_country, key=f"eb_country_{rc}")
+                    st.session_state[f"eb_country_{rc}_{bv}"] = inferred_country
+            new_country = st.text_input("Service Country", value=inferred_country, key=f"eb_country_{rc}_{bv}")
         with eb_c4:
-            new_eta = st.text_input("ETA / Schedule", value=e_disp, key=f"eb_eta_{rc}")
+            new_eta = st.text_input("ETA / Schedule", value=e_disp, key=f"eb_eta_{rc}_{bv}")
 
         eb_c5, eb_c6, eb_c7 = st.columns([1.1, 1.2, 1.1], gap="small")
         with eb_c5:
-            new_makers_raw = st.text_input("Target Makers (comma-separated)", value=", ".join(m_list), key=f"eb_makers_{rc}")
+            new_makers_raw = st.text_input("Target Makers (comma-separated)", value=", ".join(m_list), key=f"eb_makers_{rc}_{bv}")
         with eb_c6:
-            new_scope = st.text_input("Scope of Work", value=cur.get("scope") or "", key=f"eb_scope_{rc}")
+            new_scope = st.text_input("Scope of Work", value=cur.get("scope") or "", key=f"eb_scope_{rc}_{bv}")
         with eb_c7:
-            new_spares = st.text_input("Spares / Parts Requested", value=cur.get("spares_requested") or "", key=f"eb_spares_{rc}")
+            new_spares = st.text_input("Spares / Parts Requested", value=cur.get("spares_requested") or "", key=f"eb_spares_{rc}_{bv}")
 
         updated_makers = [m.strip().upper() for m in re.split(r"[,;/|]", new_makers_raw) if m.strip()]
         st.session_state.parsed_data.update({
@@ -1624,6 +1645,8 @@ with col_main:
 
     selected_primary_df = pd.DataFrame()
     selected_neighbor_df = neighbor_df.copy()
+
+    filter_sig = f"{rc}_{bv}_{canonical_country(active_country)}_{'_'.join(active_makers)}_{include_non_maker}"
 
     with st.container(border=True):
         st.markdown("""
@@ -1652,7 +1675,9 @@ with col_main:
                 on_change=_sync_non_maker_from_main,
             )
 
-        if not primary_df.empty:
+        if not canonical_country(active_country):
+            st.info("Specify a valid **Service Country** or **Port** in STEP 01 / STEP 02 to display matching service stations.")
+        elif not primary_df.empty:
             primary_for_editor = primary_df.copy()
             primary_for_editor.insert(0, "Select", True)
             disabled_primary_cols = [c for c in primary_for_editor.columns if c != "Select"]
@@ -1669,7 +1694,7 @@ with col_main:
                         default=True,
                     )
                 },
-                key=f"primary_stations_editor_{rc}",
+                key=f"primary_stations_editor_{filter_sig}",
             )
             selected_primary_df = edited_primary_df[edited_primary_df["Select"] == True].drop(
                 columns=["Select"], errors="ignore"
@@ -1699,7 +1724,7 @@ with col_main:
                             default=True,
                         )
                     },
-                    key=f"neighbor_stations_editor_{rc}",
+                    key=f"neighbor_stations_editor_{filter_sig}",
                 )
                 selected_neighbor_df = edited_neighbor_df[edited_neighbor_df["Select"] == True].drop(
                     columns=["Select"], errors="ignore"
