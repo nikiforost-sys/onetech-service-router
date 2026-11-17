@@ -7,6 +7,8 @@ import json
 import os
 import re
 import urllib.request
+import xml.etree.ElementTree as ET
+import zipfile
 import extract_msg
 import pandas as pd
 from PIL import Image
@@ -439,6 +441,7 @@ COUNTRY_ALIASES.update({
     "united states (usa)": "USA", "united states of america": "USA",
     "uk": "UK", "u.k.": "UK", "united kingdom": "UK", "great britain": "UK", "england": "UK",
     "south korea": "SOUTH KOREA", "korea": "SOUTH KOREA", "republic of korea": "SOUTH KOREA",
+    "korea, south": "SOUTH KOREA",
     "hellas": "GREECE", "ελλάδα": "GREECE", "ελλαδα": "GREECE",
     "μάλτα": "MALTA", "μαλτα": "MALTA", "ρουμανία": "ROMANIA", "τουρκία": "TURKEY",
     "türkiye": "TURKEY", "turkiye": "TURKEY", "κύπρος": "CYPRUS", "brasil": "BRAZIL",
@@ -539,7 +542,7 @@ COUNTRY_KEYS_BY_LENGTH = sorted(COUNTRY_ALIASES.keys(), key=len, reverse=True)
 
 
 # ---------------------------------------------------------------------------
-# TEXT EXTRACTION & CLEANING (PDF, EML, MSG, TXT, XLSX, XLS, CSV)
+# TEXT EXTRACTION & BUILT-IN EXCEL/XML PARSER (NO EXTRA DEPENDENCIES NEEDED)
 # ---------------------------------------------------------------------------
 def clean_signatures(text):
     if not text:
@@ -568,6 +571,60 @@ def clean_signatures(text):
     return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
 
 
+def _extract_xlsx_native(raw_bytes):
+    """Pure-Python fallback for .xlsx files if openpyxl is not installed."""
+    out_lines = []
+    with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
+        shared_strings = []
+        if "xl/sharedStrings.xml" in zf.namelist():
+            root = ET.fromstring(zf.read("xl/sharedStrings.xml"))
+            for si in root.iter():
+                if si.tag.endswith("}si") or si.tag == "si":
+                    parts = [t.text for t in si.iter() if (t.tag.endswith("}t") or t.tag == "t") and t.text]
+                    shared_strings.append("".join(parts))
+
+        sheet_files = sorted(n for n in zf.namelist() if n.startswith("xl/worksheets/sheet") and n.endswith(".xml"))
+        for sf in sheet_files:
+            out_lines.append(f"--- Worksheet: {os.path.basename(sf)} ---")
+            s_root = ET.fromstring(zf.read(sf))
+            for row_el in s_root.iter():
+                if row_el.tag.endswith("}row") or row_el.tag == "row":
+                    row_vals = []
+                    for c_el in row_el:
+                        if not (c_el.tag.endswith("}c") or c_el.tag == "c"):
+                            continue
+                        c_type = c_el.attrib.get("t", "")
+                        val_text = ""
+                        for child in c_el:
+                            if child.tag.endswith("}v") or child.tag == "v":
+                                raw_v = child.text or ""
+                                if c_type == "s" and raw_v.isdigit() and int(raw_v) < len(shared_strings):
+                                    val_text = shared_strings[int(raw_v)]
+                                else:
+                                    val_text = raw_v
+                            elif child.tag.endswith("}is") or child.tag == "is":
+                                t_parts = [t.text for t in child.iter() if (t.tag.endswith("}t") or t.tag == "t") and t.text]
+                                val_text = "".join(t_parts)
+                        if str(val_text).strip():
+                            row_vals.append(str(val_text).strip())
+                    if row_vals:
+                        out_lines.append(" | ".join(row_vals))
+    return "\n".join(out_lines)
+
+
+def _extract_xls_fallback(raw_bytes):
+    """Fallback for legacy .xls / HTML / XML files when xlrd is not installed."""
+    text_utf8 = raw_bytes.decode("utf-8", errors="ignore")
+    if "<table" in text_utf8.lower() or "<row" in text_utf8.lower() or "<cell" in text_utf8.lower():
+        stripped = re.sub(r"<[^>]+>", " ", text_utf8)
+        return re.sub(r"\s+", " ", stripped).strip()
+    utf16_chunks = re.findall(r"(?:[ -~]\x00){4,}", raw_bytes.decode("latin-1"))
+    decoded_u16 = [c.encode("latin-1").decode("utf-16le", errors="ignore").strip() for c in utf16_chunks]
+    ascii_chunks = re.findall(r"[A-Za-z0-9_\-\./:,;()@#&+ ]{5,}", raw_bytes.decode("latin-1", errors="ignore"))
+    combined = [x for x in (decoded_u16 + ascii_chunks) if x and not x.startswith("Root Entry")]
+    return "\n".join(combined)
+
+
 def extract_text_from_file(uploaded_file):
     extracted_text = ""
     file_name = uploaded_file.name.lower()
@@ -590,23 +647,44 @@ def extract_text_from_file(uploaded_file):
             extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
         elif file_name.endswith((".xlsx", ".xls")):
             raw_bytes = uploaded_file.read()
+            parsed_ok = False
             try:
                 excel_sheets = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=None)
                 for sheet_name, sheet_df in excel_sheets.items():
                     if sheet_df is not None and not sheet_df.empty:
                         extracted_text += f"\n--- Excel Sheet: {sheet_name} ---\n"
                         extracted_text += sheet_df.fillna("").to_string(index=False) + "\n"
+                if extracted_text.strip():
+                    parsed_ok = True
             except Exception:
+                parsed_ok = False
+
+            if not parsed_ok and zipfile.is_zipfile(io.BytesIO(raw_bytes)):
+                try:
+                    extracted_text += _extract_xlsx_native(raw_bytes)
+                    parsed_ok = bool(extracted_text.strip())
+                except Exception:
+                    parsed_ok = False
+
+            if not parsed_ok:
                 try:
                     html_tables = pd.read_html(io.BytesIO(raw_bytes))
                     for idx, tbl_df in enumerate(html_tables, 1):
                         if tbl_df is not None and not tbl_df.empty:
                             extracted_text += f"\n--- Table {idx} ---\n"
                             extracted_text += tbl_df.fillna("").to_string(index=False) + "\n"
+                    parsed_ok = bool(extracted_text.strip())
                 except Exception:
-                    extracted_text += re.sub(r"<[^>]+>", " ", raw_bytes.decode("utf-8", errors="ignore"))
+                    parsed_ok = False
+
+            if not parsed_ok:
+                extracted_text += _extract_xls_fallback(raw_bytes)
         elif file_name.endswith(".csv"):
-            csv_df = pd.read_csv(uploaded_file, on_bad_lines="skip")
+            raw_csv = uploaded_file.read().decode("utf-8-sig", errors="replace")
+            try:
+                csv_df = pd.read_csv(io.StringIO(raw_csv), sep=None, engine="python", on_bad_lines="skip")
+            except Exception:
+                csv_df = pd.read_csv(io.StringIO(raw_csv), on_bad_lines="skip")
             if csv_df is not None and not csv_df.empty:
                 extracted_text += csv_df.fillna("").to_string(index=False) + "\n"
     except Exception as e:
@@ -773,13 +851,22 @@ def normalize_result(data):
         result["makers"] = []
 
     result["vessel_name"] = clean_vessel_name(result.get("vessel_name"))
-    if str(result.get("country", "")).strip():
-        c = find_country(str(result["country"]))
-        result["country"] = c if c else str(result["country"]).upper()
+    raw_country = str(result.get("country", "")).strip()
+    if raw_country and raw_country.lower() not in {"not specified", "n/a", "none", "null", "unknown"}:
+        c = find_country(raw_country)
+        result["country"] = c if c else raw_country.upper()
+    else:
+        result["country"] = "Not specified"
 
-    p_key = str(result.get("port", "")).strip().lower()
-    if p_key in PORT_TO_COUNTRY and result.get("country") in ("Not specified", ""):
-        result["country"] = PORT_TO_COUNTRY[p_key]
+    port_str = str(result.get("port", "")).strip()
+    if port_str and port_str.lower() not in {"not specified", "n/a", "none", "null", "unknown"}:
+        matched_ports = ports_in_text(port_str)
+        if matched_ports:
+            result["port"] = matched_ports[0][2].title()
+            if result.get("country") in ("Not specified", ""):
+                result["country"] = matched_ports[0][3]
+    else:
+        result["port"] = "Not specified"
 
     for list_key in ("discrepancies", "missing_critical_data"):
         val = result.get(list_key)
@@ -1256,14 +1343,60 @@ CURRENT PARSED BRIEF:
 
 
 # ---------------------------------------------------------------------------
-# SESSION STATE & THREE-WAY SYNCED CHECKBOX CALLBACKS
+# SESSION STATE & CLEAN TWO-WAY SYNC CALLBACKS
 # ---------------------------------------------------------------------------
+def _apply_parsed_data(parsed_dict):
+    d = dict(RESULT_DEFAULTS)
+    if isinstance(parsed_dict, dict):
+        d.update(parsed_dict)
+    st.session_state.parsed_data = d
+    st.session_state.eb_vessel = d.get("vessel_name") or "Not specified"
+    st.session_state.eb_port = d.get("port") or "Not specified"
+    st.session_state.eb_country = d.get("country") or "Not specified"
+    st.session_state.eb_eta = d.get("eta") or "Not specified"
+    st.session_state.eb_makers = ", ".join(d.get("makers") or [])
+    st.session_state.eb_scope = d.get("scope") or "Standard technical attendance inquiry."
+    st.session_state.eb_spares = d.get("spares_requested") or "Inquired per inquiry"
+
+
+def _sync_brief_from_widgets():
+    v_val = str(st.session_state.get("eb_vessel", "")).strip() or "Not specified"
+    p_val = str(st.session_state.get("eb_port", "")).strip() or "Not specified"
+    c_raw = str(st.session_state.get("eb_country", "")).strip()
+    c_val = (find_country(c_raw) or c_raw.upper()) if c_raw and c_raw.lower() != "not specified" else "Not specified"
+    e_val = str(st.session_state.get("eb_eta", "")).strip() or "Not specified"
+    m_raw = str(st.session_state.get("eb_makers", ""))
+    m_list = [m.strip().upper() for m in re.split(r"[,;/|]", m_raw) if m.strip()]
+    sc_val = str(st.session_state.get("eb_scope", "")).strip() or "Standard technical attendance inquiry."
+    sp_val = str(st.session_state.get("eb_spares", "")).strip() or "Inquired per inquiry"
+
+    st.session_state.parsed_data.update({
+        "vessel_name": v_val,
+        "port": p_val,
+        "country": c_val,
+        "eta": e_val,
+        "makers": m_list,
+        "scope": sc_val,
+        "spares_requested": sp_val,
+    })
+
+
+def _on_port_widget_change():
+    p_val = str(st.session_state.get("eb_port", "")).strip()
+    if p_val and p_val.lower() != "not specified":
+        matched_p = ports_in_text(p_val)
+        if matched_p:
+            st.session_state.eb_port = matched_p[0][2].title()
+            st.session_state.eb_country = matched_p[0][3]
+    _sync_brief_from_widgets()
+
+
 if "reset_count" not in st.session_state:
     st.session_state.reset_count = 0
-if "brief_version" not in st.session_state:
-    st.session_state.brief_version = 0
 if "parsed_data" not in st.session_state:
-    st.session_state.parsed_data = dict(RESULT_DEFAULTS)
+    _apply_parsed_data(RESULT_DEFAULTS)
+if "eb_vessel" not in st.session_state:
+    _apply_parsed_data(st.session_state.parsed_data)
 if "raw_inquiry_text" not in st.session_state:
     st.session_state.raw_inquiry_text = ""
 if "last_used_engine" not in st.session_state:
@@ -1316,10 +1449,13 @@ def _toggle_copilot():
     st.session_state.show_copilot = not st.session_state.show_copilot
 
 
+def _close_copilot():
+    st.session_state.show_copilot = False
+
+
 def _reset_all_fields():
     st.session_state.reset_count += 1
-    st.session_state.brief_version += 1
-    st.session_state.parsed_data = dict(RESULT_DEFAULTS)
+    _apply_parsed_data(RESULT_DEFAULTS)
     st.session_state.raw_inquiry_text = ""
     st.session_state.last_used_engine = "Ready"
     st.session_state.include_non_maker_approved = False
@@ -1329,7 +1465,6 @@ def _reset_all_fields():
 
 
 rc = st.session_state.reset_count
-bv = st.session_state.brief_version
 
 df_directory, directory_source = load_directory()
 total_stations_count = len(df_directory) if df_directory is not None else 0
@@ -1383,9 +1518,7 @@ with st.sidebar:
             load_directory.clear()
             st.rerun()
     with sb_c2:
-        if st.button("🗑️ Reset All", use_container_width=True):
-            _reset_all_fields()
-            st.rerun()
+        st.button("🗑️ Reset All", on_click=_reset_all_fields, use_container_width=True)
 
     with st.expander("🔎 Browse Full Station Directory", expanded=False):
         q_search = st.text_input("Search Country / Station / Maker", placeholder="e.g. Furuno, Dubai, China...")
@@ -1481,11 +1614,7 @@ with col_main:
         with act_col2:
             load_sample_btn = st.button("🧪 Load Sample RFQ", use_container_width=True)
         with act_col3:
-            clear_step1_btn = st.button("🗑️ Reset", use_container_width=True, help="Clear all text boxes, attachments, and results")
-
-        if clear_step1_btn:
-            _reset_all_fields()
-            st.rerun()
+            st.button("🗑️ Reset", on_click=_reset_all_fields, use_container_width=True, help="Clear all text boxes, attachments, and results")
 
         if load_sample_btn:
             sample_thread = (
@@ -1503,9 +1632,8 @@ with col_main:
             st.session_state.raw_inquiry_text = sample_thread
             with st.spinner("Analyzing sample maritime RFQ thread..."):
                 parsed, eng = analyze_inquiry("", sample_thread, [], selected_engine)
-                st.session_state.parsed_data = parsed
+                _apply_parsed_data(parsed)
                 st.session_state.last_used_engine = eng
-                st.session_state.brief_version += 1
             st.rerun()
 
         if run_analysis_btn:
@@ -1534,9 +1662,8 @@ with col_main:
             else:
                 with st.spinner("Extracting maritime telemetry & verifying maker approvals..."):
                     parsed, eng = analyze_inquiry(manual_override_input, full_cleaned_text, pil_images, selected_engine)
-                    st.session_state.parsed_data = parsed
+                    _apply_parsed_data(parsed)
                     st.session_state.last_used_engine = eng
-                    st.session_state.brief_version += 1
                 st.rerun()
 
         if st.session_state.raw_inquiry_text:
@@ -1598,38 +1725,21 @@ with col_main:
 
         eb_c1, eb_c2, eb_c3, eb_c4 = st.columns([1.1, 1.0, 1.0, 1.1], gap="small")
         with eb_c1:
-            new_vessel = st.text_input("Vessel Name", value=v_disp, key=f"eb_vessel_{rc}_{bv}")
+            st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
         with eb_c2:
-            new_port = st.text_input("Service Port", value=p_disp, key=f"eb_port_{rc}_{bv}")
+            st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change)
         with eb_c3:
-            inferred_country = c_disp
-            if new_port.strip().lower() != p_disp.strip().lower():
-                p_lookup = PORT_TO_COUNTRY.get(new_port.strip().lower())
-                if p_lookup:
-                    inferred_country = p_lookup
-                    st.session_state[f"eb_country_{rc}_{bv}"] = inferred_country
-            new_country = st.text_input("Service Country", value=inferred_country, key=f"eb_country_{rc}_{bv}")
+            st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
         with eb_c4:
-            new_eta = st.text_input("ETA / Schedule", value=e_disp, key=f"eb_eta_{rc}_{bv}")
+            st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
 
         eb_c5, eb_c6, eb_c7 = st.columns([1.1, 1.2, 1.1], gap="small")
         with eb_c5:
-            new_makers_raw = st.text_input("Target Makers (comma-separated)", value=", ".join(m_list), key=f"eb_makers_{rc}_{bv}")
+            st.text_input("Target Makers (comma-separated)", key="eb_makers", on_change=_sync_brief_from_widgets)
         with eb_c6:
-            new_scope = st.text_input("Scope of Work", value=cur.get("scope") or "", key=f"eb_scope_{rc}_{bv}")
+            st.text_input("Scope of Work", key="eb_scope", on_change=_sync_brief_from_widgets)
         with eb_c7:
-            new_spares = st.text_input("Spares / Parts Requested", value=cur.get("spares_requested") or "", key=f"eb_spares_{rc}_{bv}")
-
-        updated_makers = [m.strip().upper() for m in re.split(r"[,;/|]", new_makers_raw) if m.strip()]
-        st.session_state.parsed_data.update({
-            "vessel_name": new_vessel.strip() or "Not specified",
-            "port": new_port.strip() or "Not specified",
-            "country": new_country.strip().upper() if new_country.strip() and new_country.strip().lower() != "not specified" else "Not specified",
-            "eta": new_eta.strip() or "Not specified",
-            "makers": updated_makers,
-            "scope": new_scope.strip() or "Standard technical attendance inquiry.",
-            "spares_requested": new_spares.strip() or "Inquired per inquiry",
-        })
+            st.text_input("Spares / Parts Requested", key="eb_spares", on_change=_sync_brief_from_widgets)
 
     # STEP 03: SERVICE STATION ROUTING & STRICT (*) MAKER VERIFICATION
     active_country = st.session_state.parsed_data.get("country", "Not specified")
@@ -1646,7 +1756,7 @@ with col_main:
     selected_primary_df = pd.DataFrame()
     selected_neighbor_df = neighbor_df.copy()
 
-    filter_sig = f"{rc}_{bv}_{canonical_country(active_country)}_{'_'.join(active_makers)}_{include_non_maker}"
+    filter_sig = f"{rc}_{canonical_country(active_country)}_{'_'.join(active_makers)}_{include_non_maker}"
 
     with st.container(border=True):
         st.markdown("""
@@ -1676,7 +1786,7 @@ with col_main:
             )
 
         if not canonical_country(active_country):
-            st.info("Specify a valid **Service Country** or **Port** in STEP 01 / STEP 02 to display matching service stations.")
+            st.info("Specify a valid **Service Country** or **Service Port** in STEP 01 / STEP 02 to display matching service stations.")
         elif not primary_df.empty:
             primary_for_editor = primary_df.copy()
             primary_for_editor.insert(0, "Select", True)
@@ -1755,7 +1865,12 @@ with col_main:
             )
             rfq_c1, rfq_c2 = st.columns([1.25, 1.0], gap="medium")
             with rfq_c1:
-                edited_rfq = st.text_area("Editable Outbound RFQ Template (Bracketed [...] Placeholders)", value=rfq_default_text, height=330)
+                edited_rfq = st.text_area(
+                    "Editable Outbound RFQ Template (Bracketed [...] Placeholders)",
+                    value=rfq_default_text,
+                    height=330,
+                    key=f"rfq_template_box_{filter_sig}_{len(rfq_target_df)}",
+                )
             with rfq_c2:
                 st.markdown("**📋 One-Click Copy RFQ Block**")
                 st.code(edited_rfq, language="text")
@@ -1768,12 +1883,14 @@ with col_main:
                 )
 
         with tab_outlook:
+            default_scope_idx = 1 if (selected_primary_df.empty and not selected_neighbor_df.empty) else 0
             scope_choice = st.radio(
                 "Select Station Pool for Email Extraction (Filtered by Checked 'Select' Rows in STEP 03):",
                 options=[
                     "Selected Primary Country Stations Only",
                     "Selected Primary + Selected Regional Neighboring Stations",
                 ],
+                index=default_scope_idx,
                 horizontal=True,
             )
             pool_df = (
@@ -1802,12 +1919,22 @@ if st.session_state.show_copilot and col_copilot is not None:
     with col_copilot:
         st.markdown('<div class="copilot-panel-marker"></div>', unsafe_allow_html=True)
         with st.container(border=True):
-            st.markdown("""
-            <div class="ot-copilot-header">
-                <div class="ot-copilot-title">🧭 Onetech AI Technical Copilot</div>
-                <div class="ot-copilot-sub">Context-Aware RFQ &amp; Maker-Approval Assistant</div>
-            </div>
-            """, unsafe_allow_html=True)
+            top_c1, top_c2 = st.columns([3.2, 1.2])
+            with top_c1:
+                st.markdown("""
+                <div class="ot-copilot-header" style="margin-bottom:0.4rem;">
+                    <div class="ot-copilot-title">🧭 Onetech AI Copilot</div>
+                    <div class="ot-copilot-sub">RFQ &amp; Maker-Approval Assistant</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with top_c2:
+                st.button(
+                    "✖ Close",
+                    on_click=_close_copilot,
+                    key="close_copilot_header_btn",
+                    help="Close panel without losing chat history",
+                    use_container_width=True,
+                )
 
             qp_c1, qp_c2 = st.columns(2)
             quick_prompt = None
