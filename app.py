@@ -191,7 +191,7 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2):ha
 
 
 # ---------------------------------------------------------------------------
-# SECRETS & ACTIVE MODELS
+# SECRETS & DYNAMIC ACTIVE MODELS (GEMINI + GROQ)
 # ---------------------------------------------------------------------------
 def read_secret(key_name):
     raw = ""
@@ -210,10 +210,10 @@ gemini_api_key = read_secret("GEMINI_API_KEY")
 client_groq = Groq(api_key=groq_api_key, timeout=60.0, max_retries=2) if groq_api_key else None
 
 GEMINI_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-3.8-pro",
     "gemini-2.5-flash",
     "gemini-2.0-flash",
-    "gemini-2.5-pro",
-    "gemini-1.5-flash",
 ]
 
 GROQ_MODELS = [
@@ -228,6 +228,49 @@ GROQ_VISION_MODELS = {
     "meta-llama/llama-4-scout-17b-16e-instruct",
     "meta-llama/llama-4-maverick-17b-128e-instruct",
 }
+
+
+@st.cache_data(ttl=600)
+def get_active_gemini_models():
+    """Auto-discover active Gemini models for this API key via REST API."""
+    discovered = []
+    if gemini_api_key:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_api_key}"
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            for m in data.get("models") or []:
+                methods = m.get("supportedGenerationMethods") or []
+                if "generateContent" not in methods:
+                    continue
+                name = str(m.get("name", "")).replace("models/", "").strip()
+                nl = name.lower()
+                if not name or "gemini" not in nl:
+                    continue
+                if any(skip in nl for skip in ("embedding", "aqa", "tts", "imagen", "veo", "lyria", "robotics", "computer-use")):
+                    continue
+                discovered.append(name)
+        except Exception:
+            pass
+
+    if discovered:
+        ordered = []
+        for pref in GEMINI_MODELS:
+            if pref in discovered and pref not in ordered:
+                ordered.append(pref)
+        for m in discovered:
+            if "flash" in m.lower() and m not in ordered:
+                ordered.append(m)
+        for m in discovered:
+            if "pro" in m.lower() and m not in ordered:
+                ordered.append(m)
+        for m in discovered:
+            if m not in ordered:
+                ordered.append(m)
+        return ordered
+
+    return list(GEMINI_MODELS)
 
 
 @st.cache_data(ttl=600)
@@ -471,8 +514,32 @@ COUNTRY_ALIASES.update({
 })
 
 
+def _as_clean_str(val, default=""):
+    """Safely convert any LLM output (str, list, dict, None) into a clean string for Streamlit widgets."""
+    if val is None:
+        return default
+    if isinstance(val, str):
+        s = val.strip()
+        return s if s else default
+    if isinstance(val, list):
+        parts = []
+        for item in val:
+            if isinstance(item, dict):
+                sub = " ".join(f"{v}" for v in item.values() if v is not None and str(v).strip())
+                if sub:
+                    parts.append(sub)
+            elif item is not None and str(item).strip():
+                parts.append(str(item).strip())
+        return ", ".join(parts) if parts else default
+    if isinstance(val, dict):
+        parts = [f"{k}: {v}" for k, v in val.items() if v is not None and str(v).strip()]
+        return ", ".join(parts) if parts else default
+    s = str(val).strip()
+    return s if s else default
+
+
 def canonical_country(raw_value):
-    s = str(raw_value or "").strip().lower()
+    s = _as_clean_str(raw_value).lower()
     if not s or s in {"not specified", "n/a", "none", "null"}:
         return ""
     if s in COUNTRY_ALIASES:
@@ -501,9 +568,7 @@ def _maker_matches_token(maker_raw, token_clean):
 
 
 def evaluate_station_coverage(approved_str, target_makers):
-    """
-    Evaluate 3-tier approval status + One-Stop-Shop multi-maker coverage.
-    """
+    """Evaluate 3-tier approval status + One-Stop-Shop multi-maker coverage."""
     tokens = [t.strip() for t in re.split(r"[,;]", str(approved_str or "")) if t.strip()]
     clean_targets = []
     for m in (target_makers or []):
@@ -637,7 +702,6 @@ def clean_signatures(text):
 
 
 def _prepare_pil_image(img, max_dim=1600):
-    """Normalize image to RGB and downscale gently so Vision API calls stay fast & compact."""
     if img.mode != "RGB":
         img = img.convert("RGB")
     w, h = img.size
@@ -687,7 +751,6 @@ def _detect_extension_from_bytes(raw_bytes):
 
 
 def _extract_docx_native(raw_bytes):
-    """Pure-Python extractor for .docx paragraphs and tables (zero extra dependencies)."""
     lines = []
     with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
         xml_targets = [n for n in zf.namelist() if n in ("word/document.xml", "word/header1.xml", "word/footer1.xml")]
@@ -704,7 +767,6 @@ def _extract_docx_native(raw_bytes):
 
 
 def _extract_xlsx_native(raw_bytes):
-    """Pure-Python fallback for .xlsx files if openpyxl is not installed."""
     out_lines = []
     with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
         shared_strings = []
@@ -745,7 +807,6 @@ def _extract_xlsx_native(raw_bytes):
 
 
 def _extract_xls_fallback(raw_bytes):
-    """Fallback for legacy .xls / HTML / XML files when xlrd is not installed."""
     text_utf8 = raw_bytes.decode("utf-8", errors="ignore")
     if "<table" in text_utf8.lower() or "<row" in text_utf8.lower() or "<cell" in text_utf8.lower():
         stripped = re.sub(r"<[^>]+>", " ", text_utf8)
@@ -758,7 +819,6 @@ def _extract_xls_fallback(raw_bytes):
 
 
 def _extract_pdf_content(raw_bytes, source_name="document.pdf", max_pages=25, max_vision_pages=8):
-    """Extract text from PDF; for scanned/image-only pages, extract page images for Vision AI."""
     extracted_text_parts = []
     extracted_images = []
     notes = []
@@ -818,11 +878,6 @@ def _strip_html_to_text(html_str):
 
 
 def extract_content_from_bytes(raw_bytes, file_name, _depth=0):
-    """
-    Recursively extract text AND Vision images from:
-    MSG, EML (incl. all attachments & inline images), PDF (text + scanned),
-    Excel (XLSX/XLS), CSV, Word (DOCX), ZIP archives, HTML/XML/TXT, and JPEG/PNG/TIFF/WEBP.
-    """
     if not raw_bytes or _depth > 4:
         return "", [], []
 
@@ -1053,9 +1108,10 @@ def extract_text_from_file(uploaded_file):
 
 
 def clean_vessel_name(raw_name):
-    if not raw_name or str(raw_name).strip().lower() in {"not specified", "n/a", "none", "unknown", "null"}:
+    raw_str = _as_clean_str(raw_name)
+    if not raw_str or raw_str.lower() in {"not specified", "n/a", "none", "unknown", "null"}:
         return "Not specified"
-    text = str(raw_name).strip().strip('"').strip("'")
+    text = raw_str.strip('"').strip("'")
     text = re.sub(r"(?i)^(?:m/v|m/t|mv|mt|vessel|ship)\s*[:\-]?\s*", "", text)
     text = re.sub(r"(?i)\s*[\-–—]\s*(?:vdr|gmdss|annual|survey|radio|navtex|inspection|repair|radar|attendance|service|class|coc|imo|\/\/|@).*$", "", text)
     text = re.sub(r"(?i)\b(?:vdr|gmdss|annual|survey|radio|navtex|inspection|repair|attendance|service|coc|imo)\b.*$", "", text)
@@ -1201,6 +1257,11 @@ def normalize_result(data):
         if k in data and data.get(k) is not None:
             result[k] = data.get(k)
 
+    # Guarantee clean strings for all text-input fields (prevents Streamlit TypeError if LLM returns a list)
+    result["eta"] = _as_clean_str(result.get("eta"), "Not specified")
+    result["scope"] = _as_clean_str(result.get("scope"), "Standard technical attendance inquiry.")
+    result["spares_requested"] = _as_clean_str(result.get("spares_requested"), "Inquired per inquiry")
+
     makers = result.get("makers")
     if isinstance(makers, str):
         result["makers"] = [m.strip().upper() for m in re.split(r"[,;/|]", makers) if m.strip()]
@@ -1210,20 +1271,22 @@ def normalize_result(data):
         result["makers"] = []
 
     result["vessel_name"] = clean_vessel_name(result.get("vessel_name"))
-    raw_country = str(result.get("country", "")).strip()
+    raw_country = _as_clean_str(result.get("country"))
     if raw_country and raw_country.lower() not in {"not specified", "n/a", "none", "null", "unknown"}:
         c = find_country(raw_country)
         result["country"] = c if c else raw_country.upper()
     else:
         result["country"] = "Not specified"
 
-    port_str = str(result.get("port", "")).strip()
+    port_str = _as_clean_str(result.get("port"))
     if port_str and port_str.lower() not in {"not specified", "n/a", "none", "null", "unknown"}:
         matched_ports = ports_in_text(port_str)
         if matched_ports:
             result["port"] = matched_ports[0][2].title()
             if result.get("country") in ("Not specified", ""):
                 result["country"] = matched_ports[0][3]
+        else:
+            result["port"] = port_str
     else:
         result["port"] = "Not specified"
 
@@ -1243,10 +1306,7 @@ def normalize_result(data):
 # ZERO-DEPENDENCY GEMINI REST VISION + GROQ VISION OCR & MULTIMODAL PARSING
 # ---------------------------------------------------------------------------
 def _gemini_rest_generate(model_name, prompt, pil_images=None):
-    """
-    Direct Gemini REST API call using Python stdlib urllib (works even if
-    google-genai / google-generativeai SDKs are NOT installed!).
-    """
+    """Direct Gemini REST API call using stdlib urllib (works without google-genai SDK)."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_api_key}"
     parts = [{"text": prompt}]
     for img in (pil_images or [])[:6]:
@@ -1284,12 +1344,13 @@ def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=No
             error_log.append("Gemini: GEMINI_API_KEY missing")
         return None, None
 
-    candidates = ([preferred_model] if preferred_model in GEMINI_MODELS else []) + [
-        m for m in GEMINI_MODELS if m != preferred_model
+    active_gem = get_active_gemini_models()
+    candidates = ([preferred_model] if preferred_model and preferred_model in active_gem else []) + [
+        m for m in active_gem if m != preferred_model
     ]
 
     for model_name in candidates:
-        # 1. Direct REST API (most reliable across all Streamlit environments)
+        # 1. Direct REST API
         try:
             txt = _gemini_rest_generate(model_name, prompt, pil_images=pil_images)
             if txt:
@@ -1346,7 +1407,6 @@ def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=No
 
 
 def _groq_vision_raw_text(prompt, pil_images, preferred_model=None, error_log=None):
-    """Run Groq Vision (Llama-4 Scout/Maverick) with compact base64 JPEGs and merged prompt."""
     if not client_groq or not pil_images:
         return None, None
 
@@ -1381,11 +1441,7 @@ def _groq_vision_raw_text(prompt, pil_images, preferred_model=None, error_log=No
 
 
 def run_vision_ocr_on_images(pil_images, selected_engine):
-    """
-    Dedicated Vision OCR pass for attached photos & scanned PDF pages.
-    Extracts vessel name, equipment maker/model, serial numbers, and spare part numbers
-    into structured plain text so BOTH AI and local parsers see every detail.
-    """
+    """Dedicated Vision OCR pass for attached photos & scanned PDF pages."""
     if not pil_images:
         return "", None, []
 
@@ -1492,7 +1548,7 @@ CRITICAL INSTRUCTIONS:
 2. EMAIL THREAD CHRONOLOGY: The email at the VERY TOP is the active instruction. If it updates the port (e.g. 'Taicang China instead of Qingdao China' or 'Malta instead of Genova'), use the NEW port and list the old port in discrepancies. A prior Service Report attached to the email may show an older port (e.g. Weihai, China); always use the NEW requested attendance port from the email body.
 3. VESSEL NAME: Strip 'MV', 'M/V', 'MT', 'M/T', and scope words. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', vessel_name is strictly 'Seaduty'.
 4. ALL MAKERS, MODELS & SPARE PARTS: Identify EVERY marine electronics maker involved across the email, Excel/CSV tables, Word/PDF attachments, Vision OCR text, and attached images (e.g., Furuno, JRC, Alphatron, Sperry Marine, Danelec, Yokogawa/YDK, Tokyo Keiki, Anschutz, Cobham/SAILOR, Jotron, Netwave, Consilium, Highlander, MacGregor, Wartsila/SAM/Transas, Kelvin Hughes, Simrad, Skipper, Intellian, McMurdo, etc.). Infer the maker from ANY model or OEM part number — NOT just one brand.
-5. SPARES REQUESTED: Extract a clean, concise list of ALL requested or recommended spare parts (including description, OEM part number, and quantity if shown) across ALL makers and attachments.
+5. SPARES REQUESTED: Extract a single concise STRING listing ALL requested or recommended spare parts (including description, OEM part number, and quantity if shown) across ALL makers and attachments.
 6. DO NOT extract 'Piraeus' or 'Greece' from office signatures.{vision_note}
 
 MANUAL OVERRIDE:
@@ -1509,7 +1565,7 @@ Return ONLY valid JSON:
   "country": "Service country or 'Not specified'",
   "makers": ["All OEM makers requiring service or spares"],
   "scope": "Concise technical scope summary including equipment model",
-  "spares_requested": "Exact list of spares & part numbers requested/recommended, or 'None / Attendance only'",
+  "spares_requested": "Single string listing spares & part numbers, or 'None / Attendance only'",
   "discrepancies": ["Source A says X; source B says Y"],
   "missing_critical_data": ["What is missing"]
 }}"""
@@ -1589,9 +1645,9 @@ def reconcile_results(ai_result, local_result, manual_override_text):
     base = dict(local_result or RESULT_DEFAULTS)
     if ai_result:
         for k in ("vessel_name", "eta", "port", "country", "scope", "spares_requested"):
-            ai_val = str(ai_result.get(k, "")).strip()
+            ai_val = _as_clean_str(ai_result.get(k))
             if ai_val and ai_val.lower() not in {"not specified", "n/a", "none", "null", "unknown"}:
-                base[k] = ai_result[k]
+                base[k] = ai_val
 
         combined_makers = []
         for m in (ai_result.get("makers") or []) + (local_result.get("makers") or []):
@@ -1608,7 +1664,7 @@ def reconcile_results(ai_result, local_result, manual_override_text):
                     merged.append(s)
             base[list_k] = merged
 
-    if str(base.get("port", "")).lower() == "piraeus" and str(local_result.get("port", "")).lower() not in ("piraeus", "not specified"):
+    if _as_clean_str(base.get("port")).lower() == "piraeus" and _as_clean_str(local_result.get("port")).lower() not in ("piraeus", "not specified"):
         base["port"] = local_result["port"]
         base["country"] = local_result["country"]
 
@@ -1636,7 +1692,6 @@ def analyze_inquiry(manual_override_text, cleaned_files, pil_images, selected_en
     vision_status = ""
     vision_errors = []
 
-    # Step A: Dedicated Vision OCR pass for any attached images / scanned PDF pages
     if pil_images and selected_engine != "Local Deterministic Only":
         ocr_text, ocr_engine, vision_errors = run_vision_ocr_on_images(pil_images, selected_engine)
         if ocr_text:
@@ -1705,9 +1760,6 @@ def route_service_stations(
     include_other_stations=False,
     one_stop_only=False,
 ):
-    """
-    3-tier station routing with Multi-Maker One-Stop-Shop ranking.
-    """
     empty_counts = {"approved": 0, "unstarred": 0, "other": 0, "one_stop": 0}
     if df_dir is None or df_dir.empty:
         return pd.DataFrame(), pd.DataFrame(), [], empty_counts
@@ -1818,14 +1870,14 @@ def extract_outlook_emails(df_stations):
 
 def generate_bracketed_rfq_template(parsed_data, matched_df=None):
     d = parsed_data or RESULT_DEFAULTS
-    vessel = d.get("vessel_name") or "Not specified"
-    port = d.get("port") or "Not specified"
-    country = d.get("country") or "Not specified"
-    eta = d.get("eta") or "Not specified"
+    vessel = _as_clean_str(d.get("vessel_name"), "Not specified")
+    port = _as_clean_str(d.get("port"), "Not specified")
+    country = _as_clean_str(d.get("country"), "Not specified")
+    eta = _as_clean_str(d.get("eta"), "Not specified")
     makers_list = d.get("makers") or []
     makers_str = ", ".join(makers_list) if makers_list else "OEM Equipment / TBA"
-    scope = d.get("scope") or "Standard technical attendance inquiry."
-    spares = d.get("spares_requested") or "Inquired per inquiry"
+    scope = _as_clean_str(d.get("scope"), "Standard technical attendance inquiry.")
+    spares = _as_clean_str(d.get("spares_requested"), "Inquired per inquiry")
 
     station_names = []
     if matched_df is not None and not matched_df.empty and "Service Station Name" in matched_df.columns:
@@ -1927,25 +1979,25 @@ def _apply_parsed_data(parsed_dict):
     if isinstance(parsed_dict, dict):
         d.update(parsed_dict)
     st.session_state.parsed_data = d
-    st.session_state.eb_vessel = d.get("vessel_name") or "Not specified"
-    st.session_state.eb_port = d.get("port") or "Not specified"
-    st.session_state.eb_country = d.get("country") or "Not specified"
-    st.session_state.eb_eta = d.get("eta") or "Not specified"
+    st.session_state.eb_vessel = _as_clean_str(d.get("vessel_name"), "Not specified")
+    st.session_state.eb_port = _as_clean_str(d.get("port"), "Not specified")
+    st.session_state.eb_country = _as_clean_str(d.get("country"), "Not specified")
+    st.session_state.eb_eta = _as_clean_str(d.get("eta"), "Not specified")
     st.session_state.eb_makers = ", ".join(d.get("makers") or [])
-    st.session_state.eb_scope = d.get("scope") or "Standard technical attendance inquiry."
-    st.session_state.eb_spares = d.get("spares_requested") or "Inquired per inquiry"
+    st.session_state.eb_scope = _as_clean_str(d.get("scope"), "Standard technical attendance inquiry.")
+    st.session_state.eb_spares = _as_clean_str(d.get("spares_requested"), "Inquired per inquiry")
 
 
 def _sync_brief_from_widgets():
-    v_val = str(st.session_state.get("eb_vessel", "")).strip() or "Not specified"
-    p_val = str(st.session_state.get("eb_port", "")).strip() or "Not specified"
-    c_raw = str(st.session_state.get("eb_country", "")).strip()
+    v_val = _as_clean_str(st.session_state.get("eb_vessel"), "Not specified")
+    p_val = _as_clean_str(st.session_state.get("eb_port"), "Not specified")
+    c_raw = _as_clean_str(st.session_state.get("eb_country"))
     c_val = (find_country(c_raw) or c_raw.upper()) if c_raw and c_raw.lower() != "not specified" else "Not specified"
-    e_val = str(st.session_state.get("eb_eta", "")).strip() or "Not specified"
-    m_raw = str(st.session_state.get("eb_makers", ""))
+    e_val = _as_clean_str(st.session_state.get("eb_eta"), "Not specified")
+    m_raw = _as_clean_str(st.session_state.get("eb_makers"))
     m_list = [m.strip().upper() for m in re.split(r"[,;/|]", m_raw) if m.strip()]
-    sc_val = str(st.session_state.get("eb_scope", "")).strip() or "Standard technical attendance inquiry."
-    sp_val = str(st.session_state.get("eb_spares", "")).strip() or "Inquired per inquiry"
+    sc_val = _as_clean_str(st.session_state.get("eb_scope"), "Standard technical attendance inquiry.")
+    sp_val = _as_clean_str(st.session_state.get("eb_spares"), "Inquired per inquiry")
 
     st.session_state.parsed_data.update({
         "vessel_name": v_val,
@@ -1959,7 +2011,7 @@ def _sync_brief_from_widgets():
 
 
 def _on_port_widget_change():
-    p_val = str(st.session_state.get("eb_port", "")).strip()
+    p_val = _as_clean_str(st.session_state.get("eb_port"))
     if p_val and p_val.lower() != "not specified":
         matched_p = ports_in_text(p_val)
         if matched_p:
@@ -1974,6 +2026,18 @@ if "parsed_data" not in st.session_state:
     _apply_parsed_data(RESULT_DEFAULTS)
 if "eb_vessel" not in st.session_state:
     _apply_parsed_data(st.session_state.parsed_data)
+for _wk, _wdef in (
+    ("eb_vessel", "Not specified"),
+    ("eb_port", "Not specified"),
+    ("eb_country", "Not specified"),
+    ("eb_eta", "Not specified"),
+    ("eb_makers", ""),
+    ("eb_scope", "Standard technical attendance inquiry."),
+    ("eb_spares", "Inquired per inquiry"),
+):
+    if not isinstance(st.session_state.get(_wk), str):
+        st.session_state[_wk] = _as_clean_str(st.session_state.get(_wk), _wdef)
+
 if "raw_inquiry_text" not in st.session_state:
     st.session_state.raw_inquiry_text = ""
 if "extraction_notes" not in st.session_state:
@@ -2084,15 +2148,16 @@ with st.sidebar:
     st.divider()
 
     st.markdown("##### 🤖 AI Intelligence Engine")
+    active_gemini_list = get_active_gemini_models()
     active_groq_list = get_active_groq_models()
     engine_options = (
         ["Auto (Best Available)"]
-        + [f"Gemini :: {m}" for m in GEMINI_MODELS]
+        + [f"Gemini :: {m}" for m in active_gemini_list]
         + [f"Groq :: {m}" for m in active_groq_list]
         + ["Local Deterministic Only"]
     )
     selected_engine = st.selectbox("Active Parser & Copilot Model", options=engine_options, index=0)
-    st.caption(f"{'🟢 Gemini API (REST Ready)' if gemini_api_key else '⚪ Gemini Key Missing'}  •  {'🟢 Groq API' if groq_api_key else '⚪ Groq Key Missing'}")
+    st.caption(f"{'🟢 Gemini API (Auto-Models)' if gemini_api_key else '⚪ Gemini Key Missing'}  •  {'🟢 Groq API' if groq_api_key else '⚪ Groq Key Missing'}")
     st.divider()
 
     st.markdown("##### 📡 Global Station Directory")
@@ -2316,10 +2381,10 @@ with col_main:
 
     # STEP 02: EDITABLE EXECUTIVE BRIEF & KPI TELEMETRY
     cur = st.session_state.parsed_data
-    v_disp = cur.get("vessel_name") or "Not specified"
-    p_disp = cur.get("port") or "Not specified"
-    c_disp = cur.get("country") or "Not specified"
-    e_disp = cur.get("eta") or "Not specified"
+    v_disp = _as_clean_str(cur.get("vessel_name"), "Not specified")
+    p_disp = _as_clean_str(cur.get("port"), "Not specified")
+    c_disp = _as_clean_str(cur.get("country"), "Not specified")
+    e_disp = _as_clean_str(cur.get("eta"), "Not specified")
     m_list = cur.get("makers") or []
     m_disp = ", ".join(m_list) if m_list else "Not specified"
 
@@ -2386,7 +2451,7 @@ with col_main:
             st.text_input("Spares / Parts Requested", key="eb_spares", on_change=_sync_brief_from_widgets)
 
     # STEP 03: SERVICE STATION ROUTING, 3-TIER FILTER & ONE-STOP-SHOP RANKING
-    active_country = st.session_state.parsed_data.get("country", "Not specified")
+    active_country = _as_clean_str(st.session_state.parsed_data.get("country"), "Not specified")
     active_makers = st.session_state.parsed_data.get("makers", [])
     is_multi_maker = len(active_makers) > 1
     include_unstarred = bool(st.session_state.include_maker_unstarred)
