@@ -197,18 +197,17 @@ gemini_api_key = read_secret("GEMINI_API_KEY")
 client_groq = Groq(api_key=groq_api_key, timeout=25.0, max_retries=0) if groq_api_key else None
 
 GEMINI_MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.6-flash",
     "gemini-3.8-flash",
-    "gemini-3.8-pro",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
+    "gemini-4-argon",
 ]
 
 GROQ_MODELS = [
     "openai/gpt-oss-120b",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-    "meta-llama/llama-4-maverick-17b-128e-instruct",
     "openai/gpt-oss-20b",
-    "qwen/qwen3-32b",
+    "llama-3.3-70b-versatile",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
 ]
 
 GROQ_VISION_MODELS = {
@@ -236,8 +235,9 @@ def get_active_gemini_models():
                 if not name or "gemini" not in nl:
                     continue
                 if any(skip in nl for skip in (
-                    "embedding", "aqa", "tts", "imagen", "veo", "lyria",
-                    "robotics", "computer-use", "live", "audio", "exp", "001"
+                    "2.5", "2.0", "1.5", "1.0", "embedding", "aqa", "tts", "imagen",
+                    "veo", "lyria", "robotics", "computer-use", "live", "audio",
+                    "transcribe", "exp", "001"
                 )):
                     continue
                 discovered.append(name)
@@ -1333,8 +1333,8 @@ def normalize_result(data):
 # ---------------------------------------------------------------------------
 # HYBRID FAST VISION OCR (GEMINI REST / GROQ VISION) + FAST JSON PARSER
 # ---------------------------------------------------------------------------
-def _gemini_rest_generate(model_name, prompt, pil_images=None, timeout=45):
-    """Direct Gemini REST API call with fast non-thinking config when supported."""
+def _gemini_rest_generate(model_name, prompt, pil_images=None, timeout=35):
+    """Direct Gemini REST API call (no deprecated temperature param for Gemini 3.5+/4)."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_api_key}"
     parts = [{"text": prompt}]
     for img in (pil_images or [])[:4]:
@@ -1346,7 +1346,6 @@ def _gemini_rest_generate(model_name, prompt, pil_images=None, timeout=45):
         })
     payload = {
         "contents": [{"parts": parts}],
-        "generationConfig": {"temperature": 0.1},
     }
     req = urllib.request.Request(
         url,
@@ -1367,7 +1366,7 @@ def _gemini_rest_generate(model_name, prompt, pil_images=None, timeout=45):
 
 
 def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=None):
-    """Try at most 2 active Gemini models via direct REST API (fast & reliable)."""
+    """Try up to 4 active Gemini 3.5+/4 models via direct REST API (fast & reliable)."""
     if not gemini_api_key:
         if error_log is not None:
             error_log.append("Gemini: GEMINI_API_KEY missing")
@@ -1378,9 +1377,9 @@ def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=No
         m for m in active_gem if m != preferred_model
     ]
 
-    for model_name in candidates[:2]:
+    for model_name in candidates[:4]:
         try:
-            txt = _gemini_rest_generate(model_name, prompt, pil_images=pil_images, timeout=45)
+            txt = _gemini_rest_generate(model_name, prompt, pil_images=pil_images, timeout=35)
             if txt:
                 return txt, f"Gemini ({model_name})"
         except urllib.error.HTTPError as he:
@@ -1391,7 +1390,7 @@ def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=No
                 pass
             if error_log is not None:
                 error_log.append(f"Gemini {model_name}: HTTP {he.code} {err_body}")
-            if he.code in (400, 401, 403):
+            if he.code in (401, 403):
                 break
         except Exception as exc:
             if error_log is not None:
@@ -2327,7 +2326,7 @@ with col_main:
 
         if st.session_state.vision_status:
             if st.session_state.vision_status.startswith("⚠️"):
-                st.warning(st.session_state.vision_status + (f" — Details: {' | '.join(st.session_state.vision_errors[:2])}" if st.session_state.vision_errors else ""))
+                st.warning(st.session_state.vision_status + (f" — Details: {' | '.join(st.session_state.vision_errors[:4])}" if st.session_state.vision_errors else ""))
             else:
                 st.success(st.session_state.vision_status)
 
