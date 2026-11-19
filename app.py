@@ -131,9 +131,11 @@ html, body, [class*="css"] {
 
 .ot-badge-row { display: flex; flex-wrap: wrap; gap: 0.48rem; margin: 0.35rem 0 0.8rem 0; }
 .ot-stat-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.28rem 0.68rem; border-radius: 8px; font-size: 0.76rem; font-weight: 600; }
+.ot-stat-onestop { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
 .ot-stat-approved { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
-.ot-stat-nonmaker { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
-.ot-stat-neutral { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+.ot-stat-unstarred { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.ot-stat-other { background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; }
+.ot-stat-neutral { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
 
 .ot-alert-box { border-radius: 10px; padding: 0.7rem 0.95rem; margin-bottom: 0.8rem; font-size: 0.82rem; line-height: 1.45; }
 .ot-alert-warn { background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; color: #92400e; }
@@ -207,18 +209,23 @@ gemini_api_key = read_secret("GEMINI_API_KEY")
 client_groq = Groq(api_key=groq_api_key, timeout=60.0, max_retries=2) if groq_api_key else None
 
 GEMINI_MODELS = [
-    "gemini-3.8-flash",
-    "gemini-3.8-pro",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
     "gemini-2.0-flash",
 ]
 
 GROQ_MODELS = [
-    "openai/gpt-oss-120b",
-    "openai/gpt-oss-20b",
     "meta-llama/llama-4-scout-17b-16e-instruct",
     "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
     "qwen/qwen3-32b",
 ]
+
+GROQ_VISION_MODELS = {
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+}
 
 
 @st.cache_data(ttl=600)
@@ -329,7 +336,7 @@ def load_directory():
 
 
 # ---------------------------------------------------------------------------
-# PORTS, COUNTRIES & MAKERS
+# PORTS, COUNTRIES & MAKERS (ALL MARINE ELECTRONICS MAKERS & PART PATTERNS)
 # ---------------------------------------------------------------------------
 PORT_TO_COUNTRY = {
     "taicang": "CHINA", "qingdao": "CHINA", "shanghai": "CHINA", "ningbo": "CHINA",
@@ -410,22 +417,35 @@ NEIGHBORING_COUNTRIES = {
 
 KNOWN_MAKERS = [
     "sperry marine", "sperry", "jrc", "alphatron", "furuno",
-    "tokyo keiki", "anschutz", "raytheon", "yokogawa", "ydk",
-    "macgregor", "danelec", "headway", "consilium", "highlander",
-    "wartsila", "cobham", "sailor", "jotron", "netwave", "simrad", "entel", "kelvin hughes",
-    "samsung", "totem plus", "ami", "hyundai", "garmin"
+    "tokyo keiki", "raytheon anschutz", "anschutz", "raytheon",
+    "yokogawa", "ydk", "macgregor", "danelec", "headway",
+    "consilium", "highlander", "wartsila", "sam electronics", "transas",
+    "cobham", "sailor", "thrane & thrane", "jotron", "netwave",
+    "simrad", "kongsberg", "navico", "entel", "kelvin hughes", "hensoldt",
+    "samsung", "totem plus", "ami", "hyundai", "garmin", "skipper",
+    "mcmurdo", "kannad", "intellian", "kns", "seatel", "icom",
+    "saab", "koden", "taiyo", "musasino", "nabtesco", "autronica", "deif"
 ]
 
 PART_NUMBER_TO_MAKER = [
-    (r"(?i)\b(?:03p\d{4}|ru-\d{4}|far-\d{3,4}|fmd-\d{3,4}|vr-\d{4}|fe-\d{3}|gp-\d{2,3}|fs-\d{4}|felcom)\b", "FURUNO"),
-    (r"(?i)\b(?:jcy-\d{3,4}|ncr-\d{3}|jma-\d{3,4}|jhs-\d{3}|jax-\d{2}|jlr-\d{2,3}|jue-\d{2,3}|jan-\d{3,4})\b", "JRC"),
-    (r"(?i)\b(?:visionmaster|vmft|navigat\s*\d+|navipilot|naviknot|mk\s*37|658\d{2}|659\d{2})\b", "SPERRY MARINE"),
-    (r"(?i)\b(?:dm100|dm-100|vr5000)\b", "DANELEC"),
-    (r"(?i)\b(?:std\s*22|std-22|anschuetz)\b", "ANSCHUTZ"),
-    (r"(?i)\b(?:cmz\d{3}|pt\d{3}|uz\d{3})\b", "YOKOGAWA"),
-    (r"(?i)\b(?:tg-\d{4}|pr-\d{4}|es-\d{4})\b", "TOKYO KEIKI"),
-    (r"(?i)\b(?:tr-8000|tron\s*\d{2})\b", "JOTRON"),
-    (r"(?i)\b(?:sailor\s*\d{4}|tt-\d{4})\b", "COBHAM"),
+    (r"(?i)\b(?:03p\d{4}|ru-\d{4}|far-\d{3,4}|fmd-\d{3,4}|vr-\d{4}|fe-\d{3}|gp-\d{2,3}|fs-\d{4}|fm-\d{4}|fa-\d{3}|nx-\d{3}|ds-\d{2}|felcom)\b", "FURUNO"),
+    (r"(?i)\b(?:jcy-\d{3,4}|ncr-\d{3}|jma-\d{3,4}|jhs-\d{3}|jax-\d{2}|jlr-\d{2,3}|jue-\d{2,3}|jan-\d{3,4}|jfe-\d{3}|jln-\d{3}|jsb-\d{3})\b", "JRC"),
+    (r"(?i)\b(?:visionmaster|vmft|navigat\s*(?:x(?:\s*mk\s*\d+)?|\d+)|navipilot|naviknot|mk\s*37|658\d{2}|659\d{2}|020672-0000-000|044877-0000-000|074829-0000-000|044810-0000-000|025963-0000-000)\b", "SPERRY MARINE"),
+    (r"(?i)\b(?:dm100|dm-100|dm200|vr5000|130\d{4})\b", "DANELEC"),
+    (r"(?i)\b(?:std\s*22|std-22|standard\s*22|nautopilot|synapsis|anschuetz|110-\d{3})\b", "ANSCHUTZ"),
+    (r"(?i)\b(?:cmz\d{3}|pt\d{3}|uz\d{3}|eml\d{3}|mkm\d{3})\b", "YOKOGAWA"),
+    (r"(?i)\b(?:tg-\d{4}|pr-\d{4}|es-\d{4}|br-\d{4}|ec-\d{4})\b", "TOKYO KEIKI"),
+    (r"(?i)\b(?:tr-8000|tron\s*\d{2}|tron\s*sart|tron\s*ais|fb-\d{2})\b", "JOTRON"),
+    (r"(?i)\b(?:sailor\s*\d{4}|tt-\d{4}|fleetbroadband\s*\d{3}|sp35\d{2})\b", "COBHAM"),
+    (r"(?i)\b(?:nw-?\d{4}|nw6000|nw4000|vdr-?g2)\b", "NETWAVE"),
+    (r"(?i)\b(?:sal\s*r1|sal\s*t2|s-vdr\s*m\d|vdr\s*f2|selesmar)\b", "CONSILIUM"),
+    (r"(?i)\b(?:hld-?vdr|hld-?s\d|hld-?ecdis)\b", "HIGHLANDER"),
+    (r"(?i)\b(?:manta\s*digital|sharp\s*eye|kh-\d{3,4})\b", "KELVIN HUGHES"),
+    (r"(?i)\b(?:gds\s*101|dl\s*850|dl\s*21|emln|es\s*n\d{3})\b", "SKIPPER"),
+    (r"(?i)\b(?:chartpilot|radarpilot|nacoss|platinum|ns\s*4000)\b", "WARTSILA"),
+    (r"(?i)\b(?:v\d{2,3}nx|fb\d{3}|t\d{3}w)\b", "INTELLIAN"),
+    (r"(?i)\b(?:smartfind\s*(?:g8|e8|s5|s20))\b", "MCMURDO"),
+    (r"(?i)\b(?:ap\d{2}|gc\d{2}|mx\d{3}|r\d{4})\b", "SIMRAD"),
 ]
 
 COUNTRY_ALIASES = {c.lower(): c for c in set(PORT_TO_COUNTRY.values())}
@@ -466,63 +486,114 @@ def _norm_maker_str(s):
     return s.replace("ü", "u").replace("ä", "a").replace("ö", "o")
 
 
-def evaluate_station_maker_status(approved_str, target_makers):
-    if not target_makers:
+def _maker_matches_token(maker_raw, token_clean):
+    m_norm = _norm_maker_str(maker_raw).replace("*", "").strip()
+    if not m_norm:
+        return False
+    m_first = m_norm.split()[0] if m_norm.split() else m_norm
+    if re.search(rf"(?<![a-z0-9]){re.escape(m_norm)}(?![a-z0-9])", token_clean):
+        return True
+    if len(m_first) >= 3 and re.search(rf"(?<![a-z0-9]){re.escape(m_first)}(?![a-z0-9])", token_clean):
+        return True
+    return False
+
+
+def evaluate_station_coverage(approved_str, target_makers):
+    """
+    Evaluate 3-tier approval status + One-Stop-Shop multi-maker coverage.
+    Returns dict with:
+      - status: '✅ Maker Approved (*)' | '🟡 Maker Listed (No *)' | '🔧 Other Stations (Different Makers)'
+      - coverage_label: e.g. '🏆 One-Stop (3/3 *)' | '🏆 One-Stop (3/3, 2*)' | '🔹 Partial (2/3, 1*)'
+      - matched_badges: formatted string of matched makers
+      - sort_rank: 0 (approved *), 1 (listed no *), 2 (other)
+      - is_one_stop: bool (covers ALL target makers when len(target_makers) > 1)
+      - star_count: int (how many distinct target makers have *)
+      - matched_count: int (how many distinct target makers are listed at all)
+    """
+    tokens = [t.strip() for t in re.split(r"[,;]", str(approved_str or "")) if t.strip()]
+    clean_targets = []
+    for m in (target_makers or []):
+        m_clean = str(m).replace("*", "").strip()
+        if m_clean and m_clean.upper() not in [x.upper() for x in clean_targets]:
+            clean_targets.append(m_clean)
+
+    if not clean_targets:
         has_star = "*" in str(approved_str or "")
-        return "✅ Maker Approved (*)" if has_star else "🔧 Non-Maker Approved"
+        return {
+            "status": "✅ Maker Approved (*)" if has_star else "🟡 Maker Listed (No *)",
+            "coverage_label": "All Makers",
+            "matched_badges": "All Makers",
+            "sort_rank": 0 if has_star else 1,
+            "is_one_stop": False,
+            "star_count": 1 if has_star else 0,
+            "matched_count": 1,
+        }
 
-    tokens = [t.strip() for t in re.split(r"[,;]", str(approved_str or "")) if t.strip()]
-    has_star_approval = False
-    has_unstarred_brand = False
-
-    for m in target_makers:
-        m_norm = _norm_maker_str(m).replace("*", "").strip()
-        if not m_norm:
-            continue
-        m_first = m_norm.split()[0] if m_norm.split() else m_norm
-
-        for tok in tokens:
-            tok_has_star = "*" in tok
-            tok_clean = _norm_maker_str(tok).replace("*", "").strip()
-
-            matched = False
-            if re.search(rf"(?<![a-z0-9]){re.escape(m_norm)}(?![a-z0-9])", tok_clean):
-                matched = True
-            elif len(m_first) >= 3 and re.search(rf"(?<![a-z0-9]){re.escape(m_first)}(?![a-z0-9])", tok_clean):
-                matched = True
-
-            if matched:
-                if tok_has_star:
-                    has_star_approval = True
-                else:
-                    has_unstarred_brand = True
-
-    if has_star_approval:
-        return "✅ Maker Approved"
-    if has_unstarred_brand:
-        return "🔧 Non-Maker Approved"
-    return "🔧 Non-Maker Approved (Other Brands)"
-
-
-def extract_matched_maker_badges(approved_str, target_makers):
-    if not target_makers:
-        return "All Makers"
-    tokens = [t.strip() for t in re.split(r"[,;]", str(approved_str or "")) if t.strip()]
+    star_count = 0
+    matched_count = 0
     badges = []
-    for tok in tokens:
-        tok_clean = _norm_maker_str(tok).replace("*", "").strip()
-        for m in target_makers:
-            m_norm = _norm_maker_str(m).replace("*", "").strip()
-            m_first = m_norm.split()[0] if m_norm.split() else m_norm
-            if re.search(rf"(?<![a-z0-9]){re.escape(m_norm)}(?![a-z0-9])", tok_clean) or (
-                len(m_first) >= 3 and re.search(rf"(?<![a-z0-9]){re.escape(m_first)}(?![a-z0-9])", tok_clean)
-            ):
+
+    for m in clean_targets:
+        m_has_star = False
+        m_found = False
+        matched_tok_display = None
+        for tok in tokens:
+            tok_clean = _norm_maker_str(tok).replace("*", "").strip()
+            if _maker_matches_token(m, tok_clean):
+                m_found = True
                 if "*" in tok:
-                    badges.append(f"⭐ {tok}")
-                else:
-                    badges.append(f"🔧 {tok} (No *)")
-                break
-    return ", ".join(badges) if badges else "—"
+                    m_has_star = True
+                    matched_tok_display = f"⭐ {tok}"
+                    break
+                elif matched_tok_display is None:
+                    matched_tok_display = f"🟡 {tok} (No *)"
+        if m_found:
+            matched_count += 1
+            if m_has_star:
+                star_count += 1
+            if matched_tok_display and matched_tok_display not in badges:
+                badges.append(matched_tok_display)
+
+    total_targets = len(clean_targets)
+    is_multi = total_targets > 1
+    is_one_stop = is_multi and (matched_count == total_targets)
+
+    if star_count > 0:
+        status = "✅ Maker Approved (*)"
+        sort_rank = 0
+    elif matched_count > 0:
+        status = "🟡 Maker Listed (No *)"
+        sort_rank = 1
+    else:
+        status = "🔧 Other Stations (Different Makers)"
+        sort_rank = 2
+
+    if is_multi:
+        if star_count == total_targets:
+            coverage_label = f"🏆 One-Stop ({star_count}/{total_targets} *)"
+        elif matched_count == total_targets:
+            coverage_label = f"🏆 One-Stop ({matched_count}/{total_targets}, {star_count}*)"
+        elif matched_count > 0:
+            coverage_label = f"🔹 Partial ({matched_count}/{total_targets}, {star_count}*)"
+        else:
+            coverage_label = f"— (0/{total_targets})"
+    else:
+        if star_count == 1:
+            coverage_label = "⭐ 1/1 (*)"
+        elif matched_count == 1:
+            coverage_label = "🟡 1/1 (No *)"
+        else:
+            coverage_label = "—"
+
+    return {
+        "status": status,
+        "coverage_label": coverage_label,
+        "matched_badges": ", ".join(badges) if badges else "—",
+        "sort_rank": sort_rank,
+        "is_one_stop": is_one_stop,
+        "star_count": star_count,
+        "matched_count": matched_count,
+    }
 
 
 RESULT_DEFAULTS = {
@@ -542,7 +613,7 @@ COUNTRY_KEYS_BY_LENGTH = sorted(COUNTRY_ALIASES.keys(), key=len, reverse=True)
 
 
 # ---------------------------------------------------------------------------
-# TEXT EXTRACTION & BUILT-IN EXCEL/XML PARSER (NO EXTRA DEPENDENCIES NEEDED)
+# UNIVERSAL ATTACHMENT EXTRACTOR (MSG, EML, PDF, EXCEL, DOCX, ZIP, IMAGES)
 # ---------------------------------------------------------------------------
 def clean_signatures(text):
     if not text:
@@ -569,6 +640,69 @@ def clean_signatures(text):
         kept.append(line)
 
     return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
+
+
+def _prepare_pil_image(img, max_dim=1800):
+    """Normalize image to RGB and downscale gently so Vision API calls stay fast."""
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    w, h = img.size
+    if max(w, h) > max_dim:
+        scale = max_dim / float(max(w, h))
+        img = img.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.LANCZOS)
+    return img
+
+
+def _pil_to_jpeg_base64(img, quality=85):
+    buf = io.BytesIO()
+    _prepare_pil_image(img, max_dim=1600).save(buf, format="JPEG", quality=quality)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+def _detect_extension_from_bytes(raw_bytes):
+    if not raw_bytes or len(raw_bytes) < 8:
+        return ""
+    if raw_bytes.startswith(b"%PDF"):
+        return ".pdf"
+    if raw_bytes.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+    if raw_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+        return ".png"
+    if raw_bytes.startswith((b"GIF87a", b"GIF89a")):
+        return ".gif"
+    if raw_bytes.startswith(b"RIFF") and raw_bytes[8:12] == b"WEBP":
+        return ".webp"
+    if raw_bytes.startswith((b"II*\x00", b"MM\x00*")):
+        return ".tif"
+    if raw_bytes.startswith(b"PK\x03\x04"):
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
+                names = set(zf.namelist())
+                if "word/document.xml" in names:
+                    return ".docx"
+                if any(n.startswith("xl/") for n in names):
+                    return ".xlsx"
+                return ".zip"
+        except Exception:
+            return ".zip"
+    return ""
+
+
+def _extract_docx_native(raw_bytes):
+    """Pure-Python extractor for .docx paragraphs and tables (zero extra dependencies)."""
+    lines = []
+    with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
+        xml_targets = [n for n in zf.namelist() if n in ("word/document.xml", "word/header1.xml", "word/footer1.xml")]
+        for target in xml_targets:
+            root = ET.fromstring(zf.read(target))
+            for elem in root.iter():
+                tag = elem.tag.split("}")[-1]
+                if tag == "p":
+                    texts = [t.text for t in elem.iter() if t.tag.split("}")[-1] == "t" and t.text]
+                    line = "".join(texts).strip()
+                    if line:
+                        lines.append(line)
+    return "\n".join(lines)
 
 
 def _extract_xlsx_native(raw_bytes):
@@ -625,28 +759,220 @@ def _extract_xls_fallback(raw_bytes):
     return "\n".join(combined)
 
 
-def extract_text_from_file(uploaded_file):
+def _extract_pdf_content(raw_bytes, source_name="document.pdf", max_pages=25, max_vision_pages=8):
+    """Extract text from PDF; for scanned/image-only pages, extract page images for Vision AI."""
+    extracted_text_parts = []
+    extracted_images = []
+    notes = []
+
+    reader = pypdf.PdfReader(io.BytesIO(raw_bytes))
+
+    for page_idx, page in enumerate(reader.pages[:max_pages]):
+        page_text = (page.extract_text() or "").strip()
+        if page_text:
+            extracted_text_parts.append(page_text)
+
+        if len(page_text) < 40 and len(extracted_images) < max_vision_pages:
+            page_imgs_found = 0
+            try:
+                page_img_objs = list(getattr(page, "images", []))
+                for img_obj in page_img_objs:
+                    if len(extracted_images) >= max_vision_pages:
+                        break
+                    img_bytes = getattr(img_obj, "data", None)
+                    if not img_bytes:
+                        continue
+                    try:
+                        pil_img = Image.open(io.BytesIO(img_bytes))
+                        if len(page_img_objs) > 1 and min(pil_img.size) < 150:
+                            continue
+                        extracted_images.append((f"{source_name} (p.{page_idx + 1})", _prepare_pil_image(pil_img)))
+                        page_imgs_found += 1
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+            if page_imgs_found == 0 and len(extracted_images) < max_vision_pages:
+                try:
+                    import pypdfium2 as pdfium
+                    pdf_doc = pdfium.PdfDocument(raw_bytes)
+                    pil_page = pdf_doc[page_idx].render(scale=2.0).to_pil()
+                    extracted_images.append((f"{source_name} (p.{page_idx + 1})", _prepare_pil_image(pil_page)))
+                except Exception:
+                    pass
+
+    if extracted_images:
+        notes.append(f"Scanned PDF '{source_name}': {len(extracted_images)} page(s) sent to AI Vision")
+
+    return "\n\n".join(extracted_text_parts), extracted_images, notes
+
+
+def _strip_html_to_text(html_str):
+    if not html_str:
+        return ""
+    text = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", html_str)
+    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+    text = re.sub(r"(?i)</(p|div|tr|li|h[1-6])>", "\n", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    return re.sub(r"[ \t]+", " ", text).strip()
+
+
+def extract_content_from_bytes(raw_bytes, file_name, _depth=0):
+    """
+    Recursively extract text AND Vision images from:
+    MSG, EML (incl. all attachments & inline images), PDF (text + scanned),
+    Excel (XLSX/XLS), CSV, Word (DOCX), ZIP archives, HTML/XML/TXT, and JPEG/PNG/TIFF/WEBP.
+    Returns: (cleaned_text, list_of_(label, PIL.Image), list_of_notes)
+    """
+    if not raw_bytes or _depth > 4:
+        return "", [], []
+
+    orig_name = str(file_name or "").strip()
+    fname_lower = orig_name.lower()
+    if "." not in os.path.basename(fname_lower):
+        inferred_ext = _detect_extension_from_bytes(raw_bytes)
+        if inferred_ext:
+            orig_name = (orig_name or "inline_attachment") + inferred_ext
+            fname_lower = orig_name.lower()
+
     extracted_text = ""
-    file_name = uploaded_file.name.lower()
+    extracted_images = []
+    notes = []
+
     try:
-        uploaded_file.seek(0)
-        if file_name.endswith(".pdf"):
-            reader = pypdf.PdfReader(uploaded_file)
-            for page in reader.pages[:20]:
-                extracted_text += page.extract_text() or ""
-        elif file_name.endswith(".eml"):
-            msg = email.message_from_bytes(uploaded_file.read(), policy=policy.default)
+        if fname_lower.endswith((".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff", ".gif")):
+            pil_img = Image.open(io.BytesIO(raw_bytes))
+            is_tiny_sig = _depth > 0 and (min(pil_img.size) < 160 or (pil_img.size[0] * pil_img.size[1] < 35000))
+            if not is_tiny_sig:
+                extracted_images.append((orig_name, _prepare_pil_image(pil_img)))
+                if _depth > 0:
+                    notes.append(f"Image '{orig_name}' sent to AI Vision")
+
+        elif fname_lower.endswith(".pdf"):
+            pdf_txt, pdf_imgs, pdf_notes = _extract_pdf_content(raw_bytes, source_name=orig_name)
+            extracted_text += pdf_txt
+            extracted_images.extend(pdf_imgs)
+            notes.extend(pdf_notes)
+
+        elif fname_lower.endswith(".docx"):
+            doc_txt = _extract_docx_native(raw_bytes)
+            if doc_txt:
+                extracted_text += doc_txt
+                if _depth > 0:
+                    notes.append(f"Word '{orig_name}' parsed")
+
+        elif fname_lower.endswith(".zip"):
+            with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
+                for zinfo in zf.infolist()[:25]:
+                    if zinfo.is_dir() or zinfo.filename.startswith("__MACOSX"):
+                        continue
+                    try:
+                        zbytes = zf.read(zinfo.filename)
+                    except Exception:
+                        continue
+                    z_txt, z_imgs, z_notes = extract_content_from_bytes(zbytes, os.path.basename(zinfo.filename), _depth + 1)
+                    if z_txt:
+                        extracted_text += f"\n--- ZIP ENTRY: {zinfo.filename} ---\n{z_txt}\n"
+                    extracted_images.extend(z_imgs)
+                    notes.extend(z_notes)
+                notes.append(f"ZIP '{orig_name}' unpacked")
+
+        elif fname_lower.endswith(".eml"):
+            msg = email.message_from_bytes(raw_bytes, policy=policy.default)
             extracted_text += f"\nSubject: {msg.get('subject', '')}\n"
-            body = msg.get_body(preferencelist=('plain', 'html'))
+            body = msg.get_body(preferencelist=("plain", "html"))
             if body:
-                extracted_text += body.get_content()
-        elif file_name.endswith(".msg"):
-            msg = extract_msg.Message(uploaded_file)
-            extracted_text += f"\nSubject: {msg.subject}\nBody:\n{msg.body}\n"
-        elif file_name.endswith(".txt"):
-            extracted_text = uploaded_file.read().decode("utf-8", errors="ignore")
-        elif file_name.endswith((".xlsx", ".xls")):
-            raw_bytes = uploaded_file.read()
+                content = body.get_content()
+                if body.get_content_type() == "text/html":
+                    content = _strip_html_to_text(content)
+                extracted_text += f"{content}\n"
+
+            for part in msg.walk():
+                if part.is_multipart():
+                    continue
+                ctype = (part.get_content_type() or "").lower()
+                cdisp = str(part.get("Content-Disposition", "")).lower()
+                att_name = part.get_filename() or ""
+                is_attachment_or_inline_img = (
+                    "attachment" in cdisp
+                    or bool(att_name)
+                    or ctype.startswith("image/")
+                    or ctype == "application/pdf"
+                )
+                if not is_attachment_or_inline_img:
+                    continue
+                if ctype in ("text/plain", "text/html") and not att_name:
+                    continue
+                att_payload = part.get_payload(decode=True)
+                if not att_payload:
+                    continue
+                if not att_name:
+                    ext_guess = _detect_extension_from_bytes(att_payload)
+                    att_name = f"inline_part{ext_guess}" if ext_guess else ""
+                if not att_name:
+                    continue
+                att_txt, att_imgs, att_notes = extract_content_from_bytes(att_payload, att_name, _depth + 1)
+                if att_txt:
+                    extracted_text += f"\n--- EMBEDDED ATTACHMENT: {att_name} ---\n{att_txt}\n"
+                extracted_images.extend(att_imgs)
+                notes.extend(att_notes)
+                if not att_notes and (att_txt or att_imgs):
+                    notes.append(f"Attachment '{att_name}' parsed from EML")
+
+        elif fname_lower.endswith(".msg"):
+            msg = extract_msg.Message(io.BytesIO(raw_bytes))
+            try:
+                body_txt = msg.body or ""
+                if not body_txt.strip() and getattr(msg, "htmlBody", None):
+                    raw_html = msg.htmlBody
+                    if isinstance(raw_html, bytes):
+                        raw_html = raw_html.decode("utf-8", errors="ignore")
+                    body_txt = _strip_html_to_text(raw_html)
+                extracted_text += f"\nSubject: {msg.subject or ''}\nBody:\n{body_txt}\n"
+
+                for idx, att in enumerate(getattr(msg, "attachments", []) or [], 1):
+                    att_name = (
+                        getattr(att, "longFilename", None)
+                        or getattr(att, "shortFilename", None)
+                        or getattr(att, "name", None)
+                        or ""
+                    )
+                    att_name = str(att_name).strip()
+                    att_data = getattr(att, "data", None)
+                    if att_data is None:
+                        continue
+
+                    if hasattr(att_data, "subject") and hasattr(att_data, "body"):
+                        nested_subj = getattr(att_data, "subject", "") or ""
+                        nested_body = getattr(att_data, "body", "") or ""
+                        extracted_text += f"\n--- EMBEDDED EMAIL: {att_name or nested_subj} ---\nSubject: {nested_subj}\n{nested_body}\n"
+                        notes.append(f"Nested email '{att_name or nested_subj}' parsed")
+                        continue
+
+                    if isinstance(att_data, (bytes, bytearray)):
+                        raw_att = bytes(att_data)
+                        if not att_name:
+                            ext_guess = _detect_extension_from_bytes(raw_att)
+                            if ext_guess:
+                                att_name = f"msg_attachment_{idx}{ext_guess}"
+                        if not att_name:
+                            continue
+                        att_txt, att_imgs, att_notes = extract_content_from_bytes(raw_att, att_name, _depth + 1)
+                        if att_txt:
+                            extracted_text += f"\n--- EMBEDDED ATTACHMENT: {att_name} ---\n{att_txt}\n"
+                        extracted_images.extend(att_imgs)
+                        notes.extend(att_notes)
+                        if not att_notes and (att_txt or att_imgs):
+                            notes.append(f"Attachment '{att_name}' parsed from MSG")
+            finally:
+                try:
+                    msg.close()
+                except Exception:
+                    pass
+
+        elif fname_lower.endswith((".xlsx", ".xls")):
             parsed_ok = False
             try:
                 excel_sheets = pd.read_excel(io.BytesIO(raw_bytes), sheet_name=None)
@@ -679,18 +1005,54 @@ def extract_text_from_file(uploaded_file):
 
             if not parsed_ok:
                 extracted_text += _extract_xls_fallback(raw_bytes)
-        elif file_name.endswith(".csv"):
-            raw_csv = uploaded_file.read().decode("utf-8-sig", errors="replace")
+
+            if _depth > 0 and extracted_text.strip():
+                notes.append(f"Excel '{orig_name}' parsed")
+
+        elif fname_lower.endswith(".csv"):
+            raw_csv = raw_bytes.decode("utf-8-sig", errors="replace")
             try:
                 csv_df = pd.read_csv(io.StringIO(raw_csv), sep=None, engine="python", on_bad_lines="skip")
             except Exception:
                 csv_df = pd.read_csv(io.StringIO(raw_csv), on_bad_lines="skip")
             if csv_df is not None and not csv_df.empty:
                 extracted_text += csv_df.fillna("").to_string(index=False) + "\n"
-    except Exception as e:
-        st.error(f"Error parsing {uploaded_file.name}: {e}")
+                if _depth > 0:
+                    notes.append(f"CSV '{orig_name}' parsed")
 
-    return clean_signatures(extracted_text)[:30000]
+        elif fname_lower.endswith((".html", ".htm")):
+            extracted_text = _strip_html_to_text(raw_bytes.decode("utf-8", errors="ignore"))
+
+        elif fname_lower.endswith((".txt", ".md", ".xml", ".json", ".log", ".rtf")):
+            raw_txt = raw_bytes.decode("utf-8", errors="ignore")
+            if fname_lower.endswith(".rtf"):
+                raw_txt = re.sub(r"\\[a-z]+\d* ?|[{}]", " ", raw_txt)
+            extracted_text = raw_txt
+
+        else:
+            decoded = raw_bytes.decode("utf-8", errors="ignore")
+            printable_ratio = sum(ch.isprintable() or ch.isspace() for ch in decoded[:2000]) / max(1, len(decoded[:2000]))
+            if printable_ratio > 0.85 and len(decoded.strip()) > 10:
+                extracted_text = decoded
+                if _depth > 0:
+                    notes.append(f"File '{orig_name}' read as text")
+    except Exception as e:
+        if _depth == 0:
+            st.error(f"Error parsing {orig_name}: {e}")
+
+    cleaned = clean_signatures(extracted_text)[:35000] if _depth == 0 else extracted_text
+    return cleaned, extracted_images[:8], notes
+
+
+def extract_content_from_file(uploaded_file):
+    uploaded_file.seek(0)
+    raw_bytes = uploaded_file.read()
+    return extract_content_from_bytes(raw_bytes, uploaded_file.name, _depth=0)
+
+
+def extract_text_from_file(uploaded_file):
+    txt, _, _ = extract_content_from_file(uploaded_file)
+    return txt
 
 
 def clean_vessel_name(raw_name):
@@ -881,7 +1243,7 @@ def normalize_result(data):
 
 
 # ---------------------------------------------------------------------------
-# LOCAL PARSER & AI PARSING
+# LOCAL PARSER & MULTIMODAL AI PARSING
 # ---------------------------------------------------------------------------
 def smart_local_parser(manual_override_text, files_text):
     blob = files_text or ""
@@ -916,6 +1278,8 @@ def smart_local_parser(manual_override_text, files_text):
         scope_text = "NAVTEX Receiver Technical Attendance & Repair"
     elif "radar" in text_lower:
         scope_text = "Radar Technical Attendance & Spare Parts Supply"
+    elif "gyro" in text_lower:
+        scope_text = "Gyro Compass Technical Attendance & Service"
     elif "annual" in text_lower:
         scope_text = "Annual Radio / VDR / Navigation Survey"
 
@@ -937,20 +1301,30 @@ def smart_local_parser(manual_override_text, files_text):
 
 
 def build_prompt(manual_override_text, cleaned_files, image_count):
-    inquiry = (cleaned_files or "")[:15000]
-    return f"""You are an expert maritime technical coordinator. Parse the commercial RFQ and extract facts into JSON.
+    inquiry = (cleaned_files or "")[:24000]
+    vision_note = (
+        f"\n7. ATTACHED IMAGES / SCANNED PDF PAGES ({image_count} image(s) attached): "
+        f"Carefully read EVERY attached photo, screenshot, nameplate, parts list, or scanned PDF page (including prior Service Reports extracted from email attachments). "
+        f"Extract the equipment maker(s), model(s), serial numbers, and ALL requested/recommended spare parts with their part numbers and quantities. "
+        f"CRITICAL FOR SERVICE REPORTS: Ignore the service station's letterhead / 'Authorised Dealership' list of brands — "
+        f"extract ONLY the maker(s) of the vessel's actual equipment requiring service or spares."
+        if image_count
+        else ""
+    )
+    return f"""You are an expert maritime technical coordinator. Parse the commercial RFQ and ALL extracted attachments (emails, PDFs, Excel tables, Word docs, images, and scanned reports) into structured JSON.
 
 CRITICAL INSTRUCTIONS:
 1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH.
-2. EMAIL THREAD CHRONOLOGY: The email at the VERY TOP is the active instruction. If it updates the port (e.g. 'Taicang China instead of Qingdao China' or 'Malta instead of Genova'), use the NEW port and list the old port in discrepancies.
-3. VESSEL NAME: Strip 'MV', 'M/V', and scope words. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', vessel_name is strictly 'Seaduty'.
-4. MAKERS & PART NUMBERS: Scan the full text (including Excel requisition tables) for makers (e.g., JRC, Furuno, Sperry, Danelec). Also infer the maker from OEM part numbers: e.g., '03P9335-66' or 'RU-9427' or 'FAR-2137' is 'FURUNO'; 'JCY-1900' or 'NCR-333' is 'JRC'; 'DM100' is 'DANELEC'.
-5. DO NOT extract 'Piraeus' or 'Greece' from office signatures.
+2. EMAIL THREAD CHRONOLOGY: The email at the VERY TOP is the active instruction. If it updates the port (e.g. 'Taicang China instead of Qingdao China' or 'Malta instead of Genova'), use the NEW port and list the old port in discrepancies. A prior Service Report attached to the email may show an older port (e.g. Weihai, China); always use the NEW requested attendance port from the email body.
+3. VESSEL NAME: Strip 'MV', 'M/V', 'MT', 'M/T', and scope words. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', vessel_name is strictly 'Seaduty'.
+4. ALL MAKERS, MODELS & SPARE PARTS: Identify EVERY marine electronics maker involved across the email, Excel/CSV tables, Word/PDF attachments, and attached images (e.g., Furuno, JRC, Alphatron, Sperry Marine, Danelec, Yokogawa/YDK, Tokyo Keiki, Anschutz, Cobham/SAILOR, Jotron, Netwave, Consilium, Highlander, MacGregor, Wartsila/SAM/Transas, Kelvin Hughes, Simrad, Skipper, Intellian, McMurdo, etc.). Infer the maker from ANY model or OEM part number — NOT just one brand.
+5. SPARES REQUESTED: Extract a clean, concise list of ALL requested or recommended spare parts (including description, OEM part number, and quantity if shown) across ALL makers and attachments.
+6. DO NOT extract 'Piraeus' or 'Greece' from office signatures.{vision_note}
 
 MANUAL OVERRIDE:
 \"\"\"{manual_override_text or ""}\"\"\"
 
-INQUIRY TEXT:
+INQUIRY & ATTACHMENTS TEXT:
 \"\"\"{inquiry}\"\"\"
 
 Return ONLY valid JSON:
@@ -959,9 +1333,9 @@ Return ONLY valid JSON:
   "eta": "Vessel ETA or 'Not specified'",
   "port": "Service port or 'Not specified'",
   "country": "Service country or 'Not specified'",
-  "makers": ["Maker requiring service"],
-  "scope": "Summary",
-  "spares_requested": "Spares",
+  "makers": ["All OEM makers requiring service or spares"],
+  "scope": "Concise technical scope summary including equipment model",
+  "spares_requested": "Exact list of spares & part numbers requested/recommended, or 'None / Attendance only'",
   "discrepancies": ["Source A says X; source B says Y"],
   "missing_critical_data": ["What is missing"]
 }}"""
@@ -1017,23 +1391,46 @@ def call_gemini_model(prompt, pil_images, preferred_model=None):
     return None, None
 
 
-def call_groq_model(prompt, preferred_model=None):
+def call_groq_model(prompt, pil_images=None, preferred_model=None):
     if not client_groq:
         return None, None
     active_models = get_active_groq_models()
-    candidates = ([preferred_model] if preferred_model in active_models else []) + [
-        m for m in active_models if m != preferred_model
+    if pil_images:
+        vision_candidates = [m for m in active_models if m in GROQ_VISION_MODELS or "vision" in m.lower() or "llama-4" in m.lower()]
+        other_candidates = [m for m in active_models if m not in vision_candidates]
+        ordered = vision_candidates + other_candidates
+    else:
+        ordered = active_models
+
+    candidates = ([preferred_model] if preferred_model in ordered else []) + [
+        m for m in ordered if m != preferred_model
     ]
     for model_name in candidates:
         try:
-            resp = client_groq.chat.completions.create(
-                model=model_name,
-                messages=[
+            is_vision = model_name in GROQ_VISION_MODELS or "vision" in model_name.lower() or "llama-4" in model_name.lower()
+            if pil_images and is_vision:
+                user_content = [{"type": "text", "text": prompt}]
+                for img in list(pil_images)[:5]:
+                    b64_img = _pil_to_jpeg_base64(img)
+                    user_content.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"},
+                    })
+                messages = [
+                    {"role": "system", "content": "You are a precise maritime RFQ extraction engine. Output strictly valid JSON."},
+                    {"role": "user", "content": user_content},
+                ]
+            else:
+                messages = [
                     {"role": "system", "content": "You are a precise maritime RFQ extraction engine. Output strictly valid JSON."},
                     {"role": "user", "content": prompt},
-                ],
+                ]
+
+            resp = client_groq.chat.completions.create(
+                model=model_name,
+                messages=messages,
                 temperature=0.1,
-                max_tokens=1400,
+                max_tokens=2000,
             )
             parsed = parse_model_json(resp.choices[0].message.content)
             if parsed:
@@ -1094,24 +1491,27 @@ def analyze_inquiry(manual_override_text, cleaned_files, pil_images, selected_en
     prompt = build_prompt(manual_override_text, cleaned_files, len(pil_images or []))
     ai_res, used_engine = None, "Smart Local Parser"
 
+    if selected_engine == "Local Deterministic Only":
+        return reconcile_results(None, local_res, manual_override_text), "Smart Local Parser"
+
     if selected_engine.startswith("Gemini ::"):
         pref = selected_engine.split("::", 1)[1].strip()
         ai_res, used_engine = call_gemini_model(prompt, pil_images, preferred_model=pref)
         if not ai_res:
-            ai_res, used_engine = call_groq_model(prompt)
+            ai_res, used_engine = call_groq_model(prompt, pil_images=pil_images)
     elif selected_engine.startswith("Groq ::"):
         pref = selected_engine.split("::", 1)[1].strip()
-        if pil_images and gemini_api_key:
+        if pil_images and pref not in GROQ_VISION_MODELS and gemini_api_key:
             ai_res, used_engine = call_gemini_model(prompt, pil_images)
         if not ai_res:
-            ai_res, used_engine = call_groq_model(prompt, preferred_model=pref)
+            ai_res, used_engine = call_groq_model(prompt, pil_images=pil_images, preferred_model=pref)
             if not ai_res:
                 ai_res, used_engine = call_gemini_model(prompt, pil_images)
     else:
         if pil_images and gemini_api_key:
             ai_res, used_engine = call_gemini_model(prompt, pil_images)
         if not ai_res and client_groq:
-            ai_res, used_engine = call_groq_model(prompt)
+            ai_res, used_engine = call_groq_model(prompt, pil_images=pil_images)
         if not ai_res and gemini_api_key:
             ai_res, used_engine = call_gemini_model(prompt, pil_images)
 
@@ -1121,7 +1521,7 @@ def analyze_inquiry(manual_override_text, cleaned_files, pil_images, selected_en
 
 
 # ---------------------------------------------------------------------------
-# DIRECTORY ROUTING, OUTLOOK EMAIL EXTRACTOR & BRACKETED RFQ BUILDER
+# 3-TIER DIRECTORY ROUTING + ONE-STOP-SHOP MULTI-MAKER COVERAGE
 # ---------------------------------------------------------------------------
 def get_approved_makers_col(df):
     if df is None or df.empty:
@@ -1135,52 +1535,88 @@ def get_approved_makers_col(df):
     return df.columns[-1]
 
 
-def route_service_stations(df_dir, target_country, target_makers, include_non_maker):
+def route_service_stations(
+    df_dir,
+    target_country,
+    target_makers,
+    include_maker_unstarred=False,
+    include_other_stations=False,
+    one_stop_only=False,
+):
+    """
+    3-tier station routing with Multi-Maker One-Stop-Shop ranking:
+      Tier 0 (always shown):   Maker Approved (*)
+      Tier 1 (optional toggle): Maker Listed without * (capable, not OEM approved)
+      Tier 2 (optional toggle): Other stations in the same country (different makers)
+    Returns: (primary_df, neighbor_df, neighbor_countries, tier_counts)
+    """
+    empty_counts = {"approved": 0, "unstarred": 0, "other": 0, "one_stop": 0}
     if df_dir is None or df_dir.empty:
-        return pd.DataFrame(), pd.DataFrame(), []
+        return pd.DataFrame(), pd.DataFrame(), [], empty_counts
 
     target_canon = canonical_country(target_country)
     if not target_canon:
-        return pd.DataFrame(), pd.DataFrame(), []
+        return pd.DataFrame(), pd.DataFrame(), [], empty_counts
 
     maker_col = get_approved_makers_col(df_dir)
     work_df = df_dir.copy()
     work_df["_canon_country"] = work_df["Country"].apply(canonical_country)
-    work_df["Approval Status"] = work_df[maker_col].apply(lambda s: evaluate_station_maker_status(s, target_makers))
-    work_df["Matched Makers"] = work_df[maker_col].apply(lambda s: extract_matched_maker_badges(s, target_makers))
-    work_df["_sort_rank"] = work_df["Approval Status"].apply(
-        lambda st_txt: 0 if st_txt.startswith("✅") else (1 if st_txt == "🔧 Non-Maker Approved" else 2)
-    )
+
+    evals = work_df[maker_col].apply(lambda s: evaluate_station_coverage(s, target_makers))
+    work_df["Approval Status"] = evals.apply(lambda r: r["status"])
+    work_df["Maker Coverage"] = evals.apply(lambda r: r["coverage_label"])
+    work_df["Matched Makers"] = evals.apply(lambda r: r["matched_badges"])
+    work_df["_sort_rank"] = evals.apply(lambda r: r["sort_rank"])
+    work_df["_is_one_stop"] = evals.apply(lambda r: 1 if r["is_one_stop"] else 0)
+    work_df["_star_count"] = evals.apply(lambda r: r["star_count"])
+    work_df["_matched_count"] = evals.apply(lambda r: r["matched_count"])
 
     primary_pool = work_df[work_df["_canon_country"] == target_canon].copy()
+    tier_counts = {
+        "approved": int((primary_pool["_sort_rank"] == 0).sum()),
+        "unstarred": int((primary_pool["_sort_rank"] == 1).sum()),
+        "other": int((primary_pool["_sort_rank"] == 2).sum()),
+        "one_stop": int((primary_pool["_is_one_stop"] == 1).sum()),
+    }
 
-    if not include_non_maker:
-        primary_matched = primary_pool[primary_pool["Approval Status"].str.startswith("✅")].copy()
-    else:
-        primary_matched = primary_pool[primary_pool["_sort_rank"] <= 2].copy() if target_makers else primary_pool.copy()
+    allowed_primary_ranks = {0}
+    if include_maker_unstarred:
+        allowed_primary_ranks.add(1)
+    if include_other_stations:
+        allowed_primary_ranks.add(2)
 
-    primary_matched = primary_matched.sort_values(by=["_sort_rank", "Country", "Service Station Name"]).reset_index(drop=True)
+    primary_matched = primary_pool[primary_pool["_sort_rank"].isin(allowed_primary_ranks)].copy()
+    if one_stop_only and len(target_makers or []) > 1:
+        primary_matched = primary_matched[primary_matched["_is_one_stop"] == 1].copy()
+
+    primary_matched = primary_matched.sort_values(
+        by=["_is_one_stop", "_sort_rank", "_star_count", "_matched_count", "Country", "Service Station Name"],
+        ascending=[False, True, False, False, True, True],
+    ).reset_index(drop=True)
 
     neighbors = NEIGHBORING_COUNTRIES.get(target_canon, [])
     neighbor_matched = pd.DataFrame()
     if neighbors:
         neighbor_pool = work_df[work_df["_canon_country"].isin(neighbors)].copy()
-        if not include_non_maker:
-            neighbor_matched = neighbor_pool[neighbor_pool["Approval Status"].str.startswith("✅")].copy()
-        else:
-            neighbor_matched = neighbor_pool[neighbor_pool["_sort_rank"] <= 1].copy()
+        allowed_neighbor_ranks = {0}
+        if include_maker_unstarred:
+            allowed_neighbor_ranks.add(1)
+        neighbor_matched = neighbor_pool[neighbor_pool["_sort_rank"].isin(allowed_neighbor_ranks)].copy()
+        if one_stop_only and len(target_makers or []) > 1:
+            neighbor_matched = neighbor_matched[neighbor_matched["_is_one_stop"] == 1].copy()
 
         n_order = {n: idx for idx, n in enumerate(neighbors)}
         neighbor_matched["_n_order"] = neighbor_matched["_canon_country"].map(lambda c: n_order.get(c, 99))
         neighbor_matched = neighbor_matched.sort_values(
-            by=["_sort_rank", "_n_order", "Service Station Name"]
+            by=["_is_one_stop", "_sort_rank", "_star_count", "_matched_count", "_n_order", "Service Station Name"],
+            ascending=[False, True, False, False, True, True],
         ).drop(columns=["_n_order"], errors="ignore").reset_index(drop=True)
 
-    drop_cols = ["_canon_country", "_sort_rank"]
+    drop_cols = ["_canon_country", "_sort_rank", "_is_one_stop", "_star_count", "_matched_count"]
     primary_clean = primary_matched.drop(columns=drop_cols, errors="ignore")
     neighbor_clean = neighbor_matched.drop(columns=drop_cols, errors="ignore")
 
-    preferred_front = ["Approval Status", "Matched Makers", "Country", "Service Station Name", maker_col]
+    preferred_front = ["Approval Status", "Maker Coverage", "Matched Makers", "Country", "Service Station Name", maker_col]
     if not primary_clean.empty:
         f_cols = [c for c in preferred_front if c in primary_clean.columns]
         primary_clean = primary_clean[f_cols + [c for c in primary_clean.columns if c not in f_cols]]
@@ -1188,7 +1624,7 @@ def route_service_stations(df_dir, target_country, target_makers, include_non_ma
         nf_cols = [c for c in preferred_front if c in neighbor_clean.columns]
         neighbor_clean = neighbor_clean[nf_cols + [c for c in neighbor_clean.columns if c not in nf_cols]]
 
-    return primary_clean, neighbor_clean, neighbors
+    return primary_clean, neighbor_clean, neighbors, tier_counts
 
 
 def extract_outlook_emails(df_stations):
@@ -1201,6 +1637,7 @@ def extract_outlook_emails(df_stations):
         st_name = str(row.get("Service Station Name", "Station")).strip()
         st_country = str(row.get("Country", "")).strip()
         st_status = str(row.get("Approval Status", "")).strip()
+        st_cov = str(row.get("Maker Coverage", "")).strip()
         row_blob = " | ".join(str(v) for v in row.values if pd.notna(v))
         found_in_row = []
         for match in email_pattern.findall(row_blob):
@@ -1215,6 +1652,7 @@ def extract_outlook_emails(df_stations):
             "Service Station": st_name,
             "Country": st_country,
             "Approval Status": st_status,
+            "Maker Coverage": st_cov,
             "Extracted Emails": "; ".join(found_in_row) if found_in_row else "No email in directory row",
         })
     return unique_emails, station_records
@@ -1277,7 +1715,7 @@ def generate_copilot_reply(user_query, parsed_data, primary_df, neighbor_df, raw
     neigh_records = neighbor_df.head(8).to_dict(orient="records") if neighbor_df is not None and not neighbor_df.empty else []
 
     sys_context = f"""You are the Onetech Maritime AI Technical Copilot embedded inside the Onetech Service Router dashboard.
-Assist maritime coordinators with RFQ analysis, station routing, OEM maker-approval verification ('*' = strict Maker Approval), and vendor emails.
+Assist maritime coordinators with RFQ analysis, station routing, One-Stop-Shop multi-maker coverage, OEM maker-approval verification ('*' = strict Maker Approval), and vendor emails.
 
 CURRENT PARSED BRIEF:
 - Vessel: {d.get('vessel_name')} | Port: {d.get('port')}, {d.get('country')} | ETA: {d.get('eta')}
@@ -1399,16 +1837,31 @@ if "eb_vessel" not in st.session_state:
     _apply_parsed_data(st.session_state.parsed_data)
 if "raw_inquiry_text" not in st.session_state:
     st.session_state.raw_inquiry_text = ""
+if "extraction_notes" not in st.session_state:
+    st.session_state.extraction_notes = []
+if "vision_preview_images" not in st.session_state:
+    st.session_state.vision_preview_images = []
 if "last_used_engine" not in st.session_state:
     st.session_state.last_used_engine = "Ready"
-if "include_non_maker_approved" not in st.session_state:
-    st.session_state.include_non_maker_approved = False
-if "chk_non_maker_sidebar" not in st.session_state:
-    st.session_state.chk_non_maker_sidebar = st.session_state.include_non_maker_approved
-if "chk_non_maker_step1" not in st.session_state:
-    st.session_state.chk_non_maker_step1 = st.session_state.include_non_maker_approved
-if "chk_non_maker_main" not in st.session_state:
-    st.session_state.chk_non_maker_main = st.session_state.include_non_maker_approved
+
+# Tier 1 toggle: Maker Listed without * (capable, not OEM approved)
+if "include_maker_unstarred" not in st.session_state:
+    st.session_state.include_maker_unstarred = False
+for _k in ("chk_unstarred_sidebar", "chk_unstarred_step1", "chk_unstarred_main"):
+    if _k not in st.session_state:
+        st.session_state[_k] = st.session_state.include_maker_unstarred
+
+# Tier 2 toggle: Other Stations in country (different makers)
+if "include_other_stations" not in st.session_state:
+    st.session_state.include_other_stations = False
+for _k in ("chk_other_sidebar", "chk_other_step1", "chk_other_main"):
+    if _k not in st.session_state:
+        st.session_state[_k] = st.session_state.include_other_stations
+
+# Multi-maker One-Stop-Shop filter
+if "one_stop_only" not in st.session_state:
+    st.session_state.one_stop_only = False
+
 if "show_copilot" not in st.session_state:
     st.session_state.show_copilot = True
 if "copilot_messages" not in st.session_state:
@@ -1417,32 +1870,27 @@ if "copilot_messages" not in st.session_state:
             "role": "assistant",
             "content": (
                 "Welcome to **Onetech AI Copilot** ⚓\n\n"
-                "Upload an RFQ email, PDF, or Excel file on the left. "
+                "Upload an RFQ email, PDF, Excel, Word, ZIP, or photo on the left. "
                 "I can audit discrepancies, verify `*` Maker Approvals, or draft vendor follow-ups."
             ),
         }
     ]
 
 
-def _sync_non_maker_from_sidebar():
-    val = bool(st.session_state.chk_non_maker_sidebar)
-    st.session_state.include_non_maker_approved = val
-    st.session_state.chk_non_maker_step1 = val
-    st.session_state.chk_non_maker_main = val
+def _sync_unstarred(source_key):
+    val = bool(st.session_state[source_key])
+    st.session_state.include_maker_unstarred = val
+    st.session_state.chk_unstarred_sidebar = val
+    st.session_state.chk_unstarred_step1 = val
+    st.session_state.chk_unstarred_main = val
 
 
-def _sync_non_maker_from_step1():
-    val = bool(st.session_state.chk_non_maker_step1)
-    st.session_state.include_non_maker_approved = val
-    st.session_state.chk_non_maker_sidebar = val
-    st.session_state.chk_non_maker_main = val
-
-
-def _sync_non_maker_from_main():
-    val = bool(st.session_state.chk_non_maker_main)
-    st.session_state.include_non_maker_approved = val
-    st.session_state.chk_non_maker_sidebar = val
-    st.session_state.chk_non_maker_step1 = val
+def _sync_other(source_key):
+    val = bool(st.session_state[source_key])
+    st.session_state.include_other_stations = val
+    st.session_state.chk_other_sidebar = val
+    st.session_state.chk_other_step1 = val
+    st.session_state.chk_other_main = val
 
 
 def _toggle_copilot():
@@ -1457,11 +1905,18 @@ def _reset_all_fields():
     st.session_state.reset_count += 1
     _apply_parsed_data(RESULT_DEFAULTS)
     st.session_state.raw_inquiry_text = ""
+    st.session_state.extraction_notes = []
+    st.session_state.vision_preview_images = []
     st.session_state.last_used_engine = "Ready"
-    st.session_state.include_non_maker_approved = False
-    st.session_state.chk_non_maker_sidebar = False
-    st.session_state.chk_non_maker_step1 = False
-    st.session_state.chk_non_maker_main = False
+    st.session_state.include_maker_unstarred = False
+    st.session_state.chk_unstarred_sidebar = False
+    st.session_state.chk_unstarred_step1 = False
+    st.session_state.chk_unstarred_main = False
+    st.session_state.include_other_stations = False
+    st.session_state.chk_other_sidebar = False
+    st.session_state.chk_other_step1 = False
+    st.session_state.chk_other_main = False
+    st.session_state.one_stop_only = False
 
 
 rc = st.session_state.reset_count
@@ -1507,9 +1962,18 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     st.checkbox(
-        "Include Non-Maker Approved (No *)",
-        key="chk_non_maker_sidebar",
-        on_change=_sync_non_maker_from_sidebar,
+        "🟡 Include Maker Listed (No *)",
+        key="chk_unstarred_sidebar",
+        on_change=_sync_unstarred,
+        args=("chk_unstarred_sidebar",),
+        help="Show stations that list the target maker without an asterisk (*) / red OEM approval.",
+    )
+    st.checkbox(
+        "🔧 Include Other Non-Approved Stations",
+        key="chk_other_sidebar",
+        on_change=_sync_other,
+        args=("chk_other_sidebar",),
+        help="Show all remaining stations in the target country even if they don't list the target maker.",
     )
 
     sb_c1, sb_c2 = st.columns(2)
@@ -1545,7 +2009,7 @@ st.markdown(f"""
         <div class="ot-brand-logo">⚓</div>
         <div>
             <h1 class="ot-hero-title">Onetech Service Router &amp; AI Technical Copilot</h1>
-            <p class="ot-hero-subtitle">Automated RFQ Telemetry Extraction • Strict OEM Maker Approval (*) Verification • Global Port Dispatch</p>
+            <p class="ot-hero-subtitle">Automated RFQ Telemetry Extraction • Multi-Maker One-Stop-Shop Ranking • Global Port Dispatch</p>
         </div>
     </div>
     <div class="ot-hero-badges">
@@ -1575,15 +2039,18 @@ with col_main:
                 <span class="ot-step-badge">STEP 01</span>
                 <h3 class="clean-header">Inquiry Ingestion &amp; Ground-Truth Override</h3>
             </div>
-            <span class="ot-section-caption">Supports PDF, EML, MSG, TXT, Excel (XLSX/XLS/CSV) &amp; Photos</span>
+            <span class="ot-section-caption">Reads ALL Attachments: MSG/EML, PDF (Text &amp; Scanned), Excel, Word, ZIP &amp; Images</span>
         </div>
         """, unsafe_allow_html=True)
 
         ing_col1, ing_col2 = st.columns([1.15, 1.0], gap="medium")
         with ing_col1:
             uploaded_files = st.file_uploader(
-                "Upload Client RFQ Emails, PDFs, Excel Lists, or Equipment Images",
-                type=["pdf", "eml", "msg", "txt", "xlsx", "xls", "csv", "png", "jpg", "jpeg"],
+                "Upload Client RFQ Emails, PDFs, Excel/Word/ZIP Files, or Equipment Images",
+                type=[
+                    "pdf", "eml", "msg", "txt", "xlsx", "xls", "csv",
+                    "docx", "zip", "html", "htm", "png", "jpg", "jpeg", "webp", "tif", "tiff"
+                ],
                 accept_multiple_files=True,
                 key=f"rfq_file_uploader_{rc}",
             )
@@ -1601,12 +2068,23 @@ with col_main:
                 key=f"manual_override_box_{rc}",
             )
 
-        st.checkbox(
-            "Include Non-Maker Approved Stations (No *)",
-            key="chk_non_maker_step1",
-            on_change=_sync_non_maker_from_step1,
-            help="Synced filter: Enable before or after analysis to include stations without an asterisk (*) for the target maker.",
-        )
+        chk_s1_a, chk_s1_b = st.columns(2)
+        with chk_s1_a:
+            st.checkbox(
+                "🟡 Include Maker Listed without * (Capable, Non-Approved)",
+                key="chk_unstarred_step1",
+                on_change=_sync_unstarred,
+                args=("chk_unstarred_step1",),
+                help="Show stations that list the target maker without an asterisk (*) / red OEM approval.",
+            )
+        with chk_s1_b:
+            st.checkbox(
+                "🔧 Include Other Non-Approved Stations (Different Makers)",
+                key="chk_other_step1",
+                on_change=_sync_other,
+                args=("chk_other_step1",),
+                help="Show all remaining stations in the target country even if they don't list the target maker.",
+            )
 
         act_col1, act_col2, act_col3 = st.columns([2.6, 1.0, 0.8])
         with act_col1:
@@ -1630,6 +2108,8 @@ with col_main:
                 "Vasilikon 51, Piraeus 18545 Greece"
             )
             st.session_state.raw_inquiry_text = sample_thread
+            st.session_state.extraction_notes = []
+            st.session_state.vision_preview_images = []
             with st.spinner("Analyzing sample maritime RFQ thread..."):
                 parsed, eng = analyze_inquiry("", sample_thread, [], selected_engine)
                 _apply_parsed_data(parsed)
@@ -1637,38 +2117,48 @@ with col_main:
             st.rerun()
 
         if run_analysis_btn:
-            combined_text_parts, pil_images = [], []
+            combined_text_parts, labeled_images, all_notes = [], [], []
             if pasted_inquiry and pasted_inquiry.strip():
                 combined_text_parts.append(clean_signatures(pasted_inquiry.strip()))
             if uploaded_files:
                 for uf in uploaded_files:
-                    fname = uf.name.lower()
-                    if fname.endswith((".png", ".jpg", ".jpeg")):
-                        try:
-                            uf.seek(0)
-                            pil_images.append(Image.open(uf))
-                        except Exception as exc:
-                            st.warning(f"Could not open image {uf.name}: {exc}")
-                    else:
-                        txt = extract_text_from_file(uf)
-                        if txt:
-                            combined_text_parts.append(f"--- FILE: {uf.name} ---\n{txt}")
+                    txt, imgs, notes = extract_content_from_file(uf)
+                    if txt:
+                        combined_text_parts.append(f"--- FILE: {uf.name} ---\n{txt}")
+                    if imgs:
+                        labeled_images.extend(imgs)
+                    if notes:
+                        all_notes.extend(notes)
 
+            labeled_images = labeled_images[:8]
+            pil_images = [img for _, img in labeled_images]
             full_cleaned_text = "\n\n".join(combined_text_parts).strip()
             st.session_state.raw_inquiry_text = full_cleaned_text
+            st.session_state.extraction_notes = all_notes
+            st.session_state.vision_preview_images = labeled_images
 
             if not full_cleaned_text and not (manual_override_input and manual_override_input.strip()) and not pil_images:
                 st.warning("Please upload an inquiry file, paste email text, or provide a Manual Ground-Truth Override.")
             else:
-                with st.spinner("Extracting maritime telemetry & verifying maker approvals..."):
+                with st.spinner("AI is reading email, all attachments & images, and routing stations..."):
                     parsed, eng = analyze_inquiry(manual_override_input, full_cleaned_text, pil_images, selected_engine)
                     _apply_parsed_data(parsed)
                     st.session_state.last_used_engine = eng
                 st.rerun()
 
+        if st.session_state.extraction_notes:
+            st.caption("📎 " + " • ".join(st.session_state.extraction_notes))
+
+        if st.session_state.vision_preview_images:
+            with st.expander(f"🖼️ View {len(st.session_state.vision_preview_images)} Extracted Image(s) / Scanned Pages Sent to AI Vision", expanded=False):
+                img_cols = st.columns(min(3, len(st.session_state.vision_preview_images)))
+                for idx, (lbl, pil_im) in enumerate(st.session_state.vision_preview_images):
+                    with img_cols[idx % len(img_cols)]:
+                        st.image(pil_im, caption=lbl, use_container_width=True)
+
         if st.session_state.raw_inquiry_text:
-            with st.expander("📄 View Cleaned Inquiry Text (Signatures Stripped)", expanded=False):
-                st.code(st.session_state.raw_inquiry_text[:8000], language="text")
+            with st.expander("📄 View Cleaned Inquiry & Attachments Text (Signatures Stripped)", expanded=False):
+                st.code(st.session_state.raw_inquiry_text[:10000], language="text")
 
     # STEP 02: EDITABLE EXECUTIVE BRIEF & KPI TELEMETRY
     cur = st.session_state.parsed_data
@@ -1741,22 +2231,27 @@ with col_main:
         with eb_c7:
             st.text_input("Spares / Parts Requested", key="eb_spares", on_change=_sync_brief_from_widgets)
 
-    # STEP 03: SERVICE STATION ROUTING & STRICT (*) MAKER VERIFICATION
+    # STEP 03: SERVICE STATION ROUTING, 3-TIER FILTER & ONE-STOP-SHOP RANKING
     active_country = st.session_state.parsed_data.get("country", "Not specified")
     active_makers = st.session_state.parsed_data.get("makers", [])
-    include_non_maker = bool(st.session_state.include_non_maker_approved)
+    is_multi_maker = len(active_makers) > 1
+    include_unstarred = bool(st.session_state.include_maker_unstarred)
+    include_other = bool(st.session_state.include_other_stations)
+    one_stop_only = bool(st.session_state.one_stop_only) if is_multi_maker else False
 
-    primary_df, neighbor_df, neighbor_country_list = route_service_stations(
-        df_directory, active_country, active_makers, include_non_maker
+    primary_df, neighbor_df, neighbor_country_list, tier_counts = route_service_stations(
+        df_directory,
+        active_country,
+        active_makers,
+        include_maker_unstarred=include_unstarred,
+        include_other_stations=include_other,
+        one_stop_only=one_stop_only,
     )
-
-    maker_approved_count = int(primary_df["Approval Status"].str.startswith("✅").sum()) if not primary_df.empty else 0
-    non_maker_count = int(len(primary_df) - maker_approved_count) if not primary_df.empty else 0
 
     selected_primary_df = pd.DataFrame()
     selected_neighbor_df = neighbor_df.copy()
 
-    filter_sig = f"{rc}_{canonical_country(active_country)}_{'_'.join(active_makers)}_{include_non_maker}"
+    filter_sig = f"{rc}_{canonical_country(active_country)}_{'_'.join(active_makers)}_{include_unstarred}_{include_other}_{one_stop_only}"
 
     with st.container(border=True):
         st.markdown("""
@@ -1765,25 +2260,53 @@ with col_main:
                 <span class="ot-step-badge">STEP 03</span>
                 <h3 class="clean-header">Service Station Routing &amp; Strict (*) Maker Verification</h3>
             </div>
-            <span class="ot-section-caption">Asterisk (*) = Verified OEM Maker Approval</span>
+            <span class="ot-section-caption">🏆 One-Stop-Shop • ✅ Maker Approved (*) • 🟡 Maker Listed (No *) • 🔧 Other Stations</span>
         </div>
         """, unsafe_allow_html=True)
 
-        rt_c1, rt_c2 = st.columns([1.8, 1.2])
+        onestop_badge_html = (
+            f'<span class="ot-stat-badge ot-stat-onestop">🏆 {tier_counts["one_stop"]} One-Stop-Shop ({len(active_makers)}/{len(active_makers)} Makers)</span>'
+            if is_multi_maker
+            else ""
+        )
+
+        st.markdown(f"""
+        <div class="ot-badge-row">
+            {onestop_badge_html}
+            <span class="ot-stat-badge ot-stat-approved">✅ {tier_counts['approved']} Maker Approved (*)</span>
+            <span class="ot-stat-badge ot-stat-unstarred">🟡 {tier_counts['unstarred']} Maker Listed (No *)</span>
+            <span class="ot-stat-badge ot-stat-other">🔧 {tier_counts['other']} Other Stations in Country</span>
+            <span class="ot-stat-badge ot-stat-neutral">🌐 {len(neighbor_df)} Regional Backup Stations</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if is_multi_maker:
+            rt_c1, rt_c2, rt_c3 = st.columns(3)
+        else:
+            rt_c1, rt_c2 = st.columns(2)
+            rt_c3 = None
+
         with rt_c1:
-            st.markdown(f"""
-            <div class="ot-badge-row">
-                <span class="ot-stat-badge ot-stat-approved">✅ {maker_approved_count} Maker Approved (*)</span>
-                <span class="ot-stat-badge ot-stat-nonmaker">🔧 {non_maker_count} Non-Maker Approved</span>
-                <span class="ot-stat-badge ot-stat-neutral">🌐 {len(neighbor_df)} Regional Backup Stations</span>
-            </div>
-            """, unsafe_allow_html=True)
+            st.checkbox(
+                f"🟡 Include Maker Listed without * ({tier_counts['unstarred']} available)",
+                key="chk_unstarred_main",
+                on_change=_sync_unstarred,
+                args=("chk_unstarred_main",),
+            )
         with rt_c2:
             st.checkbox(
-                "Include Non-Maker Approved Stations (No *)",
-                key="chk_non_maker_main",
-                on_change=_sync_non_maker_from_main,
+                f"🔧 Include Other Non-Approved Stations ({tier_counts['other']} available)",
+                key="chk_other_main",
+                on_change=_sync_other,
+                args=("chk_other_main",),
             )
+        if rt_c3 is not None:
+            with rt_c3:
+                st.checkbox(
+                    f"🏆 One-Stop-Shop Only ({tier_counts['one_stop']} cover all {len(active_makers)} makers)",
+                    key="one_stop_only",
+                    help="Show only stations that cover EVERY requested maker in this multi-maker RFQ.",
+                )
 
         if not canonical_country(active_country):
             st.info("Specify a valid **Service Country** or **Service Port** in STEP 01 / STEP 02 to display matching service stations.")
@@ -1811,9 +2334,9 @@ with col_main:
             ).reset_index(drop=True)
         else:
             st.info(
-                f"No direct {'Maker Approved (*) ' if not include_non_maker else ''}stations found for "
-                f"**{active_country}** with makers **{', '.join(active_makers) if active_makers else 'All'}**. "
-                f"Enable *'Include Non-Maker Approved Stations (No *)'* or review the **Regional / Neighboring Hub Stations** below."
+                f"No direct stations currently displayed for **{active_country}** with makers **{', '.join(active_makers) if active_makers else 'All'}**. "
+                f"Try enabling **🟡 Include Maker Listed without *** ({tier_counts['unstarred']}), **🔧 Include Other Non-Approved Stations** ({tier_counts['other']}), "
+                f"disabling **One-Stop-Shop Only**, or checking the **Regional / Neighboring Hub Stations** below."
             )
 
         if not neighbor_df.empty:
@@ -1942,7 +2465,7 @@ if st.session_state.show_copilot and col_copilot is not None:
                 if st.button("🔍 Audit RFQ & Risks", use_container_width=True):
                     quick_prompt = "Audit this RFQ for missing technical particulars, port discrepancies, and survey risks."
                 if st.button("⭐ Verify * Approvals", use_container_width=True):
-                    quick_prompt = "Which matched stations hold strict '*' Maker Approval for the requested equipment?"
+                    quick_prompt = "Which matched stations hold strict '*' Maker Approval or One-Stop-Shop coverage for the requested equipment?"
             with qp_c2:
                 if st.button("✉️ Urgent Chaser", use_container_width=True):
                     quick_prompt = "Draft a short, urgent follow-up chaser email with bracketed [...] placeholders to the matched stations."
