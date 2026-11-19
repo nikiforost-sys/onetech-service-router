@@ -1752,7 +1752,7 @@ def route_service_stations(
     }
 
     allowed_primary_ranks = {0}
-    if include_maker_unstarred:
+    if include_maker_unstarred or include_other_stations:
         allowed_primary_ranks.add(1)
     if include_other_stations:
         allowed_primary_ranks.add(2)
@@ -1771,7 +1771,7 @@ def route_service_stations(
     if neighbors:
         neighbor_pool = work_df[work_df["_canon_country"].isin(neighbors)].copy()
         allowed_neighbor_ranks = {0}
-        if include_maker_unstarred:
+        if include_maker_unstarred or include_other_stations:
             allowed_neighbor_ranks.add(1)
         neighbor_matched = neighbor_pool[neighbor_pool["_sort_rank"].isin(allowed_neighbor_ranks)].copy()
         if one_stop_only and len(target_makers or []) > 1:
@@ -2142,7 +2142,7 @@ with st.sidebar:
         key="chk_other_sidebar",
         on_change=_sync_other,
         args=("chk_other_sidebar",),
-        help="Show all remaining stations in the target country even if they don't list the target maker.",
+        help="Show Maker Listed (No *) and all remaining non-approved stations in the target country.",
     )
 
     sb_c1, sb_c2 = st.columns(2)
@@ -2252,7 +2252,7 @@ with col_main:
                 key="chk_other_step1",
                 on_change=_sync_other,
                 args=("chk_other_step1",),
-                help="Show all remaining stations in the target country even if they don't list the target maker.",
+                help="Show Maker Listed (No *) and all remaining non-approved stations in the target country.",
             )
 
         act_col1, act_col2, act_col3 = st.columns([2.6, 1.0, 0.8])
