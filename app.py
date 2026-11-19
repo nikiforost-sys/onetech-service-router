@@ -25,19 +25,6 @@ try:
 except ImportError:
     HAS_GOOGLE_AUTH = False
 
-try:
-    from google import genai
-    from google.genai import types
-    HAS_GOOGLE_GENAI = True
-except ImportError:
-    HAS_GOOGLE_GENAI = False
-
-try:
-    import google.generativeai as legacy_genai
-    HAS_LEGACY_GENAI = True
-except ImportError:
-    HAS_LEGACY_GENAI = False
-
 st.set_page_config(
     page_title="Onetech Service Router & Copilot",
     page_icon="⚓",
@@ -191,7 +178,7 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2):ha
 
 
 # ---------------------------------------------------------------------------
-# SECRETS & DYNAMIC ACTIVE MODELS (GEMINI + GROQ)
+# SECRETS & FAST, BOUNDED ACTIVE MODELS (GEMINI + GROQ)
 # ---------------------------------------------------------------------------
 def read_secret(key_name):
     raw = ""
@@ -207,7 +194,8 @@ def read_secret(key_name):
 groq_api_key = read_secret("GROQ_API_KEY")
 gemini_api_key = read_secret("GEMINI_API_KEY")
 
-client_groq = Groq(api_key=groq_api_key, timeout=60.0, max_retries=2) if groq_api_key else None
+# Short timeout & zero SDK auto-retries so the app NEVER hangs
+client_groq = Groq(api_key=groq_api_key, timeout=20.0, max_retries=0) if groq_api_key else None
 
 GEMINI_MODELS = [
     "gemini-3.8-flash",
@@ -232,13 +220,13 @@ GROQ_VISION_MODELS = {
 
 @st.cache_data(ttl=600)
 def get_active_gemini_models():
-    """Auto-discover active Gemini models for this API key via REST API."""
+    """Auto-discover the top 5 fast, active Gemini models for this API key."""
     discovered = []
     if gemini_api_key:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_api_key}"
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=6) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             for m in data.get("models") or []:
                 methods = m.get("supportedGenerationMethods") or []
@@ -248,7 +236,10 @@ def get_active_gemini_models():
                 nl = name.lower()
                 if not name or "gemini" not in nl:
                     continue
-                if any(skip in nl for skip in ("embedding", "aqa", "tts", "imagen", "veo", "lyria", "robotics", "computer-use")):
+                if any(skip in nl for skip in (
+                    "embedding", "aqa", "tts", "imagen", "veo", "lyria",
+                    "robotics", "computer-use", "live", "audio", "exp", "001"
+                )):
                     continue
                 discovered.append(name)
         except Exception:
@@ -259,16 +250,13 @@ def get_active_gemini_models():
         for pref in GEMINI_MODELS:
             if pref in discovered and pref not in ordered:
                 ordered.append(pref)
-        for m in discovered:
+        for m in sorted(discovered, reverse=True):
             if "flash" in m.lower() and m not in ordered:
                 ordered.append(m)
-        for m in discovered:
+        for m in sorted(discovered, reverse=True):
             if "pro" in m.lower() and m not in ordered:
                 ordered.append(m)
-        for m in discovered:
-            if m not in ordered:
-                ordered.append(m)
-        return ordered
+        return ordered[:5]
 
     return list(GEMINI_MODELS)
 
@@ -286,7 +274,7 @@ def get_active_groq_models():
                         models.append(mid)
         except Exception:
             pass
-    return models
+    return models[:8]
 
 
 # ---------------------------------------------------------------------------
@@ -338,7 +326,7 @@ def load_directory():
     for url in urls:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=12) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:
                 raw_text = resp.read().decode("utf-8-sig", errors="replace")
             if raw_text and "<html" not in raw_text[:300].lower() and "<!doctype" not in raw_text[:300].lower():
                 df = _clean_df(pd.read_csv(io.StringIO(raw_text), on_bad_lines="skip"))
@@ -701,7 +689,7 @@ def clean_signatures(text):
     return re.sub(r"\n{3,}", "\n\n", "\n".join(kept)).strip()
 
 
-def _prepare_pil_image(img, max_dim=1600):
+def _prepare_pil_image(img, max_dim=1400):
     if img.mode != "RGB":
         img = img.convert("RGB")
     w, h = img.size
@@ -711,14 +699,10 @@ def _prepare_pil_image(img, max_dim=1600):
     return img
 
 
-def _pil_to_jpeg_bytes(img, max_dim=1400, quality=80):
+def _pil_to_jpeg_base64(img, max_dim=1200, quality=75):
     buf = io.BytesIO()
     _prepare_pil_image(img, max_dim=max_dim).save(buf, format="JPEG", quality=quality)
-    return buf.getvalue()
-
-
-def _pil_to_jpeg_base64(img, max_dim=1280, quality=78):
-    return base64.b64encode(_pil_to_jpeg_bytes(img, max_dim=max_dim, quality=quality)).decode("utf-8")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
 def _detect_extension_from_bytes(raw_bytes):
@@ -818,7 +802,7 @@ def _extract_xls_fallback(raw_bytes):
     return "\n".join(combined)
 
 
-def _extract_pdf_content(raw_bytes, source_name="document.pdf", max_pages=25, max_vision_pages=8):
+def _extract_pdf_content(raw_bytes, source_name="document.pdf", max_pages=25, max_vision_pages=6):
     extracted_text_parts = []
     extracted_images = []
     notes = []
@@ -1093,7 +1077,7 @@ def extract_content_from_bytes(raw_bytes, file_name, _depth=0):
             st.error(f"Error parsing {orig_name}: {e}")
 
     cleaned = clean_signatures(extracted_text)[:35000] if _depth == 0 else extracted_text
-    return cleaned, extracted_images[:8], notes
+    return cleaned, extracted_images[:6], notes
 
 
 def extract_content_from_file(uploaded_file):
@@ -1257,7 +1241,6 @@ def normalize_result(data):
         if k in data and data.get(k) is not None:
             result[k] = data.get(k)
 
-    # Guarantee clean strings for all text-input fields (prevents Streamlit TypeError if LLM returns a list)
     result["eta"] = _as_clean_str(result.get("eta"), "Not specified")
     result["scope"] = _as_clean_str(result.get("scope"), "Standard technical attendance inquiry.")
     result["spares_requested"] = _as_clean_str(result.get("spares_requested"), "Inquired per inquiry")
@@ -1303,17 +1286,17 @@ def normalize_result(data):
 
 
 # ---------------------------------------------------------------------------
-# ZERO-DEPENDENCY GEMINI REST VISION + GROQ VISION OCR & MULTIMODAL PARSING
+# FAST SINGLE-PASS MULTIMODAL AI ENGINE (DIRECT GEMINI REST + GROQ FALLBACK)
 # ---------------------------------------------------------------------------
-def _gemini_rest_generate(model_name, prompt, pil_images=None):
-    """Direct Gemini REST API call using stdlib urllib (works without google-genai SDK)."""
+def _gemini_rest_generate(model_name, prompt, pil_images=None, timeout=22):
+    """Fast, zero-dependency Gemini REST API call with strict timeout."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_api_key}"
     parts = [{"text": prompt}]
-    for img in (pil_images or [])[:6]:
+    for img in (pil_images or [])[:4]:
         parts.append({
             "inline_data": {
                 "mime_type": "image/jpeg",
-                "data": _pil_to_jpeg_base64(img, max_dim=1400, quality=80),
+                "data": _pil_to_jpeg_base64(img, max_dim=1250, quality=76),
             }
         })
     payload = {
@@ -1326,11 +1309,11 @@ def _gemini_rest_generate(model_name, prompt, pil_images=None):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     candidates = data.get("candidates") or []
     if not candidates:
-        raise RuntimeError(f"Empty Gemini candidates: {str(data)[:200]}")
+        raise RuntimeError(f"Empty Gemini candidates: {str(data)[:160]}")
     res_parts = (candidates[0].get("content") or {}).get("parts") or []
     text_out = "\n".join(p.get("text", "") for p in res_parts if p.get("text"))
     if not text_out.strip():
@@ -1339,6 +1322,7 @@ def _gemini_rest_generate(model_name, prompt, pil_images=None):
 
 
 def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=None):
+    """Try at most 3 fast Gemini models via direct REST API (never hangs)."""
     if not gemini_api_key:
         if error_log is not None:
             error_log.append("Gemini: GEMINI_API_KEY missing")
@@ -1349,10 +1333,9 @@ def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=No
         m for m in active_gem if m != preferred_model
     ]
 
-    for model_name in candidates:
-        # 1. Direct REST API
+    for model_name in candidates[:3]:
         try:
-            txt = _gemini_rest_generate(model_name, prompt, pil_images=pil_images)
+            txt = _gemini_rest_generate(model_name, prompt, pil_images=pil_images, timeout=22)
             if txt:
                 return txt, f"Gemini ({model_name})"
         except urllib.error.HTTPError as he:
@@ -1362,119 +1345,16 @@ def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=No
             except Exception:
                 pass
             if error_log is not None:
-                error_log.append(f"Gemini REST {model_name}: HTTP {he.code} {err_body}")
+                error_log.append(f"Gemini {model_name}: HTTP {he.code} {err_body}")
+            if he.code in (400, 401, 403):
+                break
         except Exception as exc:
             if error_log is not None:
-                error_log.append(f"Gemini REST {model_name}: {str(exc)[:140]}")
-
-        # 2. Fallback to google-genai SDK if installed
-        if HAS_GOOGLE_GENAI:
-            try:
-                client = genai.Client(api_key=gemini_api_key)
-                contents = [prompt]
-                for img in (pil_images or [])[:6]:
-                    contents.append(types.Part.from_bytes(data=_pil_to_jpeg_bytes(img), mime_type="image/jpeg"))
-                resp = client.models.generate_content(
-                    model=model_name,
-                    contents=contents,
-                    config=types.GenerateContentConfig(temperature=0.1),
-                )
-                txt = (getattr(resp, "text", "") or "").strip()
-                if txt:
-                    return txt, f"Gemini SDK ({model_name})"
-            except Exception as exc:
-                if error_log is not None:
-                    error_log.append(f"Gemini SDK {model_name}: {str(exc)[:140]}")
-
-        # 3. Fallback to legacy google.generativeai SDK if installed
-        if HAS_LEGACY_GENAI:
-            try:
-                legacy_genai.configure(api_key=gemini_api_key)
-                model = legacy_genai.GenerativeModel(model_name)
-                contents = [prompt] + [
-                    {"mime_type": "image/jpeg", "data": _pil_to_jpeg_bytes(img)}
-                    for img in (pil_images or [])[:6]
-                ]
-                resp = model.generate_content(contents)
-                txt = (getattr(resp, "text", "") or "").strip()
-                if txt:
-                    return txt, f"Gemini Legacy ({model_name})"
-            except Exception as exc:
-                if error_log is not None:
-                    error_log.append(f"Gemini Legacy {model_name}: {str(exc)[:140]}")
+                error_log.append(f"Gemini {model_name}: {str(exc)[:140]}")
 
     return None, None
 
 
-def _groq_vision_raw_text(prompt, pil_images, preferred_model=None, error_log=None):
-    if not client_groq or not pil_images:
-        return None, None
-
-    active = get_active_groq_models()
-    vision_models = [m for m in active if m in GROQ_VISION_MODELS or "llama-4" in m.lower() or "vision" in m.lower()]
-    if preferred_model and preferred_model in vision_models:
-        vision_models = [preferred_model] + [m for m in vision_models if m != preferred_model]
-
-    for model_name in vision_models:
-        try:
-            user_content = [{"type": "text", "text": prompt}]
-            for img in list(pil_images)[:4]:
-                b64_img = _pil_to_jpeg_base64(img, max_dim=1150, quality=72)
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"},
-                })
-            resp = client_groq.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": user_content}],
-                temperature=0.1,
-                max_tokens=1800,
-            )
-            txt = (resp.choices[0].message.content or "").strip()
-            if txt:
-                return txt, f"Groq Vision ({model_name})"
-        except Exception as exc:
-            if error_log is not None:
-                error_log.append(f"Groq Vision {model_name}: {str(exc)[:160]}")
-            continue
-    return None, None
-
-
-def run_vision_ocr_on_images(pil_images, selected_engine):
-    """Dedicated Vision OCR pass for attached photos & scanned PDF pages."""
-    if not pil_images:
-        return "", None, []
-
-    ocr_prompt = """You are a maritime technical document reader. Read ALL attached images / scanned PDF pages carefully and extract the factual technical details in plain text:
-- Vessel Name / IMO (if shown)
-- Equipment Type, OEM Maker, and Exact Model (IMPORTANT: On Service Reports, IGNORE the service company's letterhead / 'Authorised Dealership' list of brands. Report ONLY the vessel's actual 'Equipment type and model'!)
-- Serial Numbers (if shown)
-- Exact Scope / Findings / Follow-up Needed
-- ALL Recommended or Requested Spare Parts with exact OEM Part Numbers and Quantities
-
-Be concise, exact, and factual. Do not invent anything not visible in the images."""
-
-    errors = []
-    if selected_engine.startswith("Groq ::"):
-        pref = selected_engine.split("::", 1)[1].strip()
-        txt, eng = _groq_vision_raw_text(ocr_prompt, pil_images, preferred_model=pref, error_log=errors)
-        if txt:
-            return txt, eng, errors
-        txt, eng = _gemini_raw_text(ocr_prompt, pil_images=pil_images, error_log=errors)
-        return (txt or ""), eng, errors
-
-    pref_gem = selected_engine.split("::", 1)[1].strip() if selected_engine.startswith("Gemini ::") else None
-    txt, eng = _gemini_raw_text(ocr_prompt, pil_images=pil_images, preferred_model=pref_gem, error_log=errors)
-    if txt:
-        return txt, eng, errors
-
-    txt, eng = _groq_vision_raw_text(ocr_prompt, pil_images, error_log=errors)
-    return (txt or ""), eng, errors
-
-
-# ---------------------------------------------------------------------------
-# LOCAL PARSER & MULTIMODAL AI PARSING
-# ---------------------------------------------------------------------------
 def smart_local_parser(manual_override_text, files_text):
     blob = files_text or ""
     port, country, _ = choose_primary_port(blob)
@@ -1531,13 +1411,13 @@ def smart_local_parser(manual_override_text, files_text):
 
 
 def build_prompt(manual_override_text, cleaned_files, image_count):
-    inquiry = (cleaned_files or "")[:24000]
+    inquiry = (cleaned_files or "")[:20000]
     vision_note = (
         f"\n7. ATTACHED IMAGES / SCANNED PDF PAGES ({image_count} image(s) attached): "
         f"Carefully read EVERY attached photo, screenshot, nameplate, parts list, or scanned PDF page (including prior Service Reports extracted from email attachments). "
         f"Extract the equipment maker(s), model(s), serial numbers, and ALL requested/recommended spare parts with their part numbers and quantities. "
         f"CRITICAL FOR SERVICE REPORTS: Ignore the service station's letterhead / 'Authorised Dealership' list of brands — "
-        f"extract ONLY the maker(s) of the vessel's actual equipment requiring service or spares."
+        f"extract ONLY the maker(s) of the vessel's actual equipment requiring service or spares (e.g. 'Equipment type and model: Sperry/Navigat X MK 1' -> ['SPERRY MARINE'])."
         if image_count
         else ""
     )
@@ -1547,7 +1427,7 @@ CRITICAL INSTRUCTIONS:
 1. MANUAL OVERRIDE IS ABSOLUTE GROUND TRUTH.
 2. EMAIL THREAD CHRONOLOGY: The email at the VERY TOP is the active instruction. If it updates the port (e.g. 'Taicang China instead of Qingdao China' or 'Malta instead of Genova'), use the NEW port and list the old port in discrepancies. A prior Service Report attached to the email may show an older port (e.g. Weihai, China); always use the NEW requested attendance port from the email body.
 3. VESSEL NAME: Strip 'MV', 'M/V', 'MT', 'M/T', and scope words. For 'MV SEADUTY - VDR & GMDSS ANNUAL SURVEY', vessel_name is strictly 'Seaduty'.
-4. ALL MAKERS, MODELS & SPARE PARTS: Identify EVERY marine electronics maker involved across the email, Excel/CSV tables, Word/PDF attachments, Vision OCR text, and attached images (e.g., Furuno, JRC, Alphatron, Sperry Marine, Danelec, Yokogawa/YDK, Tokyo Keiki, Anschutz, Cobham/SAILOR, Jotron, Netwave, Consilium, Highlander, MacGregor, Wartsila/SAM/Transas, Kelvin Hughes, Simrad, Skipper, Intellian, McMurdo, etc.). Infer the maker from ANY model or OEM part number — NOT just one brand.
+4. ALL MAKERS, MODELS & SPARE PARTS: Identify EVERY marine electronics maker involved across the email, Excel/CSV tables, Word/PDF attachments, and attached images (e.g., Furuno, JRC, Alphatron, Sperry Marine, Danelec, Yokogawa/YDK, Tokyo Keiki, Anschutz, Cobham/SAILOR, Jotron, Netwave, Consilium, Highlander, MacGregor, Wartsila/SAM/Transas, Kelvin Hughes, Simrad, Skipper, Intellian, McMurdo, etc.). Infer the maker from ANY model or OEM part number — NOT just one brand.
 5. SPARES REQUESTED: Extract a single concise STRING listing ALL requested or recommended spare parts (including description, OEM part number, and quantity if shown) across ALL makers and attachments.
 6. DO NOT extract 'Piraeus' or 'Greece' from office signatures.{vision_note}
 
@@ -1566,56 +1446,65 @@ Return ONLY valid JSON:
   "makers": ["All OEM makers requiring service or spares"],
   "scope": "Concise technical scope summary including equipment model",
   "spares_requested": "Single string listing spares & part numbers, or 'None / Attendance only'",
+  "vision_summary": "Short summary of equipment/maker/part numbers read from attached images/scanned PDFs, or ''",
   "discrepancies": ["Source A says X; source B says Y"],
   "missing_critical_data": ["What is missing"]
 }}"""
 
 
-def parse_model_json(content):
+def parse_model_json_with_vision(content):
     text = (content or "").strip()
     text = re.sub(r"^`{3}(?:json)?|`{3}$", "", text, flags=re.MULTILINE).strip()
+    raw_dict = None
     try:
-        return normalize_result(json.loads(text))
+        raw_dict = json.loads(text)
     except Exception:
         match = re.search(r"\{[\s\S]*\}", text)
         if match:
             try:
-                return normalize_result(json.loads(match.group(0)))
+                raw_dict = json.loads(match.group(0))
             except Exception:
                 pass
-    return None
+    if not isinstance(raw_dict, dict):
+        return None, ""
+    vision_sum = _as_clean_str(raw_dict.get("vision_summary"), "")
+    return normalize_result(raw_dict), vision_sum
 
 
-def call_gemini_model(prompt, pil_images, preferred_model=None):
-    raw_txt, eng = _gemini_raw_text(prompt, pil_images=pil_images, preferred_model=preferred_model)
+def call_gemini_model(prompt, pil_images, preferred_model=None, error_log=None):
+    raw_txt, eng = _gemini_raw_text(prompt, pil_images=pil_images, preferred_model=preferred_model, error_log=error_log)
     if raw_txt:
-        parsed = parse_model_json(raw_txt)
+        parsed, v_sum = parse_model_json_with_vision(raw_txt)
         if parsed:
-            return parsed, eng
-    return None, None
+            return parsed, eng, v_sum
+    return None, None, ""
 
 
-def call_groq_model(prompt, pil_images=None, preferred_model=None):
+def call_groq_model(prompt, pil_images=None, preferred_model=None, vision_only=False, error_log=None):
     if not client_groq:
-        return None, None
+        return None, None, ""
     active_models = get_active_groq_models()
-    if pil_images:
-        vision_candidates = [m for m in active_models if m in GROQ_VISION_MODELS or "vision" in m.lower() or "llama-4" in m.lower()]
-        other_candidates = [m for m in active_models if m not in vision_candidates]
-        ordered = vision_candidates + other_candidates
+    vision_candidates = [m for m in active_models if m in GROQ_VISION_MODELS or "llama-4" in m.lower() or "vision" in m.lower()]
+    text_candidates = [m for m in active_models if m not in vision_candidates]
+
+    if vision_only:
+        ordered = vision_candidates[:2]
+    elif pil_images:
+        ordered = vision_candidates[:2] + text_candidates[:2]
     else:
-        ordered = active_models
+        ordered = text_candidates[:2] + vision_candidates[:1]
 
     candidates = ([preferred_model] if preferred_model in ordered else []) + [
         m for m in ordered if m != preferred_model
     ]
-    for model_name in candidates:
+
+    for model_name in candidates[:3]:
         try:
-            is_vision = model_name in GROQ_VISION_MODELS or "vision" in model_name.lower() or "llama-4" in model_name.lower()
+            is_vision = model_name in GROQ_VISION_MODELS or "llama-4" in model_name.lower() or "vision" in model_name.lower()
             if pil_images and is_vision:
                 user_content = [{"type": "text", "text": prompt}]
                 for img in list(pil_images)[:4]:
-                    b64_img = _pil_to_jpeg_base64(img, max_dim=1150, quality=72)
+                    b64_img = _pil_to_jpeg_base64(img, max_dim=1100, quality=72)
                     user_content.append({
                         "type": "image_url",
                         "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"},
@@ -1631,14 +1520,16 @@ def call_groq_model(prompt, pil_images=None, preferred_model=None):
                 model=model_name,
                 messages=messages,
                 temperature=0.1,
-                max_tokens=2000,
+                max_tokens=1800,
             )
-            parsed = parse_model_json(resp.choices[0].message.content)
+            parsed, v_sum = parse_model_json_with_vision(resp.choices[0].message.content)
             if parsed:
-                return parsed, f"Groq ({model_name})"
-        except Exception:
+                return parsed, f"Groq ({model_name})", v_sum
+        except Exception as exc:
+            if error_log is not None:
+                error_log.append(f"Groq {model_name}: {str(exc)[:140]}")
             continue
-    return None, None
+    return None, None, ""
 
 
 def reconcile_results(ai_result, local_result, manual_override_text):
@@ -1688,49 +1579,53 @@ def reconcile_results(ai_result, local_result, manual_override_text):
 
 
 def analyze_inquiry(manual_override_text, cleaned_files, pil_images, selected_engine):
+    """Single-pass, fast multimodal analysis (never hangs)."""
     enriched_text = cleaned_files or ""
     vision_status = ""
     vision_errors = []
 
-    if pil_images and selected_engine != "Local Deterministic Only":
-        ocr_text, ocr_engine, vision_errors = run_vision_ocr_on_images(pil_images, selected_engine)
-        if ocr_text:
-            enriched_text = (
-                f"{enriched_text}\n\n"
-                f"--- AI VISION OCR FROM ATTACHED IMAGES / SCANNED PDF ({ocr_engine}) ---\n"
-                f"{ocr_text}"
-            ).strip()
-            vision_status = f"👁️ AI Vision read {len(pil_images)} image(s) via {ocr_engine}"
-        else:
-            vision_status = "⚠️ AI Vision could not read attached images"
-
     local_res = smart_local_parser(manual_override_text, enriched_text)
     prompt = build_prompt(manual_override_text, enriched_text, len(pil_images or []))
-    ai_res, used_engine = None, "Smart Local Parser"
+    ai_res, used_engine, vision_summary = None, "Smart Local Parser", ""
 
     if selected_engine == "Local Deterministic Only":
         return reconcile_results(None, local_res, manual_override_text), "Smart Local Parser", enriched_text, vision_status, vision_errors
 
     if selected_engine.startswith("Gemini ::"):
         pref = selected_engine.split("::", 1)[1].strip()
-        ai_res, used_engine = call_gemini_model(prompt, pil_images, preferred_model=pref)
+        ai_res, used_engine, vision_summary = call_gemini_model(prompt, pil_images, preferred_model=pref, error_log=vision_errors)
         if not ai_res:
-            ai_res, used_engine = call_groq_model(prompt, pil_images=pil_images)
+            ai_res, used_engine, vision_summary = call_groq_model(prompt, pil_images=pil_images, error_log=vision_errors)
     elif selected_engine.startswith("Groq ::"):
         pref = selected_engine.split("::", 1)[1].strip()
-        if pil_images and pref not in GROQ_VISION_MODELS and gemini_api_key:
-            ai_res, used_engine = call_gemini_model(prompt, pil_images)
-        if not ai_res:
-            ai_res, used_engine = call_groq_model(prompt, pil_images=pil_images, preferred_model=pref)
-            if not ai_res:
-                ai_res, used_engine = call_gemini_model(prompt, pil_images)
-    else:
-        if pil_images and gemini_api_key:
-            ai_res, used_engine = call_gemini_model(prompt, pil_images)
-        if not ai_res and client_groq:
-            ai_res, used_engine = call_groq_model(prompt, pil_images=pil_images)
+        ai_res, used_engine, vision_summary = call_groq_model(prompt, pil_images=pil_images, preferred_model=pref, error_log=vision_errors)
         if not ai_res and gemini_api_key:
-            ai_res, used_engine = call_gemini_model(prompt, pil_images)
+            ai_res, used_engine, vision_summary = call_gemini_model(prompt, pil_images, error_log=vision_errors)
+    else:
+        if pil_images:
+            if gemini_api_key:
+                ai_res, used_engine, vision_summary = call_gemini_model(prompt, pil_images, error_log=vision_errors)
+            if not ai_res and client_groq:
+                ai_res, used_engine, vision_summary = call_groq_model(prompt, pil_images=pil_images, vision_only=True, error_log=vision_errors)
+            if not ai_res and client_groq:
+                ai_res, used_engine, vision_summary = call_groq_model(prompt, pil_images=None, error_log=vision_errors)
+        else:
+            if client_groq:
+                ai_res, used_engine, vision_summary = call_groq_model(prompt, pil_images=None, error_log=vision_errors)
+            if not ai_res and gemini_api_key:
+                ai_res, used_engine, vision_summary = call_gemini_model(prompt, None, error_log=vision_errors)
+
+    if pil_images:
+        used_vision_engine = used_engine and (
+            used_engine.startswith("Gemini")
+            or any(v in used_engine.lower() for v in ("llama-4", "vision"))
+        )
+        if ai_res and used_vision_engine:
+            vision_status = f"👁️ AI Vision read {len(pil_images)} image(s) via {used_engine}"
+            if vision_summary:
+                enriched_text = f"{enriched_text}\n\n--- AI VISION SUMMARY ({used_engine}) ---\n{vision_summary}".strip()
+        else:
+            vision_status = "⚠️ AI Vision could not read attached images"
 
     if not used_engine:
         used_engine = "Smart Local Parser"
@@ -1945,7 +1840,7 @@ CURRENT PARSED BRIEF:
     if client_groq:
         active_groq = get_active_groq_models()
         pref = selected_engine.split("::", 1)[1].strip() if selected_engine.startswith("Groq ::") else active_groq[0]
-        for m in ([pref] + [x for x in active_groq if x != pref]):
+        for m in ([pref] + [x for x in active_groq if x != pref])[:3]:
             try:
                 resp = client_groq.chat.completions.create(
                     model=m,
@@ -2157,7 +2052,7 @@ with st.sidebar:
         + ["Local Deterministic Only"]
     )
     selected_engine = st.selectbox("Active Parser & Copilot Model", options=engine_options, index=0)
-    st.caption(f"{'🟢 Gemini API (Auto-Models)' if gemini_api_key else '⚪ Gemini Key Missing'}  •  {'🟢 Groq API' if groq_api_key else '⚪ Groq Key Missing'}")
+    st.caption(f"{'🟢 Gemini API (Fast REST)' if gemini_api_key else '⚪ Gemini Key Missing'}  •  {'🟢 Groq API' if groq_api_key else '⚪ Groq Key Missing'}")
     st.divider()
 
     st.markdown("##### 📡 Global Station Directory")
@@ -2339,7 +2234,7 @@ with col_main:
                     if notes:
                         all_notes.extend(notes)
 
-            labeled_images = labeled_images[:8]
+            labeled_images = labeled_images[:6]
             pil_images = [img for _, img in labeled_images]
             full_cleaned_text = "\n\n".join(combined_text_parts).strip()
             st.session_state.extraction_notes = all_notes
@@ -2348,7 +2243,7 @@ with col_main:
             if not full_cleaned_text and not (manual_override_input and manual_override_input.strip()) and not pil_images:
                 st.warning("Please upload an inquiry file, paste email text, or provide a Manual Ground-Truth Override.")
             else:
-                with st.spinner("AI is reading email, all attachments & scanned images, and routing stations..."):
+                with st.spinner("AI is reading email, attachments & scanned images..."):
                     parsed, eng, enriched_txt, v_stat, v_errs = analyze_inquiry(
                         manual_override_input, full_cleaned_text, pil_images, selected_engine
                     )
@@ -2376,7 +2271,7 @@ with col_main:
                         st.image(pil_im, caption=lbl, use_container_width=True)
 
         if st.session_state.raw_inquiry_text:
-            with st.expander("📄 View Cleaned Inquiry, Attachments & Vision OCR Text", expanded=False):
+            with st.expander("📄 View Cleaned Inquiry, Attachments & Vision Summary", expanded=False):
                 st.code(st.session_state.raw_inquiry_text[:12000], language="text")
 
     # STEP 02: EDITABLE EXECUTIVE BRIEF & KPI TELEMETRY
