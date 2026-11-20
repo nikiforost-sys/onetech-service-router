@@ -50,22 +50,20 @@ st.set_page_config(
     page_title="Onetech Service Router & Copilot",
     page_icon="⚓",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # ---------------------------------------------------------------------------
-# ENTERPRISE SAAS UI/UX STYLESHEET: THEME-SAFE, STEPPER, STICKY COPILOT & CARDS
+# CLEAN, CALM, THEME-SAFE UI STYLESHEET
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
 
 :root {
-    --ot-navy: #0f172a;
-    --ot-slate: #1e293b;
     --ot-primary: #0284c7;
     --ot-accent: #2563eb;
-    --ot-border: rgba(148, 163, 184, 0.28);
+    --ot-border: rgba(148, 163, 184, 0.26);
     --ot-text-main: var(--text-color, #0f172a);
     --ot-text-muted: #64748b;
     --ot-card-bg: var(--secondary-background-color, #f8fafc);
@@ -76,154 +74,121 @@ html, body, [class*="css"] {
 }
 
 .block-container {
-    padding-top: 1.3rem !important;
-    padding-bottom: 5.5rem !important;
-    max-width: 1580px !important;
+    padding-top: 1.15rem !important;
+    padding-bottom: 5rem !important;
+    max-width: 1380px !important;
 }
 
-.ot-hero-bar {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0c4a6e 100%);
-    border-radius: 14px;
-    padding: 1.1rem 1.45rem;
-    margin-bottom: 0.85rem;
-    color: #ffffff;
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.ot-topbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.9rem;
+    gap: 0.75rem;
+    padding: 0.75rem 1.15rem;
+    margin-bottom: 0.9rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 65%, #0c4a6e 100%);
+    color: #ffffff;
+    box-shadow: 0 6px 18px -6px rgba(15, 23, 42, 0.22);
 }
-.ot-hero-left { display: flex; align-items: center; gap: 0.9rem; }
+.ot-topbar-left { display: flex; align-items: center; gap: 0.75rem; }
 .ot-brand-logo {
-    width: 44px; height: 44px; border-radius: 11px; flex-shrink: 0;
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
     background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+    font-size: 1.2rem;
 }
-.ot-hero-title { font-size: 1.28rem; font-weight: 800; letter-spacing: -0.02em; margin: 0; color: #ffffff; line-height: 1.2; }
-.ot-hero-subtitle { font-size: 0.81rem; color: #cbd5e1; margin: 0.18rem 0 0 0; }
-.ot-hero-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
+.ot-hero-title { font-size: 1.12rem; font-weight: 700; letter-spacing: -0.015em; margin: 0; color: #ffffff; line-height: 1.2; }
+.ot-hero-subtitle { font-size: 0.78rem; color: #cbd5e1; margin: 0.1rem 0 0 0; }
+.ot-topbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
 .ot-pill {
-    display: inline-flex; align-items: center; gap: 0.38rem;
-    padding: 0.3rem 0.72rem; border-radius: 999px; font-size: 0.74rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.26rem 0.65rem; border-radius: 999px; font-size: 0.73rem; font-weight: 600;
     background: rgba(255, 255, 255, 0.1); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.16);
 }
 .ot-pill-live { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); }
-.ot-dot-live { width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25); display: inline-block; }
+.ot-dot-live { width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block; }
 
-.ot-stepper {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.55rem;
-    margin-bottom: 1rem;
+.ot-welcome-title {
+    font-size: 1.25rem; font-weight: 700; color: var(--ot-text-main);
+    margin: 0 0 0.25rem 0; letter-spacing: -0.02em;
 }
-@media (max-width: 900px) { .ot-stepper { grid-template-columns: repeat(2, 1fr); } }
-.ot-step-pill {
-    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-    padding: 0.5rem 0.8rem; border-radius: 10px;
-    background: var(--ot-card-bg); border: 1px solid var(--ot-border);
-    font-size: 0.78rem; color: var(--ot-text-main);
+.ot-welcome-sub {
+    font-size: 0.85rem; color: var(--ot-text-muted); margin: 0 0 0.9rem 0;
 }
-.ot-step-pill-done {
-    border-color: rgba(16, 185, 129, 0.45);
-    background: rgba(16, 185, 129, 0.08);
-}
-.ot-step-pill-warn {
-    border-color: rgba(245, 158, 11, 0.45);
-    background: rgba(245, 158, 11, 0.08);
-}
-.ot-step-num {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 700;
-    padding: 0.12rem 0.42rem; border-radius: 5px;
-    background: rgba(2, 132, 199, 0.14); color: #0284c7;
-}
-.ot-step-meta { font-size: 0.72rem; color: var(--ot-text-muted); font-weight: 600; white-space: nowrap; }
 
-.ot-section-header {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem;
-    margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--ot-border);
-}
-.ot-section-title-wrap { display: flex; align-items: center; gap: 0.6rem; }
-.ot-step-badge {
-    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
-    color: #ffffff; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700;
-    padding: 0.2rem 0.5rem; border-radius: 6px; letter-spacing: 0.04em;
-}
-.clean-header { font-size: 1.05rem; font-weight: 700; margin: 0; color: var(--ot-text-main); letter-spacing: -0.01em; }
-.ot-section-caption { font-size: 0.76rem; color: var(--ot-text-muted); font-weight: 500; }
-
-.ot-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.9rem; }
-@media (max-width: 1100px) { .ot-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+.ot-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin-bottom: 0.7rem; }
+@media (max-width: 1024px) { .ot-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 576px) { .ot-kpi-grid { grid-template-columns: 1fr; } }
 
 .ot-kpi-card {
     background: var(--ot-card-bg);
-    border: 1px solid var(--ot-border); border-left: 4px solid var(--ot-primary);
-    border-radius: 10px; padding: 0.72rem 0.9rem; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    border: 1px solid var(--ot-border); border-left: 3px solid var(--ot-primary);
+    border-radius: 10px; padding: 0.65rem 0.85rem;
 }
-.ot-kpi-label { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ot-text-muted); margin-bottom: 0.2rem; }
-.ot-kpi-value { font-size: 0.97rem; font-weight: 700; color: var(--ot-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ot-kpi-value-muted { font-size: 0.9rem; font-weight: 500; font-style: italic; color: var(--ot-text-muted); }
-.ot-kpi-sub { font-size: 0.72rem; color: var(--ot-text-muted); margin-top: 0.12rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ot-kpi-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ot-text-muted); margin-bottom: 0.18rem; }
+.ot-kpi-value { font-size: 0.95rem; font-weight: 700; color: var(--ot-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ot-kpi-value-muted { font-size: 0.88rem; font-weight: 500; font-style: italic; color: var(--ot-text-muted); }
+.ot-kpi-sub { font-size: 0.72rem; color: var(--ot-text-muted); margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.ot-badge-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0.35rem 0 0.75rem 0; }
-.ot-stat-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.28rem 0.66rem; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
-.ot-stat-onestop { background: rgba(124, 58, 237, 0.12); color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.3); }
-.ot-stat-approved { background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.32); }
-.ot-stat-unstarred { background: rgba(245, 158, 11, 0.13); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35); }
-.ot-stat-other { background: rgba(100, 116, 139, 0.12); color: var(--ot-text-muted); border: 1px solid rgba(100, 116, 139, 0.28); }
-.ot-stat-neutral { background: rgba(37, 99, 235, 0.11); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.28); }
-.ot-maker-chip {
-    display: inline-flex; align-items: center; padding: 0.18rem 0.58rem; border-radius: 999px;
-    font-size: 0.73rem; font-weight: 600; margin-right: 0.35rem; margin-bottom: 0.25rem;
-    background: rgba(124, 58, 237, 0.12); color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.28);
+.ot-scope-strip {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.65rem;
+}
+@media (max-width: 768px) { .ot-scope-strip { grid-template-columns: 1fr; } }
+.ot-scope-item {
+    background: var(--ot-card-bg); border: 1px solid var(--ot-border);
+    border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.8rem; color: var(--ot-text-main);
+    line-height: 1.4;
+}
+.ot-scope-lbl {
+    font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ot-text-muted); display: block; margin-bottom: 0.12rem;
 }
 
-.ot-alert-box { border-radius: 10px; padding: 0.68rem 0.95rem; margin-bottom: 0.75rem; font-size: 0.82rem; line-height: 1.48; }
-.ot-alert-warn { background: rgba(245, 158, 11, 0.11); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #f59e0b; color: var(--ot-text-main); }
-.ot-alert-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35); border-left: 4px solid #ef4444; color: var(--ot-text-main); }
+.ot-alert-box { border-radius: 9px; padding: 0.6rem 0.85rem; margin-bottom: 0.65rem; font-size: 0.81rem; line-height: 1.45; }
+.ot-alert-warn { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 3px solid #f59e0b; color: var(--ot-text-main); }
+.ot-alert-danger { background: rgba(239, 68, 68, 0.09); border: 1px solid rgba(239, 68, 68, 0.35); border-left: 3px solid #ef4444; color: var(--ot-text-main); }
 
 .ot-selection-bar {
     display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem;
-    padding: 0.42rem 0.75rem; border-radius: 8px; margin-bottom: 0.5rem;
+    padding: 0.45rem 0.8rem; border-radius: 8px; margin-top: 0.35rem; margin-bottom: 0.45rem;
     background: var(--ot-card-bg); border: 1px solid var(--ot-border);
-    font-size: 0.78rem; color: var(--ot-text-main);
+    font-size: 0.79rem; color: var(--ot-text-main);
+}
+
+.ot-maker-chip {
+    display: inline-flex; align-items: center; padding: 0.16rem 0.55rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 600; margin-right: 0.3rem; margin-bottom: 0.2rem;
+    background: rgba(124, 58, 237, 0.12); color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.25);
 }
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 12px !important;
     border-color: var(--ot-border) !important;
-    box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
 }
 
 button[kind="primary"] {
     background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
     border: none !important; font-weight: 600 !important; border-radius: 8px !important;
-    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22) !important;
-    transition: transform 0.12s ease, box-shadow 0.12s ease !important;
-}
-button[kind="primary"]:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2) !important;
 }
 
 div.st-key-floating_copilot_btn {
     position: fixed !important;
-    bottom: 24px !important;
-    right: 24px !important;
+    bottom: 22px !important;
+    right: 22px !important;
     z-index: 999999 !important;
     width: auto !important;
 }
 div.st-key-floating_copilot_btn button {
     border-radius: 999px !important;
-    padding: 0.65rem 1.35rem !important;
-    font-weight: 700 !important;
-    font-size: 0.92rem !important;
+    padding: 0.6rem 1.25rem !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
     background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
     color: #ffffff !important;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.35) !important;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.32) !important;
     border: 1px solid rgba(56, 189, 248, 0.45) !important;
 }
 
@@ -238,13 +203,13 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2):
 
 .ot-copilot-header {
     background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-    color: #ffffff; padding: 0.78rem 0.95rem; border-radius: 10px; margin-bottom: 0.65rem;
+    color: #ffffff; padding: 0.7rem 0.9rem; border-radius: 10px; margin-bottom: 0.55rem;
 }
-.ot-copilot-title { font-size: 0.94rem; font-weight: 700; margin: 0; }
-.ot-copilot-sub { font-size: 0.72rem; color: #93c5fd; margin-top: 0.1rem; }
+.ot-copilot-title { font-size: 0.92rem; font-weight: 700; margin: 0; }
+.ot-copilot-sub { font-size: 0.72rem; color: #93c5fd; margin-top: 0.08rem; }
 .ot-sidebar-card {
     background: var(--ot-card-bg); border: 1px solid var(--ot-border);
-    border-radius: 10px; padding: 0.7rem 0.85rem; margin-bottom: 0.7rem;
+    border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.65rem;
     font-size: 0.8rem; color: var(--ot-text-main);
 }
 </style>
@@ -2290,6 +2255,8 @@ if "reset_count" not in st.session_state:
     st.session_state.reset_count = 0
 if "has_active_inquiry" not in st.session_state:
     st.session_state.has_active_inquiry = False
+if "manual_entry_mode" not in st.session_state:
+    st.session_state.manual_entry_mode = False
 if "parsed_data" not in st.session_state:
     _apply_parsed_data(RESULT_DEFAULTS, mark_active=False)
 if "eb_vessel" not in st.session_state:
@@ -2334,6 +2301,8 @@ if "neighbor_sel_ver" not in st.session_state:
     st.session_state.neighbor_sel_ver = 0
 if "_last_rfq_default_hash" not in st.session_state:
     st.session_state._last_rfq_default_hash = ""
+if "rfq_saved_text" not in st.session_state:
+    st.session_state.rfq_saved_text = ""
 
 if "include_maker_unstarred" not in st.session_state:
     st.session_state.include_maker_unstarred = False
@@ -2351,15 +2320,14 @@ if "one_stop_only" not in st.session_state:
     st.session_state.one_stop_only = False
 
 if "show_copilot" not in st.session_state:
-    st.session_state.show_copilot = True
+    st.session_state.show_copilot = False
 if "copilot_messages" not in st.session_state:
     st.session_state.copilot_messages = [
         {
             "role": "assistant",
             "content": (
-                "Welcome to **Onetech AI Copilot** ⚓\n\n"
-                "Upload an RFQ email, PDF, Excel, Word, ZIP, or photo on the left. "
-                "I can audit discrepancies, verify `*` Maker Approvals, or draft vendor follow-ups."
+                "Hi! I'm **Onetech AI Copilot** ⚓\n\n"
+                "Ask me to audit discrepancies, verify `*` Maker Approvals, compare matched stations, or draft vendor follow-ups."
             ),
         }
     ]
@@ -2416,9 +2384,20 @@ def _set_neighbor_sel_mode(mode):
     st.session_state.neighbor_sel_ver += 1
 
 
+def _save_rfq_widget_edit():
+    st.session_state.rfq_saved_text = st.session_state.get("rfq_editor_widget", "")
+
+
 def _reset_rfq_editor(default_text, default_hash):
-    st.session_state.rfq_editor_text = default_text
+    st.session_state.rfq_saved_text = default_text
+    st.session_state.rfq_editor_widget = default_text
     st.session_state._last_rfq_default_hash = default_hash
+
+
+def _start_manual_entry():
+    st.session_state.has_active_inquiry = True
+    st.session_state.manual_entry_mode = True
+    st.session_state.parsed_data["missing_critical_data"] = compute_missing_critical_data(st.session_state.parsed_data)
 
 
 def _toggle_copilot():
@@ -2432,6 +2411,7 @@ def _close_copilot():
 def _reset_all_fields():
     st.session_state.reset_count += 1
     st.session_state.has_active_inquiry = False
+    st.session_state.manual_entry_mode = False
     _apply_parsed_data(RESULT_DEFAULTS, mark_active=False)
     st.session_state.raw_inquiry_text = ""
     st.session_state.extraction_notes = []
@@ -2448,7 +2428,127 @@ def _reset_all_fields():
     st.session_state.neighbor_sel_mode = "all"
     st.session_state.neighbor_sel_ver += 1
     st.session_state._last_rfq_default_hash = ""
-    st.session_state._pending_toast = "Workspace cleared and ready for a new inquiry."
+    st.session_state.rfq_saved_text = ""
+    st.session_state._pending_toast = "Ready for a new inquiry."
+
+
+def _run_sample_rfq(selected_engine):
+    sample_thread = (
+        "From: Operations Executive <ops@shipping-corp.com>\n"
+        "Subject: RE: MV SEADUTY - VDR & GMDSS ANNUAL SURVEY + RADAR SPARES\n\n"
+        "Good day Onetech team,\n"
+        "Please note vessel schedule updated: final port will be Taicang China instead of Qingdao China.\n"
+        "ETA Taicang: 18-20 Nov 2026.\n"
+        "Please arrange Maker Approved engineer for JRC VDR JCY-1900 Annual Survey and Furuno Radar FAR-2137 magnetron 03P9335-66 replacement.\n\n"
+        "-----Original Message-----\n"
+        "Subject: MV SEADUTY - VDR & GMDSS ANNUAL SURVEY @ QINGDAO\n"
+        "Please quote VDR annual attendance at Qingdao, China.\n"
+        "Vasilikon 51, Piraeus 18545 Greece"
+    )
+    st.session_state.extraction_notes = ["Sample RFQ loaded (M/V Seaduty — JRC & Furuno @ Taicang, China)"]
+    st.session_state.vision_preview_images = []
+    st.session_state.vision_status = ""
+    st.session_state.vision_errors = []
+    st.session_state.manual_entry_mode = False
+    t0 = time.perf_counter()
+    with st.status("Analyzing sample RFQ...", expanded=False) as status_box:
+        parsed, eng, enriched_txt, v_stat, v_errs = analyze_inquiry("", sample_thread, [], selected_engine)
+        _apply_parsed_data(parsed, mark_active=True)
+        st.session_state.raw_inquiry_text = enriched_txt
+        st.session_state.last_used_engine = eng
+        st.session_state.last_analysis_sec = time.perf_counter() - t0
+        status_box.update(label=f"Sample analyzed via {eng}", state="complete")
+    st.session_state._pending_toast = f"Sample routed: M/V {parsed.get('vessel_name')} @ {parsed.get('port')}, {parsed.get('country')}"
+    st.rerun()
+
+
+def _render_intake_form(selected_engine, rc, is_compact=False):
+    """Shared clean RFQ uploader / paste / optional manual override form."""
+    uploaded_files = st.file_uploader(
+        "Drop client emails, PDFs, Excel/Word/ZIP files, or photos",
+        type=[
+            "pdf", "eml", "msg", "txt", "xlsx", "xls", "csv",
+            "docx", "zip", "html", "htm", "png", "jpg", "jpeg", "webp", "tif", "tiff"
+        ],
+        accept_multiple_files=True,
+        key=f"rfq_file_uploader_{rc}",
+        help="Supports MSG/EML emails (with attachments), text & scanned PDFs, Excel, CSV, Word, ZIP archives, and equipment photos.",
+    )
+    pasted_inquiry = st.text_area(
+        "Or paste email thread / inquiry text",
+        height=95 if is_compact else 115,
+        placeholder="Paste the client email thread here (the top message is treated as the latest update)...",
+        key=f"pasted_inquiry_box_{rc}",
+    )
+
+    with st.expander("🎯 Manual Override (Optional — force Vessel, Port, Country, ETA, or Makers)", expanded=False):
+        manual_override_input = st.text_area(
+            "Manual Ground-Truth Override",
+            height=115,
+            label_visibility="collapsed",
+            placeholder="Optional — values entered here override AI & email text:\nVessel: MV Seaduty\nPort: Taicang\nCountry: China\nETA: 22-24 Nov 2026\nMaker: Furuno, JRC",
+            key=f"manual_override_box_{rc}",
+        )
+
+    if is_compact:
+        run_btn = st.button("⚡ Re-analyze & Update Stations", type="primary", use_container_width=True, key=f"btn_reanalyze_{rc}")
+        sample_btn = False
+    else:
+        b1, b2, b3 = st.columns([2.2, 1.0, 1.0], gap="small")
+        with b1:
+            run_btn = st.button("⚡ Analyze & Find Stations", type="primary", use_container_width=True, key=f"btn_analyze_{rc}")
+        with b2:
+            sample_btn = st.button("🧪 Try Sample", use_container_width=True, key=f"btn_sample_{rc}", help="Test with a realistic multi-maker RFQ")
+        with b3:
+            st.button("✏️ Enter Manually", on_click=_start_manual_entry, use_container_width=True, key=f"btn_manual_{rc}", help="Skip upload and search stations by port & maker directly")
+
+    if sample_btn:
+        _run_sample_rfq(selected_engine)
+
+    if run_btn:
+        t0 = time.perf_counter()
+        combined_text_parts, labeled_images, all_notes = [], [], []
+        with st.status("Analyzing inquiry...", expanded=True) as status_box:
+            if pasted_inquiry and pasted_inquiry.strip():
+                combined_text_parts.append(clean_signatures(pasted_inquiry.strip()))
+            if uploaded_files:
+                st.write(f"Reading **{len(uploaded_files)}** uploaded file(s)...")
+                for uf in uploaded_files:
+                    txt, imgs, notes = extract_content_from_file(uf)
+                    if txt:
+                        combined_text_parts.append(f"--- FILE: {uf.name} ---\n{txt}")
+                    if imgs:
+                        labeled_images.extend(imgs)
+                    if notes:
+                        all_notes.extend(notes)
+
+            labeled_images = labeled_images[:6]
+            pil_images = [img for _, img in labeled_images]
+            full_cleaned_text = "\n\n".join(combined_text_parts).strip()
+            st.session_state.extraction_notes = all_notes
+            st.session_state.vision_preview_images = labeled_images
+
+            if not full_cleaned_text and not (manual_override_input and manual_override_input.strip()) and not pil_images:
+                status_box.update(label="Please add a file, paste text, or fill Manual Override", state="error", expanded=False)
+                st.warning("Upload a file, paste an email, or enter a Manual Override first.")
+            else:
+                if pil_images and selected_engine != "Local Deterministic Only":
+                    st.write(f"Running AI Vision OCR on **{len(pil_images)}** image(s)...")
+                st.write("Extracting vessel details, makers, spares & matching stations...")
+                parsed, eng, enriched_txt, v_stat, v_errs = analyze_inquiry(
+                    manual_override_input, full_cleaned_text, pil_images, selected_engine
+                )
+                _apply_parsed_data(parsed, mark_active=True)
+                st.session_state.manual_entry_mode = False
+                st.session_state.raw_inquiry_text = enriched_txt
+                st.session_state.last_used_engine = eng
+                st.session_state.vision_status = v_stat
+                st.session_state.vision_errors = v_errs
+                elapsed = time.perf_counter() - t0
+                st.session_state.last_analysis_sec = elapsed
+                status_box.update(label=f"Done via {eng} ({elapsed:.1f}s)", state="complete", expanded=False)
+                st.session_state._pending_toast = f"Routed via {eng} ({elapsed:.1f}s)"
+                st.rerun()
 
 
 if st.session_state._pending_toast:
@@ -2463,63 +2563,26 @@ unique_countries_count = df_directory["Country"].nunique() if df_directory is no
 
 
 # ---------------------------------------------------------------------------
-# SIDEBAR: CONTROL CENTER
+# SIDEBAR: SETTINGS & FULL DIRECTORY (CLEAN & COLLAPSED BY DEFAULT)
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("""
-    <div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:0.4rem;">
-        <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#0284c7,#2563eb);display:flex;align-items:center;justify-content:center;color:white;font-size:1.15rem;font-weight:700;flex-shrink:0;">⚓</div>
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.35rem;">
+        <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#0284c7,#2563eb);display:flex;align-items:center;justify-content:center;color:white;font-size:1.1rem;flex-shrink:0;">⚓</div>
         <div>
-            <div style="font-weight:800;font-size:1rem;color:var(--text-color, #0f172a);line-height:1.15;">ONETECH ROUTER</div>
-            <div style="font-size:0.72rem;color:#64748b;font-weight:500;">Enterprise Maritime Dispatch</div>
+            <div style="font-weight:800;font-size:0.95rem;color:var(--text-color, #0f172a);line-height:1.15;">ONETECH SETTINGS</div>
+            <div style="font-size:0.72rem;color:#64748b;">Directory &amp; Engine Controls</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("##### 🤖 AI Intelligence Engine")
-    active_gemini_list = get_active_gemini_models()
-    active_groq_list = get_active_groq_models()
-    engine_options = (
-        ["Auto (Best Available)"]
-        + [f"Gemini :: {m}" for m in active_gemini_list]
-        + [f"Groq :: {m}" for m in active_groq_list]
-        + ["Local Deterministic Only"]
-    )
-    selected_engine = st.selectbox(
-        "Active Parser & Copilot Model",
-        options=engine_options,
-        index=0,
-        help="Auto mode uses Gemini/Groq Vision OCR for scanned documents & photos, and fast Groq/Gemini JSON parsing for emails.",
-    )
-    st.caption(
-        f"{'🟢 Gemini API (Vision OCR)' if gemini_api_key else '⚪ Gemini Key Missing'}  •  "
-        f"{'🟢 Groq API' if (groq_api_key and HAS_GROQ) else '⚪ Groq Unavailable'}"
-    )
-    st.divider()
-
-    st.markdown("##### 📡 Global Station Directory")
     st.markdown(f"""
     <div class="ot-sidebar-card">
-        <div style="font-weight:700;margin-bottom:0.2rem;">🟢 {html.escape(directory_source)}</div>
-        <div style="color:#64748b;"><strong>{total_stations_count}</strong> Verified Stations across <strong>{unique_countries_count}</strong> Countries</div>
+        <div style="font-weight:700;margin-bottom:0.15rem;">🟢 {html.escape(directory_source)}</div>
+        <div style="color:#64748b;"><strong>{total_stations_count}</strong> Stations • <strong>{unique_countries_count}</strong> Countries</div>
     </div>
     """, unsafe_allow_html=True)
-
-    st.checkbox(
-        "🟡 Include Maker Listed (No *)",
-        key="chk_unstarred_sidebar",
-        on_change=_sync_unstarred,
-        args=("chk_unstarred_sidebar",),
-        help="Show stations that list the target maker without an asterisk (*) / red OEM approval.",
-    )
-    st.checkbox(
-        "🔧 Include Other Non-Approved Stations",
-        key="chk_other_sidebar",
-        on_change=_sync_other,
-        args=("chk_other_sidebar",),
-        help="Show Maker Listed (No *) and all remaining non-approved stations in the target country.",
-    )
 
     sb_c1, sb_c2 = st.columns(2)
     with sb_c1:
@@ -2528,21 +2591,51 @@ with st.sidebar:
             st.session_state._pending_toast = "Directory synced from live source."
             st.rerun()
     with sb_c2:
-        st.button("🗑️ Reset All", on_click=_reset_all_fields, use_container_width=True, help="Clear all inputs and results")
+        st.button("🗑️ Reset", on_click=_reset_all_fields, use_container_width=True, help="Clear current inquiry")
 
-    st.button(
-        "✖ Hide AI Copilot" if st.session_state.show_copilot else "💬 Open AI Copilot",
-        key="sidebar_copilot_toggle_btn",
-        on_click=_toggle_copilot,
-        use_container_width=True,
-        help="Show or hide the right-side AI Technical Copilot panel",
+    st.markdown("###### Routing Defaults")
+    st.checkbox(
+        "🟡 Include Unstarred (No *)",
+        key="chk_unstarred_sidebar",
+        on_change=_sync_unstarred,
+        args=("chk_unstarred_sidebar",),
+        help="Include stations that list the target maker without a strict (*) approval.",
+    )
+    st.checkbox(
+        "🔧 Include All Country Stations",
+        key="chk_other_sidebar",
+        on_change=_sync_other,
+        args=("chk_other_sidebar",),
+        help="Include unstarred and all remaining stations in the target country.",
     )
 
-    with st.expander("🔎 Browse Full Station Directory", expanded=False):
+    st.divider()
+
+    with st.expander("🤖 AI Engine Settings", expanded=False):
+        active_gemini_list = get_active_gemini_models()
+        active_groq_list = get_active_groq_models()
+        engine_options = (
+            ["Auto (Best Available)"]
+            + [f"Gemini :: {m}" for m in active_gemini_list]
+            + [f"Groq :: {m}" for m in active_groq_list]
+            + ["Local Deterministic Only"]
+        )
+        selected_engine = st.selectbox(
+            "Parser & Copilot Model",
+            options=engine_options,
+            index=0,
+            help="Auto uses Gemini/Groq Vision OCR for scanned PDFs/images and fast Groq/Gemini extraction for emails.",
+        )
+        st.caption(
+            f"{'🟢 Gemini API' if gemini_api_key else '⚪ Gemini Key Missing'}  •  "
+            f"{'🟢 Groq API' if (groq_api_key and HAS_GROQ) else '⚪ Groq Unavailable'}"
+        )
+
+    with st.expander("🔎 Browse Full Directory", expanded=False):
         if df_directory is not None and not df_directory.empty:
             dir_countries = ["All Countries"] + sorted(df_directory["Country"].dropna().astype(str).unique().tolist())
-            sel_dir_country = st.selectbox("Filter by Country", options=dir_countries, index=0, key="sb_dir_country")
-            q_search = st.text_input("Search Station / Maker", placeholder="e.g. Furuno, Dubai, Radio Holland...")
+            sel_dir_country = st.selectbox("Country", options=dir_countries, index=0, key="sb_dir_country")
+            q_search = st.text_input("Search Station / Maker", placeholder="e.g. Furuno, Dubai...")
             view_dir = df_directory
             if sel_dir_country != "All Countries":
                 view_dir = view_dir[view_dir["Country"].astype(str) == sel_dir_country]
@@ -2552,7 +2645,7 @@ with st.sidebar:
             st.caption(f"Showing **{len(view_dir)}** of {len(df_directory)} stations")
             st.dataframe(view_dir, use_container_width=True, hide_index=True, height=230)
             st.download_button(
-                "⬇️ Export Filtered CSV",
+                "⬇️ Export CSV",
                 data=view_dir.to_csv(index=False).encode("utf-8-sig"),
                 file_name="onetech_station_directory.csv",
                 mime="text/csv",
@@ -2561,40 +2654,61 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------------------
-# FLOATING COPILOT BUTTON (ONLY WHEN CLOSED SO IT NEVER BLOCKS CHAT INPUT)
+# COMPACT TOP BAR & FLOATING COPILOT TRIGGER
 # ---------------------------------------------------------------------------
 if not st.session_state.show_copilot:
     st.button(
-        "💬 Open AI Copilot",
+        "💬 AI Copilot",
         key="floating_copilot_btn",
         on_click=_toggle_copilot,
     )
 
 timing_pill = (
-    f'<span class="ot-pill">⏱️ {st.session_state.last_analysis_sec:.1f}s</span>'
+    f'<span class="ot-pill">⚡ {html.escape(st.session_state.last_used_engine)} ({st.session_state.last_analysis_sec:.1f}s)</span>'
     if st.session_state.last_analysis_sec is not None
     else ""
 )
 
 st.markdown(f"""
-<div class="ot-hero-bar">
-    <div class="ot-hero-left">
+<div class="ot-topbar">
+    <div class="ot-topbar-left">
         <div class="ot-brand-logo">⚓</div>
         <div>
-            <h1 class="ot-hero-title">Onetech Service Router &amp; AI Technical Copilot</h1>
-            <p class="ot-hero-subtitle">Automated RFQ Telemetry Extraction • Multi-Maker One-Stop-Shop Ranking • Global Port Dispatch</p>
+            <h1 class="ot-hero-title">Onetech Service Router</h1>
+            <p class="ot-hero-subtitle">Upload RFQ → Match Approved (*) Stations → Dispatch</p>
         </div>
     </div>
-    <div class="ot-hero-badges">
-        <span class="ot-pill ot-pill-live"><span class="ot-dot-live"></span> {html.escape(directory_source)}</span>
-        <span class="ot-pill">🏢 {total_stations_count} Stations</span>
-        <span class="ot-pill">⚡ {html.escape(st.session_state.last_used_engine)}</span>
+    <div class="ot-topbar-right">
+        <span class="ot-pill ot-pill-live"><span class="ot-dot-live"></span> {html.escape(directory_source)} • {total_stations_count} Stations</span>
         {timing_pill}
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-stepper_slot = st.empty()
+# Pre-compute routing state so both Main Workspace and Copilot always stay in sync
+active_country = _as_clean_str(st.session_state.parsed_data.get("country"), "Not specified")
+active_makers = st.session_state.parsed_data.get("makers", [])
+is_multi_maker = len(active_makers) > 1
+include_unstarred = bool(st.session_state.include_maker_unstarred)
+include_other = bool(st.session_state.include_other_stations)
+one_stop_only = bool(st.session_state.one_stop_only) if is_multi_maker else False
+
+primary_df, neighbor_df, neighbor_country_list, tier_counts = route_service_stations(
+    df_directory,
+    active_country,
+    active_makers,
+    include_maker_unstarred=include_unstarred,
+    include_other_stations=include_other,
+    one_stop_only=one_stop_only,
+)
+selected_primary_df = pd.DataFrame()
+selected_neighbor_df = neighbor_df.copy()
+
+filter_sig = f"{rc}_{canonical_country(active_country)}_{'_'.join(active_makers)}_{include_unstarred}_{include_other}_{one_stop_only}"
+if st.session_state._last_filter_sig != filter_sig:
+    st.session_state._last_filter_sig = filter_sig
+    st.session_state.primary_sel_mode = "all"
+    st.session_state.neighbor_sel_mode = "all"
 
 if st.session_state.show_copilot:
     col_main, col_copilot = st.columns([2.35, 1.0], gap="large")
@@ -2604,652 +2718,444 @@ else:
 
 
 # ---------------------------------------------------------------------------
-# MAIN WORKSPACE
+# MAIN WORKSPACE: PROGRESSIVE DISCLOSURE (CLEAN START -> FOCUSED RESULTS)
 # ---------------------------------------------------------------------------
 with col_main:
-    # STEP 01: INQUIRY INGESTION & OVERRIDE
-    with st.container(border=True):
-        st.markdown("""
-        <div class="ot-section-header">
-            <div class="ot-section-title-wrap">
-                <span class="ot-step-badge">STEP 01</span>
-                <h3 class="clean-header">Inquiry Ingestion &amp; Ground-Truth Override</h3>
-            </div>
-            <span class="ot-section-caption">MSG/EML • PDF (Text &amp; Scanned) • Excel/CSV • Word • ZIP • Photos</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-        ing_col1, ing_col2 = st.columns([1.2, 1.0], gap="medium")
-        with ing_col1:
-            uploaded_files = st.file_uploader(
-                "Upload Client RFQ Emails, PDFs, Excel/Word/ZIP Files, or Equipment Images",
-                type=[
-                    "pdf", "eml", "msg", "txt", "xlsx", "xls", "csv",
-                    "docx", "zip", "html", "htm", "png", "jpg", "jpeg", "webp", "tif", "tiff"
-                ],
-                accept_multiple_files=True,
-                key=f"rfq_file_uploader_{rc}",
-                help="Drag & drop one or more client files. Embedded email attachments, ZIP entries, and scanned PDF pages are read automatically.",
-            )
-            pasted_inquiry = st.text_area(
-                "Or Paste Raw Email Thread / Inquiry Text",
-                height=115,
-                placeholder="Paste raw email thread here (the top-most message is treated as the latest instruction)...",
-                key=f"pasted_inquiry_box_{rc}",
-            )
-        with ing_col2:
-            manual_override_input = st.text_area(
-                "Manual Ground-Truth Override (Optional — Highest Priority)",
-                height=205,
-                placeholder="Force specific values to override AI & email text:\nVessel: MV Seaduty\nPort: Taicang\nCountry: China\nETA: 22-24 Nov 2026\nMaker: Furuno, JRC",
-                key=f"manual_override_box_{rc}",
-                help="Any field entered here takes absolute priority over AI extraction and email attachments.",
-            )
-
-        act_col1, act_col2, act_col3 = st.columns([2.5, 1.1, 0.8])
-        with act_col1:
-            run_analysis_btn = st.button("⚡ Analyze Inquiry & Route Service Stations", type="primary", use_container_width=True)
-        with act_col2:
-            load_sample_btn = st.button("🧪 Try Sample RFQ", use_container_width=True, help="Load a realistic multi-maker maritime RFQ example")
-        with act_col3:
-            st.button("🗑️ Reset", on_click=_reset_all_fields, use_container_width=True, help="Clear all text boxes, attachments, and results")
-
-        if load_sample_btn:
-            sample_thread = (
-                "From: Operations Executive <ops@shipping-corp.com>\n"
-                "Subject: RE: MV SEADUTY - VDR & GMDSS ANNUAL SURVEY + RADAR SPARES\n\n"
-                "Good day Onetech team,\n"
-                "Please note vessel schedule updated: final port will be Taicang China instead of Qingdao China.\n"
-                "ETA Taicang: 18-20 Nov 2026.\n"
-                "Please arrange Maker Approved engineer for JRC VDR JCY-1900 Annual Survey and Furuno Radar FAR-2137 magnetron 03P9335-66 replacement.\n\n"
-                "-----Original Message-----\n"
-                "Subject: MV SEADUTY - VDR & GMDSS ANNUAL SURVEY @ QINGDAO\n"
-                "Please quote VDR annual attendance at Qingdao, China.\n"
-                "Vasilikon 51, Piraeus 18545 Greece"
-            )
-            st.session_state.extraction_notes = ["Sample RFQ loaded (M/V Seaduty — JRC & Furuno @ Taicang, China)"]
-            st.session_state.vision_preview_images = []
-            st.session_state.vision_status = ""
-            st.session_state.vision_errors = []
-            t0 = time.perf_counter()
-            with st.status("Analyzing sample maritime RFQ thread...", expanded=False) as status_box:
-                parsed, eng, enriched_txt, v_stat, v_errs = analyze_inquiry("", sample_thread, [], selected_engine)
-                _apply_parsed_data(parsed, mark_active=True)
-                st.session_state.raw_inquiry_text = enriched_txt
-                st.session_state.last_used_engine = eng
-                st.session_state.last_analysis_sec = time.perf_counter() - t0
-                status_box.update(label=f"Sample analyzed via {eng}", state="complete")
-            st.session_state._pending_toast = f"Sample RFQ routed ({parsed.get('port')}, {parsed.get('country')}) via {eng}"
-            st.rerun()
-
-        if run_analysis_btn:
-            t0 = time.perf_counter()
-            combined_text_parts, labeled_images, all_notes = [], [], []
-            with st.status("Running Onetech Inquiry Pipeline...", expanded=True) as status_box:
-                if pasted_inquiry and pasted_inquiry.strip():
-                    combined_text_parts.append(clean_signatures(pasted_inquiry.strip()))
-                if uploaded_files:
-                    st.write(f"📂 Reading **{len(uploaded_files)}** uploaded file(s) & embedded attachments...")
-                    for uf in uploaded_files:
-                        txt, imgs, notes = extract_content_from_file(uf)
-                        if txt:
-                            combined_text_parts.append(f"--- FILE: {uf.name} ---\n{txt}")
-                        if imgs:
-                            labeled_images.extend(imgs)
-                        if notes:
-                            all_notes.extend(notes)
-
-                labeled_images = labeled_images[:6]
-                pil_images = [img for _, img in labeled_images]
-                full_cleaned_text = "\n\n".join(combined_text_parts).strip()
-                st.session_state.extraction_notes = all_notes
-                st.session_state.vision_preview_images = labeled_images
-
-                if not full_cleaned_text and not (manual_override_input and manual_override_input.strip()) and not pil_images:
-                    status_box.update(label="No inquiry input detected", state="error", expanded=False)
-                    st.warning("Please upload an inquiry file, paste email text, or provide a Manual Ground-Truth Override.")
+    if not st.session_state.has_active_inquiry:
+        # CLEAN, CALM START SCREEN
+        with st.container(border=True):
+            st.markdown("""
+            <div class="ot-welcome-title">Start a Service Routing Inquiry</div>
+            <div class="ot-welcome-sub">Drop client emails, PDFs, spreadsheets, ZIPs, or photos — or paste text below. Open the sidebar (top-left) anytime for AI model settings or the full station directory.</div>
+            """, unsafe_allow_html=True)
+            _render_intake_form(selected_engine, rc, is_compact=False)
+    else:
+        # QUICK ACTION BAR FOR ACTIVE INQUIRY
+        qa_left, qa_btn1, qa_btn2 = st.columns([3.2, 1.0, 1.0], gap="small")
+        with qa_left:
+            if st.session_state.vision_status:
+                if st.session_state.vision_status.startswith("⚠️"):
+                    st.warning(st.session_state.vision_status + (f" — {' | '.join(st.session_state.vision_errors[:2])}" if st.session_state.vision_errors else ""))
                 else:
-                    if pil_images and selected_engine != "Local Deterministic Only":
-                        st.write(f"👁️ Running AI Vision OCR on **{len(pil_images)}** image(s) / scanned page(s)...")
-                    st.write("🧠 Extracting structured vessel telemetry, makers, spares & routing stations...")
-                    parsed, eng, enriched_txt, v_stat, v_errs = analyze_inquiry(
-                        manual_override_input, full_cleaned_text, pil_images, selected_engine
-                    )
-                    _apply_parsed_data(parsed, mark_active=True)
-                    st.session_state.raw_inquiry_text = enriched_txt
-                    st.session_state.last_used_engine = eng
-                    st.session_state.vision_status = v_stat
-                    st.session_state.vision_errors = v_errs
-                    elapsed = time.perf_counter() - t0
-                    st.session_state.last_analysis_sec = elapsed
-                    status_box.update(label=f"Analysis complete via {eng} ({elapsed:.1f}s)", state="complete", expanded=False)
-                    st.session_state._pending_toast = f"Analysis complete via {eng} ({elapsed:.1f}s)"
-                    st.rerun()
-
-        if st.session_state.extraction_notes:
-            st.caption("📎 " + " • ".join(st.session_state.extraction_notes))
-
-        if st.session_state.vision_status:
-            if st.session_state.vision_status.startswith("⚠️"):
-                st.warning(st.session_state.vision_status + (f" — Details: {' | '.join(st.session_state.vision_errors[:4])}" if st.session_state.vision_errors else ""))
+                    st.caption(st.session_state.vision_status)
+            elif st.session_state.extraction_notes:
+                st.caption("📎 " + " • ".join(st.session_state.extraction_notes[:3]))
             else:
-                st.success(st.session_state.vision_status)
-
-        if st.session_state.vision_preview_images:
-            with st.expander(f"🖼️ View {len(st.session_state.vision_preview_images)} Extracted Image(s) / Scanned Pages Sent to AI Vision", expanded=False):
-                img_cols = st.columns(min(3, len(st.session_state.vision_preview_images)))
-                for idx, (lbl, pil_im) in enumerate(st.session_state.vision_preview_images):
-                    with img_cols[idx % len(img_cols)]:
-                        st.image(pil_im, caption=lbl, use_container_width=True)
-
-        if st.session_state.raw_inquiry_text:
-            with st.expander("📄 View Cleaned Inquiry, Attachments & Vision OCR Text", expanded=False):
-                st.code(st.session_state.raw_inquiry_text[:12000], language="text")
-
-    # STEP 02: EDITABLE EXECUTIVE BRIEF & KPI TELEMETRY
-    cur = st.session_state.parsed_data
-    v_disp = _as_clean_str(cur.get("vessel_name"), "Not specified")
-    p_disp = _as_clean_str(cur.get("port"), "Not specified")
-    c_disp = _as_clean_str(cur.get("country"), "Not specified")
-    e_disp = _as_clean_str(cur.get("eta"), "Not specified")
-    m_list = cur.get("makers") or []
-    m_disp = ", ".join(m_list) if m_list else "Not specified"
-
-    v_is_set = v_disp.lower() != "not specified"
-    p_is_set = p_disp.lower() != "not specified"
-    e_is_set = e_disp.lower() != "not specified"
-    v_kpi_label = (
-        v_disp if re.match(r"(?i)^m/[vt]\s+", v_disp) else f"M/V {v_disp}"
-    ) if v_is_set else "Not specified"
-
-    with st.container(border=True):
-        st.markdown("""
-        <div class="ot-section-header">
-            <div class="ot-section-title-wrap">
-                <span class="ot-step-badge">STEP 02</span>
-                <h3 class="clean-header">Editable Executive Brief &amp; Telemetry</h3>
-            </div>
-            <span class="ot-section-caption">Live Two-Way Sync with Station Routing &amp; RFQ Template</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-        if not st.session_state.has_active_inquiry:
-            st.caption("💡 Tip: Upload or paste an inquiry in **STEP 01**, click **🧪 Try Sample RFQ**, or type directly below for instant manual station routing.")
-
-        st.markdown(f"""
-        <div class="ot-kpi-grid">
-            <div class="ot-kpi-card">
-                <div class="ot-kpi-label">🚢 Vessel Name</div>
-                <div class="{'ot-kpi-value' if v_is_set else 'ot-kpi-value-muted'}" title="{html.escape(v_kpi_label)}">{html.escape(v_kpi_label)}</div>
-                <div class="ot-kpi-sub">Cleaned Hull Identifier</div>
-            </div>
-            <div class="ot-kpi-card" style="border-left-color:#2563eb;">
-                <div class="ot-kpi-label">📍 Destination Port</div>
-                <div class="{'ot-kpi-value' if p_is_set else 'ot-kpi-value-muted'}" title="{html.escape(p_disp)}, {html.escape(c_disp)}">{html.escape(p_disp)}</div>
-                <div class="ot-kpi-sub">Country: <strong>{html.escape(c_disp)}</strong></div>
-            </div>
-            <div class="ot-kpi-card" style="border-left-color:#0d9488;">
-                <div class="ot-kpi-label">🗓️ ETA / Schedule</div>
-                <div class="{'ot-kpi-value' if e_is_set else 'ot-kpi-value-muted'}" title="{html.escape(e_disp)}">{html.escape(e_disp)}</div>
-                <div class="ot-kpi-sub">Attendance Window</div>
-            </div>
-            <div class="ot-kpi-card" style="border-left-color:#7c3aed;">
-                <div class="ot-kpi-label">🛠️ Target OEM Makers</div>
-                <div class="{'ot-kpi-value' if m_list else 'ot-kpi-value-muted'}" title="{html.escape(m_disp)}">{html.escape(m_disp)}</div>
-                <div class="ot-kpi-sub">{len(m_list)} Brand(s) Detected</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        for d_list, cls, title in (
-            (cur.get("discrepancies") or [], "ot-alert-warn", "⚠️ Chronology / Thread Discrepancies Detected:"),
-            (cur.get("missing_critical_data") or [], "ot-alert-danger", "🚨 Missing Critical Telemetry:"),
-        ):
-            if d_list:
-                items_html = "<br>".join(f"• {html.escape(str(x))}" for x in d_list)
-                st.markdown(f'<div class="ot-alert-box {cls}"><strong>{title}</strong><br>{items_html}</div>', unsafe_allow_html=True)
-
-        if st.session_state.show_copilot:
-            eb_r1_c1, eb_r1_c2 = st.columns(2, gap="small")
-            with eb_r1_c1:
-                st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
-            with eb_r1_c2:
-                st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
-            eb_r2_c1, eb_r2_c2 = st.columns(2, gap="small")
-            with eb_r2_c1:
-                st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change, help="Known ports automatically populate Service Country.")
-            with eb_r2_c2:
-                st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
-        else:
-            eb_c1, eb_c2, eb_c3, eb_c4 = st.columns([1.1, 1.0, 1.0, 1.1], gap="small")
-            with eb_c1:
-                st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
-            with eb_c2:
-                st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change, help="Known ports automatically populate Service Country.")
-            with eb_c3:
-                st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
-            with eb_c4:
-                st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
-
-        st.text_input(
-            "Target Makers (comma-separated)",
-            key="eb_makers",
-            on_change=_sync_brief_from_widgets,
-            placeholder="e.g. Furuno, JRC, Sperry Marine",
-            help="Aliases like Sperry / YDK / Sailor / Alphatron are automatically normalized and matched.",
-        )
-        if m_list:
-            chips_html = "".join(f'<span class="ot-maker-chip">🛠️ {html.escape(mk)}</span>' for mk in m_list)
-            st.markdown(f'<div style="margin:-0.25rem 0 0.55rem 0;">{chips_html}</div>', unsafe_allow_html=True)
-
-        eb_sc_c1, eb_sc_c2 = st.columns(2, gap="small")
-        with eb_sc_c1:
-            st.text_area("Scope of Work", key="eb_scope", height=82, on_change=_sync_brief_from_widgets)
-        with eb_sc_c2:
-            st.text_area("Spares / Parts Requested", key="eb_spares", height=82, on_change=_sync_brief_from_widgets)
-
-    # STEP 03: SERVICE STATION ROUTING, 3-TIER FILTER & ONE-STOP-SHOP RANKING
-    active_country = _as_clean_str(st.session_state.parsed_data.get("country"), "Not specified")
-    active_makers = st.session_state.parsed_data.get("makers", [])
-    is_multi_maker = len(active_makers) > 1
-    include_unstarred = bool(st.session_state.include_maker_unstarred)
-    include_other = bool(st.session_state.include_other_stations)
-    one_stop_only = bool(st.session_state.one_stop_only) if is_multi_maker else False
-
-    primary_df, neighbor_df, neighbor_country_list, tier_counts = route_service_stations(
-        df_directory,
-        active_country,
-        active_makers,
-        include_maker_unstarred=include_unstarred,
-        include_other_stations=include_other,
-        one_stop_only=one_stop_only,
-    )
-
-    selected_primary_df = pd.DataFrame()
-    selected_neighbor_df = neighbor_df.copy()
-
-    filter_sig = f"{rc}_{canonical_country(active_country)}_{'_'.join(active_makers)}_{include_unstarred}_{include_other}_{one_stop_only}"
-    if st.session_state._last_filter_sig != filter_sig:
-        st.session_state._last_filter_sig = filter_sig
-        st.session_state.primary_sel_mode = "all"
-        st.session_state.neighbor_sel_mode = "all"
-
-    with st.container(border=True):
-        st.markdown("""
-        <div class="ot-section-header">
-            <div class="ot-section-title-wrap">
-                <span class="ot-step-badge">STEP 03</span>
-                <h3 class="clean-header">Service Station Routing &amp; Strict (*) Maker Verification</h3>
-            </div>
-            <span class="ot-section-caption">🏆 One-Stop-Shop • ✅ Maker Approved (*) • 🟡 Maker Listed (No *) • 🔧 Other Stations</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-        onestop_badge_html = (
-            f'<span class="ot-stat-badge ot-stat-onestop">🏆 {tier_counts["one_stop"]} One-Stop-Shop ({len(active_makers)}/{len(active_makers)} Makers)</span>'
-            if is_multi_maker
-            else ""
-        )
-
-        st.markdown(f"""
-        <div class="ot-badge-row">
-            {onestop_badge_html}
-            <span class="ot-stat-badge ot-stat-approved">✅ {tier_counts['approved']} Maker Approved (*)</span>
-            <span class="ot-stat-badge ot-stat-unstarred">🟡 {tier_counts['unstarred']} Maker Listed (No *)</span>
-            <span class="ot-stat-badge ot-stat-other">🔧 {tier_counts['other']} Other Stations in Country</span>
-            <span class="ot-stat-badge ot-stat-neutral">🌐 {len(neighbor_df)} Regional Backup Stations</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-        if is_multi_maker:
-            rt_c1, rt_c2, rt_c3 = st.columns(3)
-        else:
-            rt_c1, rt_c2 = st.columns(2)
-            rt_c3 = None
-
-        with rt_c1:
-            st.checkbox(
-                f"🟡 Include Maker Listed without * ({tier_counts['unstarred']} available)",
-                key="chk_unstarred_main",
-                on_change=_sync_unstarred,
-                args=("chk_unstarred_main",),
+                st.caption("Review the summary below, select stations, then copy emails & RFQ from **Dispatch & Emails**.")
+        with qa_btn1:
+            st.button(
+                "✖ Hide Copilot" if st.session_state.show_copilot else "💬 AI Copilot",
+                key="topbar_copilot_btn",
+                on_click=_toggle_copilot,
+                use_container_width=True,
             )
-        with rt_c2:
-            st.checkbox(
-                f"🔧 Include Other Non-Approved Stations ({tier_counts['other']} available)",
-                key="chk_other_main",
-                on_change=_sync_other,
-                args=("chk_other_main",),
-            )
-        if rt_c3 is not None:
-            with rt_c3:
-                st.checkbox(
-                    f"🏆 One-Stop-Shop Only ({tier_counts['one_stop']} cover all {len(active_makers)} makers)",
-                    key="one_stop_only",
-                    help="Show only stations that cover EVERY requested maker in this multi-maker RFQ.",
-                )
+        with qa_btn2:
+            st.button("➕ New Inquiry", key="topbar_new_inquiry_btn", on_click=_reset_all_fields, use_container_width=True)
 
-        if not canonical_country(active_country):
-            st.info("Specify a valid **Service Country** or **Service Port** in STEP 01 / STEP 02 to display matching service stations.")
-        elif not primary_df.empty:
-            st_filter_col, st_btn_col1, st_btn_col2, st_btn_col3 = st.columns([2.1, 0.85, 0.9, 1.05], gap="small")
-            with st_filter_col:
-                primary_search_q = st.text_input(
-                    "Filter stations",
-                    placeholder="🔎 Filter by port, city, or station name...",
-                    label_visibility="collapsed",
-                    key=f"st_search_primary_{rc}",
-                )
-            with st_btn_col1:
-                st.button("☑️ All", key="btn_prim_sel_all", on_click=_set_primary_sel_mode, args=("all",), use_container_width=True)
-            with st_btn_col2:
-                st.button("☐ None", key="btn_prim_sel_none", on_click=_set_primary_sel_mode, args=("none",), use_container_width=True)
-            with st_btn_col3:
-                if is_multi_maker and tier_counts["one_stop"] > 0:
-                    st.button("🏆 One-Stop", key="btn_prim_sel_os", on_click=_set_primary_sel_mode, args=("onestop",), use_container_width=True, help="Select only One-Stop-Shop rows")
+        # COMPACT SUMMARY CARD
+        cur = st.session_state.parsed_data
+        v_disp = _as_clean_str(cur.get("vessel_name"), "Not specified")
+        p_disp = _as_clean_str(cur.get("port"), "Not specified")
+        c_disp = _as_clean_str(cur.get("country"), "Not specified")
+        e_disp = _as_clean_str(cur.get("eta"), "Not specified")
+        sc_disp = _as_clean_str(cur.get("scope"), "Standard technical attendance inquiry.")
+        sp_disp = _as_clean_str(cur.get("spares_requested"), "Inquired per inquiry")
+        m_list = cur.get("makers") or []
+        m_disp = ", ".join(m_list) if m_list else "Not specified"
+
+        v_is_set = v_disp.lower() != "not specified"
+        p_is_set = p_disp.lower() != "not specified"
+        e_is_set = e_disp.lower() != "not specified"
+        v_kpi_label = (
+            v_disp if re.match(r"(?i)^m/[vt]\s+", v_disp) else f"M/V {v_disp}"
+        ) if v_is_set else "Not specified"
+
+        with st.container(border=True):
+            st.markdown(f"""
+            <div class="ot-kpi-grid">
+                <div class="ot-kpi-card">
+                    <div class="ot-kpi-label">🚢 Vessel</div>
+                    <div class="{'ot-kpi-value' if v_is_set else 'ot-kpi-value-muted'}" title="{html.escape(v_kpi_label)}">{html.escape(v_kpi_label)}</div>
+                </div>
+                <div class="ot-kpi-card" style="border-left-color:#2563eb;">
+                    <div class="ot-kpi-label">📍 Port &amp; Country</div>
+                    <div class="{'ot-kpi-value' if p_is_set else 'ot-kpi-value-muted'}" title="{html.escape(p_disp)}, {html.escape(c_disp)}">{html.escape(p_disp)}</div>
+                    <div class="ot-kpi-sub">{html.escape(c_disp)}</div>
+                </div>
+                <div class="ot-kpi-card" style="border-left-color:#0d9488;">
+                    <div class="ot-kpi-label">🗓️ ETA</div>
+                    <div class="{'ot-kpi-value' if e_is_set else 'ot-kpi-value-muted'}" title="{html.escape(e_disp)}">{html.escape(e_disp)}</div>
+                </div>
+                <div class="ot-kpi-card" style="border-left-color:#7c3aed;">
+                    <div class="ot-kpi-label">🛠️ Makers ({len(m_list)})</div>
+                    <div class="{'ot-kpi-value' if m_list else 'ot-kpi-value-muted'}" title="{html.escape(m_disp)}">{html.escape(m_disp)}</div>
+                </div>
+            </div>
+            <div class="ot-scope-strip">
+                <div class="ot-scope-item"><span class="ot-scope-lbl">Scope of Work</span>{html.escape(sc_disp)}</div>
+                <div class="ot-scope-item"><span class="ot-scope-lbl">Spares / Parts Requested</span>{html.escape(sp_disp)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            discrep_list = cur.get("discrepancies") or []
+            missing_list = cur.get("missing_critical_data") or []
+            if discrep_list:
+                items_html = "<br>".join(f"• {html.escape(str(x))}" for x in discrep_list)
+                st.markdown(f'<div class="ot-alert-box ot-alert-warn"><strong>⚠️ Thread / Port Discrepancy:</strong><br>{items_html}</div>', unsafe_allow_html=True)
+            if missing_list:
+                items_html = "<br>".join(f"• {html.escape(str(x))}" for x in missing_list)
+                st.markdown(f'<div class="ot-alert-box ot-alert-danger"><strong>🚨 Missing Details (edit below):</strong><br>{items_html}</div>', unsafe_allow_html=True)
+
+            auto_expand_edit = bool(st.session_state.manual_entry_mode or missing_list)
+            with st.expander("✏️ Edit Inquiry Details (live-updates Stations & RFQ)", expanded=auto_expand_edit):
+                if st.session_state.show_copilot:
+                    e1, e2 = st.columns(2, gap="small")
+                    with e1:
+                        st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
+                    with e2:
+                        st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
+                    e3, e4 = st.columns(2, gap="small")
+                    with e3:
+                        st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change, help="Known ports auto-fill Service Country.")
+                    with e4:
+                        st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
                 else:
-                    st.button("⭐ Approved", key="btn_prim_sel_app", on_click=_set_primary_sel_mode, args=("approved",), use_container_width=True, help="Select only Maker Approved (*) rows")
+                    e1, e2, e3, e4 = st.columns([1.1, 1.0, 1.0, 1.1], gap="small")
+                    with e1:
+                        st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
+                    with e2:
+                        st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change, help="Known ports auto-fill Service Country.")
+                    with e3:
+                        st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
+                    with e4:
+                        st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
 
-            primary_view = primary_df.copy()
-            q_clean = (primary_search_q or "").strip()
-            if q_clean:
-                p_mask = primary_view.astype(str).apply(lambda col: col.str.contains(q_clean, case=False, na=False)).any(axis=1)
-                primary_view = primary_view[p_mask].reset_index(drop=True)
-
-            if primary_view.empty:
-                st.info(f"No matched stations contain **'{q_clean}'**. Clear the search filter above to see all {len(primary_df)} matched station(s).")
-            else:
-                sel_mode = st.session_state.primary_sel_mode
-                if sel_mode == "none":
-                    default_sel = [False] * len(primary_view)
-                elif sel_mode == "approved":
-                    default_sel = (primary_view["Approval Status"] == "✅ Maker Approved (*)").tolist()
-                elif sel_mode == "onestop":
-                    default_sel = primary_view["Maker Coverage"].astype(str).str.startswith("🏆").tolist()
-                else:
-                    default_sel = [True] * len(primary_view)
-
-                primary_for_editor = primary_view.copy()
-                primary_for_editor.insert(0, "Select", default_sel)
-                disabled_primary_cols = [c for c in primary_for_editor.columns if c != "Select"]
-                q_hash = hashlib.md5(q_clean.lower().encode("utf-8")).hexdigest()[:6]
-
-                edited_primary_df = st.data_editor(
-                    primary_for_editor,
-                    use_container_width=True,
-                    hide_index=True,
-                    disabled=disabled_primary_cols,
-                    column_config={
-                        "Select": st.column_config.CheckboxColumn(
-                            "Select",
-                            help="Check or uncheck stations to include in Outlook email extraction and RFQ dispatch.",
-                            default=True,
-                        )
-                    },
-                    key=f"primary_stations_editor_{filter_sig}_{st.session_state.primary_sel_ver}_{q_hash}",
+                st.text_input(
+                    "Target Makers (comma-separated)",
+                    key="eb_makers",
+                    on_change=_sync_brief_from_widgets,
+                    placeholder="e.g. Furuno, JRC, Sperry Marine",
+                    help="Aliases like Sperry / YDK / Sailor / Alphatron are automatically matched.",
                 )
-                sel_mask = edited_primary_df["Select"].fillna(False).astype(bool)
-                selected_primary_df = edited_primary_df[sel_mask].drop(
-                    columns=["Select"], errors="ignore"
-                ).reset_index(drop=True)
+                if m_list:
+                    chips_html = "".join(f'<span class="ot-maker-chip">🛠️ {html.escape(mk)}</span>' for mk in m_list)
+                    st.markdown(f'<div style="margin:-0.25rem 0 0.5rem 0;">{chips_html}</div>', unsafe_allow_html=True)
 
-                filter_note = f" (filtered by '{html.escape(q_clean)}' from {len(primary_df)})" if q_clean else ""
-                st.markdown(
-                    f'<div class="ot-selection-bar">'
-                    f'<span>✅ <strong>{len(selected_primary_df)}</strong> of <strong>{len(primary_view)}</strong> primary station(s) selected for dispatch{filter_note}</span>'
-                    f'<span style="color:var(--ot-text-muted);">Uncheck any row to exclude it from RFQ &amp; Outlook</span>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-        else:
-            extra_hint = ""
-            if one_stop_only and tier_counts["one_stop"] > 0 and not include_unstarred and tier_counts.get("one_stop_approved", 0) == 0:
-                extra_hint = " Note: One-Stop-Shop coverage exists under **Maker Listed (No *)**."
-            st.info(
-                f"No direct stations currently displayed for **{active_country}** with makers **{', '.join(active_makers) if active_makers else 'All'}**.{extra_hint}"
-            )
-            qa_buttons = []
-            if not include_unstarred and tier_counts["unstarred"] > 0:
-                qa_buttons.append(("unstarred", f"🟡 Show {tier_counts['unstarred']} Unstarred Capable Station(s)", _enable_unstarred_only))
-            if not include_other and tier_counts["other"] > 0:
-                qa_buttons.append(("other", f"🔧 Show {tier_counts['other']} Other Station(s) in {active_country}", _enable_other_stations))
-            if one_stop_only:
-                qa_buttons.append(("disable_os", "🏆 Show Partial-Coverage Stations Too", _disable_one_stop_only))
-            if qa_buttons:
-                qa_cols = st.columns(len(qa_buttons))
-                for col_box, (b_key, b_lbl, b_cb) in zip(qa_cols, qa_buttons):
-                    with col_box:
-                        st.button(b_lbl, key=f"empty_qa_{b_key}", on_click=b_cb, use_container_width=True)
+                sc_c1, sc_c2 = st.columns(2, gap="small")
+                with sc_c1:
+                    st.text_area("Scope of Work", key="eb_scope", height=78, on_change=_sync_brief_from_widgets)
+                with sc_c2:
+                    st.text_area("Spares / Parts Requested", key="eb_spares", height=78, on_change=_sync_brief_from_widgets)
 
-        if not neighbor_df.empty:
-            neighbor_label = f"🌍 Regional / Neighboring Hub Stations ({len(neighbor_df)} available in {', '.join(c.upper() for c in neighbor_country_list[:5])})"
-            with st.expander(neighbor_label, expanded=primary_df.empty):
-                nb_c1, nb_c2, nb_c3 = st.columns([2.8, 0.9, 0.9], gap="small")
-                with nb_c1:
-                    st.caption("Backup stations in neighboring maritime hubs — check rows to include in Regional dispatch.")
-                with nb_c2:
-                    st.button("☑️ Select All", key="btn_nb_sel_all", on_click=_set_neighbor_sel_mode, args=("all",), use_container_width=True)
-                with nb_c3:
-                    st.button("☐ Deselect All", key="btn_nb_sel_none", on_click=_set_neighbor_sel_mode, args=("none",), use_container_width=True)
+            source_badges = []
+            if st.session_state.vision_preview_images:
+                source_badges.append(f"{len(st.session_state.vision_preview_images)} image(s)")
+            if st.session_state.extraction_notes:
+                source_badges.append(f"{len(st.session_state.extraction_notes)} note(s)")
+            src_suffix = f" ({' • '.join(source_badges)})" if source_badges else ""
 
-                nb_default = [False] * len(neighbor_df) if st.session_state.neighbor_sel_mode == "none" else [True] * len(neighbor_df)
-                neighbor_for_editor = neighbor_df.copy()
-                neighbor_for_editor.insert(0, "Select", nb_default)
-                disabled_neighbor_cols = [c for c in neighbor_for_editor.columns if c != "Select"]
-                edited_neighbor_df = st.data_editor(
-                    neighbor_for_editor,
-                    use_container_width=True,
-                    hide_index=True,
-                    disabled=disabled_neighbor_cols,
-                    column_config={
-                        "Select": st.column_config.CheckboxColumn(
-                            "Select",
-                            help="Check or uncheck regional stations to include when extracting regional emails.",
-                            default=True,
-                        )
-                    },
-                    key=f"neighbor_stations_editor_{filter_sig}_{st.session_state.neighbor_sel_ver}",
-                )
-                nb_mask = edited_neighbor_df["Select"].fillna(False).astype(bool)
-                selected_neighbor_df = edited_neighbor_df[nb_mask].drop(
-                    columns=["Select"], errors="ignore"
-                ).reset_index(drop=True)
-                st.caption(f"Selected **{len(selected_neighbor_df)}** of **{len(neighbor_df)}** regional hub station(s).")
+            with st.expander(f"📥 Source Files, Manual Override & OCR Text{src_suffix}", expanded=False):
+                _render_intake_form(selected_engine, rc, is_compact=True)
+                if st.session_state.vision_preview_images:
+                    st.markdown("**🖼️ Pages / Photos Sent to AI Vision**")
+                    img_cols = st.columns(min(3, len(st.session_state.vision_preview_images)))
+                    for idx, (lbl, pil_im) in enumerate(st.session_state.vision_preview_images):
+                        with img_cols[idx % len(img_cols)]:
+                            st.image(pil_im, caption=lbl, use_container_width=True)
+                if st.session_state.raw_inquiry_text:
+                    st.markdown("**📄 Extracted Inquiry & OCR Text**")
+                    st.code(st.session_state.raw_inquiry_text[:12000], language="text")
 
-    # STEP 04: DISPATCH TOOLKIT (OUTLOOK EMAIL EXTRACTOR & BRACKETED RFQ)
-    rfq_target_df = selected_primary_df if not selected_primary_df.empty else selected_neighbor_df
-    rfq_default_text = generate_bracketed_rfq_template(
-        st.session_state.parsed_data,
-        rfq_target_df,
-    )
-    rfq_default_hash = hashlib.md5(rfq_default_text.encode("utf-8")).hexdigest()[:12]
-    if "rfq_editor_text" not in st.session_state or st.session_state._last_rfq_default_hash != rfq_default_hash:
-        st.session_state.rfq_editor_text = rfq_default_text
-        st.session_state._last_rfq_default_hash = rfq_default_hash
-
-    default_scope_idx = 1 if (selected_primary_df.empty and not selected_neighbor_df.empty) else 0
-
-    with st.container(border=True):
-        st.markdown("""
-        <div class="ot-section-header">
-            <div class="ot-section-title-wrap">
-                <span class="ot-step-badge">STEP 04</span>
-                <h3 class="clean-header">Dispatch Toolkit: Outlook Email Extractor &amp; Bracketed [...] RFQ</h3>
-            </div>
-            <span class="ot-section-caption">Ready-to-Send Vendor Dispatch</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-        tab_rfq, tab_outlook = st.tabs([
-            "📝 Bracketed [...] Outbound RFQ Template",
-            "📧 Outlook Email Extractor (To / Bcc)",
+        # FOCUSED 2-TAB WORKSPACE: STATIONS & DISPATCH
+        tab_stations, tab_dispatch = st.tabs([
+            f"🏢 Service Stations ({len(primary_df)} matched)",
+            "📤 Dispatch & Emails",
         ])
 
-        with tab_outlook:
-            scope_choice = st.radio(
-                "Select Station Pool for Email Extraction (Filtered by Checked 'Select' Rows in STEP 03):",
-                options=[
-                    "Selected Primary Country Stations Only",
-                    "Selected Primary + Selected Regional Neighboring Stations",
-                ],
-                index=default_scope_idx,
-                horizontal=True,
-                key=f"outlook_scope_radio_{rc}",
-            )
-            pool_df = (
-                selected_primary_df
-                if scope_choice == "Selected Primary Country Stations Only"
-                else pd.concat([selected_primary_df, selected_neighbor_df], ignore_index=True)
-            )
+        with tab_stations:
+            if is_multi_maker:
+                f_c1, f_c2, f_c3 = st.columns(3)
+            else:
+                f_c1, f_c2 = st.columns(2)
+                f_c3 = None
+
+            with f_c1:
+                st.checkbox(
+                    f"🟡 Include Unstarred / No * ({tier_counts['unstarred']})",
+                    key="chk_unstarred_main",
+                    on_change=_sync_unstarred,
+                    args=("chk_unstarred_main",),
+                    help="Show stations that list the maker without an OEM approval asterisk (*).",
+                )
+            with f_c2:
+                st.checkbox(
+                    f"🔧 Include All Country Stations ({tier_counts['other']})",
+                    key="chk_other_main",
+                    on_change=_sync_other,
+                    args=("chk_other_main",),
+                    help="Show unstarred stations plus all other stations in the target country.",
+                )
+            if f_c3 is not None:
+                with f_c3:
+                    st.checkbox(
+                        f"🏆 One-Stop-Shop Only ({tier_counts['one_stop']})",
+                        key="one_stop_only",
+                        help=f"Show only stations covering all {len(active_makers)} requested makers.",
+                    )
+
+            if not canonical_country(active_country):
+                st.info("Enter a **Service Port** or **Service Country** in **✏️ Edit Inquiry Details** above to see matching stations.")
+            elif not primary_df.empty:
+                s_col, b_all, b_none, b_smart = st.columns([2.3, 0.75, 0.8, 1.05], gap="small")
+                with s_col:
+                    primary_search_q = st.text_input(
+                        "Filter stations",
+                        placeholder="🔎 Filter by port, city, or station name...",
+                        label_visibility="collapsed",
+                        key=f"st_search_primary_{rc}",
+                    )
+                with b_all:
+                    st.button("☑️ All", key="btn_prim_sel_all", on_click=_set_primary_sel_mode, args=("all",), use_container_width=True)
+                with b_none:
+                    st.button("☐ None", key="btn_prim_sel_none", on_click=_set_primary_sel_mode, args=("none",), use_container_width=True)
+                with b_smart:
+                    if is_multi_maker and tier_counts["one_stop"] > 0:
+                        st.button("🏆 One-Stop", key="btn_prim_sel_os", on_click=_set_primary_sel_mode, args=("onestop",), use_container_width=True)
+                    else:
+                        st.button("⭐ Approved", key="btn_prim_sel_app", on_click=_set_primary_sel_mode, args=("approved",), use_container_width=True)
+
+                primary_view = primary_df.copy()
+                q_clean = (primary_search_q or "").strip()
+                if q_clean:
+                    p_mask = primary_view.astype(str).apply(lambda col: col.str.contains(q_clean, case=False, na=False)).any(axis=1)
+                    primary_view = primary_view[p_mask].reset_index(drop=True)
+
+                if primary_view.empty:
+                    st.info(f"No matched stations contain **'{q_clean}'**. Clear the search box to see all {len(primary_df)} matched station(s).")
+                else:
+                    sel_mode = st.session_state.primary_sel_mode
+                    if sel_mode == "none":
+                        default_sel = [False] * len(primary_view)
+                    elif sel_mode == "approved":
+                        default_sel = (primary_view["Approval Status"] == "✅ Maker Approved (*)").tolist()
+                    elif sel_mode == "onestop":
+                        default_sel = primary_view["Maker Coverage"].astype(str).str.startswith("🏆").tolist()
+                    else:
+                        default_sel = [True] * len(primary_view)
+
+                    primary_for_editor = primary_view.copy()
+                    primary_for_editor.insert(0, "Select", default_sel)
+                    disabled_primary_cols = [c for c in primary_for_editor.columns if c != "Select"]
+                    q_hash = hashlib.md5(q_clean.lower().encode("utf-8")).hexdigest()[:6]
+
+                    edited_primary_df = st.data_editor(
+                        primary_for_editor,
+                        use_container_width=True,
+                        hide_index=True,
+                        disabled=disabled_primary_cols,
+                        column_config={
+                            "Select": st.column_config.CheckboxColumn(
+                                "Select",
+                                help="Checked stations are included in Outlook emails and the RFQ greeting.",
+                                default=True,
+                            )
+                        },
+                        key=f"primary_stations_editor_{filter_sig}_{st.session_state.primary_sel_ver}_{q_hash}",
+                    )
+                    sel_mask = edited_primary_df["Select"].fillna(False).astype(bool)
+                    selected_primary_df = edited_primary_df[sel_mask].drop(
+                        columns=["Select"], errors="ignore"
+                    ).reset_index(drop=True)
+
+                    st.markdown(
+                        f'<div class="ot-selection-bar">'
+                        f'<span>✅ <strong>{len(selected_primary_df)}</strong> of <strong>{len(primary_view)}</strong> station(s) selected'
+                        f' • Approved (*): <strong>{tier_counts["approved"]}</strong></span>'
+                        f'<span style="color:var(--ot-text-muted);">Ready → Open <strong>📤 Dispatch &amp; Emails</strong></span>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+            else:
+                extra_hint = ""
+                if one_stop_only and tier_counts["one_stop"] > 0 and not include_unstarred and tier_counts.get("one_stop_approved", 0) == 0:
+                    extra_hint = " One-Stop-Shop coverage exists under **Unstarred (No *)**."
+                st.info(
+                    f"No strict `(*)` approved stations shown for **{active_country}** ({', '.join(active_makers) if active_makers else 'All Makers'}).{extra_hint}"
+                )
+                qa_buttons = []
+                if not include_unstarred and tier_counts["unstarred"] > 0:
+                    qa_buttons.append(("unstarred", f"🟡 Show {tier_counts['unstarred']} Unstarred Station(s)", _enable_unstarred_only))
+                if not include_other and tier_counts["other"] > 0:
+                    qa_buttons.append(("other", f"🔧 Show {tier_counts['other']} Other Station(s) in {active_country}", _enable_other_stations))
+                if one_stop_only:
+                    qa_buttons.append(("disable_os", "🏆 Show Partial-Coverage Stations Too", _disable_one_stop_only))
+                if qa_buttons:
+                    qa_cols = st.columns(len(qa_buttons))
+                    for col_box, (b_key, b_lbl, b_cb) in zip(qa_cols, qa_buttons):
+                        with col_box:
+                            st.button(b_lbl, key=f"empty_qa_{b_key}", on_click=b_cb, use_container_width=True)
+
+            if not neighbor_df.empty:
+                neighbor_label = f"🌍 Regional Backup Hubs ({len(neighbor_df)} in {', '.join(c.upper() for c in neighbor_country_list[:5])})"
+                with st.expander(neighbor_label, expanded=primary_df.empty):
+                    nb_c1, nb_c2, nb_c3 = st.columns([2.8, 0.85, 0.9], gap="small")
+                    with nb_c1:
+                        st.caption("Backup stations in neighboring countries.")
+                    with nb_c2:
+                        st.button("☑️ All", key="btn_nb_sel_all", on_click=_set_neighbor_sel_mode, args=("all",), use_container_width=True)
+                    with nb_c3:
+                        st.button("☐ None", key="btn_nb_sel_none", on_click=_set_neighbor_sel_mode, args=("none",), use_container_width=True)
+
+                    nb_default = [False] * len(neighbor_df) if st.session_state.neighbor_sel_mode == "none" else [True] * len(neighbor_df)
+                    neighbor_for_editor = neighbor_df.copy()
+                    neighbor_for_editor.insert(0, "Select", nb_default)
+                    disabled_neighbor_cols = [c for c in neighbor_for_editor.columns if c != "Select"]
+                    edited_neighbor_df = st.data_editor(
+                        neighbor_for_editor,
+                        use_container_width=True,
+                        hide_index=True,
+                        disabled=disabled_neighbor_cols,
+                        column_config={
+                            "Select": st.column_config.CheckboxColumn(
+                                "Select",
+                                help="Checked regional stations are included when Regional Backup is enabled in Dispatch.",
+                                default=True,
+                            )
+                        },
+                        key=f"neighbor_stations_editor_{filter_sig}_{st.session_state.neighbor_sel_ver}",
+                    )
+                    nb_mask = edited_neighbor_df["Select"].fillna(False).astype(bool)
+                    selected_neighbor_df = edited_neighbor_df[nb_mask].drop(
+                        columns=["Select"], errors="ignore"
+                    ).reset_index(drop=True)
+                    st.caption(f"Selected **{len(selected_neighbor_df)}** of **{len(neighbor_df)}** regional hub(s).")
+
+        # LIVE RFQ GENERATION & SYNC (SURVIVES COPY/EDIT MODE SWITCHES)
+        rfq_target_df = selected_primary_df if not selected_primary_df.empty else selected_neighbor_df
+        rfq_default_text = generate_bracketed_rfq_template(st.session_state.parsed_data, rfq_target_df)
+        rfq_default_hash = hashlib.md5(rfq_default_text.encode("utf-8")).hexdigest()[:12]
+        if not st.session_state.rfq_saved_text or st.session_state._last_rfq_default_hash != rfq_default_hash:
+            st.session_state.rfq_saved_text = rfq_default_text
+            st.session_state._last_rfq_default_hash = rfq_default_hash
+            if "rfq_editor_widget" in st.session_state:
+                st.session_state.rfq_editor_widget = rfq_default_text
+
+        with tab_dispatch:
+            # 1) OUTLOOK RECIPIENTS BLOCK
+            st.markdown("##### 📧 1. Outlook Recipients (`To / Bcc`)")
+            if not neighbor_df.empty:
+                default_scope_idx = 1 if (selected_primary_df.empty and not selected_neighbor_df.empty) else 0
+                scope_choice = st.radio(
+                    "Stations to include",
+                    options=[
+                        "Selected Primary Country Stations Only",
+                        "Selected Primary + Selected Regional Backup Stations",
+                    ],
+                    index=default_scope_idx,
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key=f"outlook_scope_radio_{rc}",
+                )
+                pool_df = (
+                    selected_primary_df
+                    if scope_choice == "Selected Primary Country Stations Only"
+                    else pd.concat([selected_primary_df, selected_neighbor_df], ignore_index=True)
+                )
+            else:
+                pool_df = selected_primary_df
+
             extracted_emails, station_email_rows = extract_outlook_emails(pool_df)
             missing_email_count = sum(1 for r in station_email_rows if r.get("Extracted Emails") == "No email in directory row")
 
-            m_c1, m_c2, m_c3 = st.columns(3)
-            m_c1.metric("Selected Stations", len(pool_df))
-            m_c2.metric("Unique Emails Ready", len(extracted_emails))
-            m_c3.metric("Missing Email in Sheet", missing_email_count)
-
-            if missing_email_count > 0 and len(pool_df) > 0:
-                st.warning(f"⚠️ {missing_email_count} selected station(s) have no `@` email listed in the directory row — verify their contact details in the table below.")
-
-            if extracted_emails:
-                st.markdown("**📋 Outlook `To / Bcc` Semicolon-Separated Address Block**")
-                st.code("; ".join(extracted_emails), language="text")
-                with st.expander("Gmail / Webmail Comma-Separated Format (, )", expanded=False):
-                    st.code(", ".join(extracted_emails), language="text")
-            else:
-                st.info("No `@` email addresses were found in the currently selected station rows. Below is the selected station roster:")
-
-            if station_email_rows:
-                roster_df = pd.DataFrame(station_email_rows)
-                st.dataframe(roster_df, use_container_width=True, hide_index=True)
-                clean_v_fn = re.sub(r"[^A-Za-z0-9]+", "_", v_disp).strip("_") or "Vessel"
-                st.download_button(
-                    "⬇️ Download Selected Station Roster (.csv)",
-                    data=roster_df.to_csv(index=False).encode("utf-8-sig"),
-                    file_name=f"Stations_{clean_v_fn}.csv",
-                    mime="text/csv",
-                    use_container_width=True,
-                )
-
-        with tab_rfq:
-            addr_src = "primary" if not selected_primary_df.empty else ("regional backup" if not selected_neighbor_df.empty else "no")
             st.caption(
-                f"Live-synced with STEP 02 Brief & **{len(rfq_target_df)}** selected {addr_src} station(s). "
-                "Edit freely below or copy directly into Outlook."
+                f"**{len(pool_df)}** selected station(s) • **{len(extracted_emails)}** unique email(s) ready"
+                + (f" • ⚠️ **{missing_email_count}** missing email in sheet" if missing_email_count > 0 else "")
             )
 
-            if st.session_state.show_copilot:
-                edited_rfq = st.text_area(
-                    "Editable Outbound RFQ Template (Bracketed [...] Placeholders)",
-                    height=310,
-                    key="rfq_editor_text",
-                )
-                rfq_subj, _ = _split_rfq_subject_body(edited_rfq)
-                mailto_url, mailto_has_body = build_mailto_href(extracted_emails, edited_rfq)
-                clean_v_fn = re.sub(r"[^A-Za-z0-9]+", "_", v_disp).strip("_") or "Vessel"
-                clean_p_fn = re.sub(r"[^A-Za-z0-9]+", "_", p_disp).strip("_") or "Port"
-
-                b_col1, b_col2, b_col3 = st.columns([1.2, 1.2, 1.0], gap="small")
-                with b_col1:
-                    st.download_button(
-                        "⬇️ Download RFQ (.txt)",
-                        data=edited_rfq.encode("utf-8"),
-                        file_name=f"RFQ_{clean_v_fn}_{clean_p_fn}.txt",
-                        mime="text/plain",
-                        use_container_width=True,
-                    )
-                with b_col2:
-                    st.link_button(
-                        "📬 Open Draft in Email App",
-                        url=mailto_url,
-                        use_container_width=True,
-                        help="Opens Outlook / default email client with Bcc & Subject" + (" + Body" if mailto_has_body else " (copy body below)"),
-                    )
-                with b_col3:
-                    st.button(
-                        "↺ Reset Template",
-                        on_click=_reset_rfq_editor,
-                        args=(rfq_default_text, rfq_default_hash),
-                        disabled=(edited_rfq == rfq_default_text),
-                        use_container_width=True,
-                        help="Revert manual edits back to the live auto-generated RFQ template",
-                    )
-
-                st.markdown("**📋 One-Click Copy Subject Line**")
-                st.code(rfq_subj, language="text")
-                st.markdown("**📋 One-Click Copy Full RFQ Block**")
-                st.code(edited_rfq, language="text")
+            if extracted_emails:
+                st.code("; ".join(extracted_emails), language="text")
             else:
-                rfq_c1, rfq_c2 = st.columns([1.2, 1.0], gap="medium")
-                with rfq_c1:
-                    edited_rfq = st.text_area(
-                        "Editable Outbound RFQ Template (Bracketed [...] Placeholders)",
-                        height=350,
-                        key="rfq_editor_text",
-                    )
-                    if edited_rfq != rfq_default_text:
-                        st.button(
-                            "↺ Reset to Auto-Generated Template",
-                            on_click=_reset_rfq_editor,
-                            args=(rfq_default_text, rfq_default_hash),
-                        )
-                with rfq_c2:
-                    rfq_subj, _ = _split_rfq_subject_body(edited_rfq)
-                    mailto_url, mailto_has_body = build_mailto_href(extracted_emails, edited_rfq)
+                st.info("No `@` email addresses found in the currently selected rows.")
+
+            if station_email_rows:
+                with st.expander(f"📋 Station Email Roster & Gmail Format ({len(station_email_rows)} stations)", expanded=missing_email_count > 0 and not extracted_emails):
+                    if extracted_emails:
+                        st.caption("Comma-separated (Gmail / Webmail):")
+                        st.code(", ".join(extracted_emails), language="text")
+                    roster_df = pd.DataFrame(station_email_rows)
+                    st.dataframe(roster_df, use_container_width=True, hide_index=True)
                     clean_v_fn = re.sub(r"[^A-Za-z0-9]+", "_", v_disp).strip("_") or "Vessel"
-                    clean_p_fn = re.sub(r"[^A-Za-z0-9]+", "_", p_disp).strip("_") or "Port"
+                    st.download_button(
+                        "⬇️ Download Roster (.csv)",
+                        data=roster_df.to_csv(index=False).encode("utf-8-sig"),
+                        file_name=f"Stations_{clean_v_fn}.csv",
+                        mime="text/csv",
+                    )
 
-                    st.markdown("**📋 One-Click Copy Subject Line**")
-                    st.code(rfq_subj, language="text")
-                    st.markdown("**📋 One-Click Copy Full RFQ Block**")
-                    st.code(edited_rfq, language="text")
-                    dl_c1, dl_c2 = st.columns(2, gap="small")
-                    with dl_c1:
-                        st.download_button(
-                            "⬇️ Download (.txt)",
-                            data=edited_rfq.encode("utf-8"),
-                            file_name=f"RFQ_{clean_v_fn}_{clean_p_fn}.txt",
-                            mime="text/plain",
-                            use_container_width=True,
-                        )
-                    with dl_c2:
-                        st.link_button(
-                            "📬 Open Email Draft",
-                            url=mailto_url,
-                            use_container_width=True,
-                            help="Opens Outlook / default email client with Bcc & Subject" + (" + Body" if mailto_has_body else " (copy body above)"),
-                        )
+            st.divider()
 
-    # UPDATE TOP WORKFLOW PROGRESS STEPPER WITH LIVE STEP 01-04 STATUS
-    s1_done = bool(st.session_state.has_active_inquiry)
-    missing_cnt = len(cur.get("missing_critical_data") or [])
-    s2_done = s1_done and missing_cnt == 0
-    s2_warn = s1_done and missing_cnt > 0
-    total_selected_stations = len(selected_primary_df) + (len(selected_neighbor_df) if selected_primary_df.empty else 0)
-    s3_done = total_selected_stations > 0
-    s4_done = len(extracted_emails) > 0 or s3_done
+            # 2) OUTBOUND RFQ TEMPLATE (CLEAN COPY vs EDIT TOGGLE — NO DUPLICATE BOXES)
+            hdr_l, hdr_r = st.columns([1.8, 1.2])
+            with hdr_l:
+                st.markdown("##### 📝 2. Outbound RFQ Message")
+            with hdr_r:
+                rfq_view_mode = st.radio(
+                    "RFQ mode",
+                    options=["📋 Copy Ready", "✏️ Edit Message"],
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key=f"rfq_view_mode_{rc}",
+                )
 
-    stepper_slot.markdown(f"""
-    <div class="ot-stepper">
-        <div class="ot-step-pill {'ot-step-pill-done' if s1_done else ''}">
-            <span><span class="ot-step-num">01</span> <strong>Ingest RFQ</strong></span>
-            <span class="ot-step-meta">{'✅ Ready' if s1_done else 'Waiting'}</span>
-        </div>
-        <div class="ot-step-pill {'ot-step-pill-done' if s2_done else ('ot-step-pill-warn' if s2_warn else '')}">
-            <span><span class="ot-step-num">02</span> <strong>Verify Brief</strong></span>
-            <span class="ot-step-meta">{'✅ Complete' if s2_done else (f'⚠️ {missing_cnt} missing' if s2_warn else 'Pending')}</span>
-        </div>
-        <div class="ot-step-pill {'ot-step-pill-done' if s3_done else ''}">
-            <span><span class="ot-step-num">03</span> <strong>Route Stations</strong></span>
-            <span class="ot-step-meta">{f'✅ {total_selected_stations} selected' if s3_done else '0 selected'}</span>
-        </div>
-        <div class="ot-step-pill {'ot-step-pill-done' if s4_done else ''}">
-            <span><span class="ot-step-num">04</span> <strong>Dispatch</strong></span>
-            <span class="ot-step-meta">{f'📧 {len(extracted_emails)} email(s)' if extracted_emails else ('📝 RFQ ready' if s3_done else 'Standby')}</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+            if rfq_view_mode == "✏️ Edit Message":
+                if "rfq_editor_widget" not in st.session_state:
+                    st.session_state.rfq_editor_widget = st.session_state.rfq_saved_text
+                st.text_area(
+                    "Edit RFQ message",
+                    height=330,
+                    label_visibility="collapsed",
+                    key="rfq_editor_widget",
+                    on_change=_save_rfq_widget_edit,
+                )
+                active_rfq_text = st.session_state.rfq_saved_text
+            else:
+                active_rfq_text = st.session_state.rfq_saved_text
+                rfq_subj, _ = _split_rfq_subject_body(active_rfq_text)
+                st.caption("Subject line (click copy icon on right):")
+                st.code(rfq_subj, language="text")
+                st.caption("Full RFQ message (click copy icon on right):")
+                st.code(active_rfq_text, language="text")
+
+            mailto_url, mailto_has_body = build_mailto_href(extracted_emails, active_rfq_text)
+            clean_v_fn = re.sub(r"[^A-Za-z0-9]+", "_", v_disp).strip("_") or "Vessel"
+            clean_p_fn = re.sub(r"[^A-Za-z0-9]+", "_", p_disp).strip("_") or "Port"
+            is_customized = active_rfq_text != rfq_default_text
+
+            act_a, act_b, act_c = st.columns([1.2, 1.1, 1.0], gap="small")
+            with act_a:
+                st.link_button(
+                    "📬 Open in Email App",
+                    url=mailto_url,
+                    use_container_width=True,
+                    help="Opens Outlook / default email app with Bcc & Subject" + (" + Body" if mailto_has_body else " (paste body from above)"),
+                )
+            with act_b:
+                st.download_button(
+                    "⬇️ Download (.txt)",
+                    data=active_rfq_text.encode("utf-8"),
+                    file_name=f"RFQ_{clean_v_fn}_{clean_p_fn}.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                )
+            with act_c:
+                st.button(
+                    "↺ Reset Template",
+                    key="btn_reset_rfq_tpl",
+                    on_click=_reset_rfq_editor,
+                    args=(rfq_default_text, rfq_default_hash),
+                    disabled=not is_customized,
+                    use_container_width=True,
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -3262,7 +3168,7 @@ if st.session_state.show_copilot and col_copilot is not None:
             top_c1, top_c2 = st.columns([3.0, 1.2])
             with top_c1:
                 st.markdown("""
-                <div class="ot-copilot-header" style="margin-bottom:0.4rem;">
+                <div class="ot-copilot-header" style="margin-bottom:0.35rem;">
                     <div class="ot-copilot-title">🧭 Onetech AI Copilot</div>
                     <div class="ot-copilot-sub">RFQ &amp; Maker-Approval Assistant</div>
                 </div>
@@ -3272,33 +3178,33 @@ if st.session_state.show_copilot and col_copilot is not None:
                     "✖ Close",
                     on_click=_close_copilot,
                     key="close_copilot_header_btn",
-                    help="Close panel without losing chat history",
+                    help="Hide panel (chat history is kept)",
                     use_container_width=True,
                 )
 
             qp_c1, qp_c2 = st.columns(2)
             quick_prompt = None
             with qp_c1:
-                if st.button("🔍 Audit RFQ", use_container_width=True, help="Audit for missing technical particulars, port discrepancies, and survey risks"):
+                if st.button("🔍 Audit RFQ", use_container_width=True, help="Audit missing details, port discrepancies, and survey risks"):
                     quick_prompt = "Audit this RFQ for missing technical particulars, port discrepancies, and survey risks."
-                if st.button("⭐ Verify * Makers", use_container_width=True, help="Check strict '*' Maker Approval and One-Stop-Shop coverage"):
+                if st.button("⭐ Verify * Makers", use_container_width=True, help="Verify strict '*' Maker Approval and One-Stop-Shop coverage"):
                     quick_prompt = "Which matched stations hold strict '*' Maker Approval or One-Stop-Shop coverage for the requested equipment?"
             with qp_c2:
                 if st.button("✉️ Urgent Chaser", use_container_width=True, help="Draft a short follow-up chaser email"):
                     quick_prompt = "Draft a short, urgent follow-up chaser email with bracketed [...] placeholders to the matched stations."
                 if st.button("🧹 Clear Chat", use_container_width=True):
                     st.session_state.copilot_messages = [
-                        {"role": "assistant", "content": "Chat history cleared. How can I help you route or audit this attendance?"}
+                        {"role": "assistant", "content": "Chat history cleared. How can I help with this attendance?"}
                     ]
                     st.rerun()
 
-            chat_box = st.container(height=400)
+            chat_box = st.container(height=390)
             with chat_box:
                 for msg in st.session_state.copilot_messages:
                     with st.chat_message(msg["role"]):
                         st.markdown(msg["content"])
 
-            user_chat_input = st.chat_input("Ask Copilot about stations, makers, or RFQ...")
+            user_chat_input = st.chat_input("Ask about stations, makers, or RFQ...")
             active_prompt = quick_prompt or user_chat_input
 
             if active_prompt:
@@ -3308,7 +3214,7 @@ if st.session_state.show_copilot and col_copilot is not None:
                     with st.chat_message("user"):
                         st.markdown(active_prompt)
                     with st.chat_message("assistant"):
-                        with st.spinner("Copilot thinking..."):
+                        with st.spinner("Thinking..."):
                             reply_text = generate_copilot_reply(
                                 active_prompt,
                                 st.session_state.parsed_data,
