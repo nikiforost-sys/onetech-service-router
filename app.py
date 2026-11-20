@@ -489,23 +489,24 @@ def read_secret(key_name):
 groq_api_key = read_secret("GROQ_API_KEY")
 gemini_api_key = read_secret("GEMINI_API_KEY")
 
-client_groq = Groq(api_key=groq_api_key, timeout=25.0, max_retries=0) if (groq_api_key and HAS_GROQ) else None
+client_groq = Groq(api_key=groq_api_key, timeout=16.0, max_retries=0) if (groq_api_key and HAS_GROQ) else None
 
 GEMINI_MODELS = [
+    "gemini-4-hydrogen",
+    "gemini-3.8-flash",
     "gemini-3.5-flash-lite",
     "gemini-3.6-flash",
-    "gemini-3.8-flash",
-    "gemini-4-argon",
 ]
 
 GROQ_MODELS = [
     "openai/gpt-oss-120b",
+    "qwen/qwen3.8-27b",
     "openai/gpt-oss-20b",
     "llama-3.3-70b-versatile",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
 ]
 
 GROQ_VISION_MODELS = {
+    "qwen/qwen3.8-27b",
     "meta-llama/llama-4-scout-17b-16e-instruct",
     "meta-llama/llama-4-maverick-17b-128e-instruct",
 }
@@ -513,13 +514,15 @@ GROQ_VISION_MODELS = {
 
 @st.cache_data(ttl=600)
 def get_active_gemini_models():
-    """Auto-discover the top 5 active Gemini models for this API key."""
+    """Auto-discover the top active free-tier-compatible Gemini models for this API key."""
     discovered = []
     fallback_2x = []
     non_text_skip = (
         "embedding", "aqa", "tts", "imagen", "veo", "lyria",
-        "robotics", "computer-use", "live", "audio", "transcribe", "exp", "001"
+        "robotics", "computer-use", "live", "audio", "transcribe", "exp", "001",
+        "image", "omni", "genie", "decision"
     )
+    paid_only_skip = ("carbon", "argon", "neon")
     if gemini_api_key:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_api_key}"
@@ -535,6 +538,8 @@ def get_active_gemini_models():
                 if not name or "gemini" not in nl:
                     continue
                 if any(skip in nl for skip in non_text_skip):
+                    continue
+                if any(paid in nl for paid in paid_only_skip):
                     continue
                 if any(old in nl for old in ("1.5", "1.0")):
                     continue
@@ -552,10 +557,10 @@ def get_active_gemini_models():
             if pref in pool and pref not in ordered:
                 ordered.append(pref)
         for m in sorted(pool, reverse=True):
-            if "flash" in m.lower() and m not in ordered:
+            if "hydrogen" in m.lower() and m not in ordered:
                 ordered.append(m)
         for m in sorted(pool, reverse=True):
-            if "pro" in m.lower() and m not in ordered:
+            if "flash" in m.lower() and m not in ordered:
                 ordered.append(m)
         for m in sorted(pool, reverse=True):
             if m not in ordered:
@@ -574,7 +579,8 @@ def get_active_groq_models():
             live_ids = []
             for m in getattr(resp, "data", []):
                 mid = getattr(m, "id", "")
-                if mid and not any(x in mid.lower() for x in ("whisper", "tts", "guard", "allam")):
+                ml = mid.lower()
+                if mid and not any(x in ml for x in ("whisper", "tts", "guard", "safeguard", "allam", "orpheus")):
                     live_ids.append(mid)
             if live_ids:
                 live_set = set(live_ids)
@@ -1771,8 +1777,14 @@ def normalize_result(data):
 # ---------------------------------------------------------------------------
 # HYBRID FAST VISION OCR (GEMINI REST / GROQ VISION) + FAST JSON PARSER
 # ---------------------------------------------------------------------------
-def _gemini_rest_generate(model_name, prompt, pil_images=None, timeout=35):
-    """Direct Gemini REST API call (no deprecated temperature param for Gemini 3.5+/4)."""
+def _strip_think_tags(text):
+    """Remove any <think>...</think> reasoning blocks emitted by open-weight reasoning models."""
+    cleaned = re.sub(r"(?is)<think>[\s\S]*?</think>", "", str(text or "")).strip()
+    return cleaned
+
+
+def _gemini_rest_generate(model_name, prompt, pil_images=None, timeout=18, expect_json=False, fast_thinking=True):
+    """Direct Gemini REST API call (fast LOW thinking for Gemini 3+/4, optional JSON mode, zero-400 fallback)."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_api_key}"
     parts = [{"text": prompt}]
     for img in (pil_images or [])[:4]:
@@ -1782,29 +1794,51 @@ def _gemini_rest_generate(model_name, prompt, pil_images=None, timeout=35):
                 "data": _pil_to_jpeg_base64(img, max_dim=1300, quality=78),
             }
         })
-    payload = {
-        "contents": [{"parts": parts}],
-    }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+
+    base_payload = {"contents": [{"parts": parts}]}
+    gen_cfg = {}
+    nl = (model_name or "").lower()
+    if fast_thinking and ("gemini-4" in nl or "gemini-3" in nl):
+        gen_cfg["thinkingConfig"] = {"thinkingLevel": "LOW"}
+    if expect_json:
+        gen_cfg["responseMimeType"] = "application/json"
+
+    def _send(body_dict):
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(body_dict).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    if gen_cfg:
+        payload = dict(base_payload, generationConfig=gen_cfg)
+        try:
+            data = _send(payload)
+        except urllib.error.HTTPError as he:
+            if he.code == 400:
+                data = _send(base_payload)
+            else:
+                raise
+    else:
+        data = _send(base_payload)
+
     candidates = data.get("candidates") or []
     if not candidates:
         raise RuntimeError(f"Empty Gemini candidates: {str(data)[:160]}")
     res_parts = (candidates[0].get("content") or {}).get("parts") or []
-    text_out = "\n".join(p.get("text", "") for p in res_parts if p.get("text"))
+    text_out = "\n".join(p.get("text", "") for p in res_parts if p.get("text") and not p.get("thought"))
+    if not text_out.strip():
+        text_out = "\n".join(p.get("text", "") for p in res_parts if p.get("text"))
     if not text_out.strip():
         raise RuntimeError("Empty Gemini text output")
     return text_out.strip()
 
 
-def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=None):
-    """Try up to 4 active Gemini 3.5+/4 models via direct REST API (fast & reliable)."""
+def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=None, expect_json=False, fast_thinking=True):
+    """Try active free-tier Gemini 4/3.8/3.5 models via direct REST API within a strict time budget."""
     if not gemini_api_key:
         if error_log is not None:
             error_log.append("Gemini: GEMINI_API_KEY missing")
@@ -1815,9 +1849,24 @@ def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=No
         m for m in active_gem if m != preferred_model
     ]
 
+    per_req_timeout = 22 if pil_images else 16
+    max_total_sec = 32.0 if pil_images else 24.0
+    t_start = time.perf_counter()
+
     for model_name in candidates[:4]:
+        elapsed = time.perf_counter() - t_start
+        if elapsed >= max_total_sec:
+            break
+        req_timeout = max(6, min(per_req_timeout, int(max_total_sec - elapsed)))
         try:
-            txt = _gemini_rest_generate(model_name, prompt, pil_images=pil_images, timeout=35)
+            txt = _gemini_rest_generate(
+                model_name,
+                prompt,
+                pil_images=pil_images,
+                timeout=req_timeout,
+                expect_json=expect_json,
+                fast_thinking=fast_thinking,
+            )
             if txt:
                 return txt, f"Gemini ({model_name})"
         except urllib.error.HTTPError as he:
@@ -1838,31 +1887,46 @@ def _gemini_raw_text(prompt, pil_images=None, preferred_model=None, error_log=No
 
 
 def _groq_vision_ocr(prompt, pil_images, preferred_model=None, error_log=None):
-    """Fallback Vision OCR via Groq Llama-4 Vision (max 2 models)."""
+    """Fallback Vision OCR via Groq multimodal models (Qwen 3.8 27B / Vision, max 2 models)."""
     if not client_groq or not pil_images:
         return None, None
 
     active = get_active_groq_models()
-    vision_models = [m for m in active if m in GROQ_VISION_MODELS or "llama-4" in m.lower() or "vision" in m.lower()]
+    vision_models = [
+        m for m in active
+        if m in GROQ_VISION_MODELS or any(k in m.lower() for k in ("qwen3.8", "llama-4", "vision"))
+    ]
     if preferred_model and preferred_model in vision_models:
         vision_models = [preferred_model] + [m for m in vision_models if m != preferred_model]
 
     for model_name in vision_models[:2]:
+        ml = model_name.lower()
+        max_imgs = 3 if "qwen" in ml else 4
+        user_content = [{"type": "text", "text": prompt}]
+        for img in list(pil_images)[:max_imgs]:
+            b64_img = _pil_to_jpeg_base64(img, max_dim=1100, quality=72)
+            user_content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"},
+            })
+        base_kwargs = {
+            "model": model_name,
+            "messages": [{"role": "user", "content": user_content}],
+            "temperature": 0.1,
+            "max_tokens": 1400,
+        }
         try:
-            user_content = [{"type": "text", "text": prompt}]
-            for img in list(pil_images)[:4]:
-                b64_img = _pil_to_jpeg_base64(img, max_dim=1100, quality=72)
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"},
-                })
-            resp = client_groq.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": user_content}],
-                temperature=0.1,
-                max_tokens=1400,
-            )
-            txt = (resp.choices[0].message.content or "").strip()
+            call_kwargs = dict(base_kwargs)
+            if "qwen3.8" in ml:
+                call_kwargs["reasoning_effort"] = "none"
+            try:
+                resp = client_groq.chat.completions.create(**call_kwargs)
+            except Exception as first_exc:
+                if "reasoning_effort" in call_kwargs and "400" in str(first_exc):
+                    resp = client_groq.chat.completions.create(**base_kwargs)
+                else:
+                    raise
+            txt = _strip_think_tags(resp.choices[0].message.content or "")
             if txt:
                 return txt, f"Groq Vision ({model_name})"
         except Exception as exc:
@@ -1874,7 +1938,7 @@ def _groq_vision_ocr(prompt, pil_images, preferred_model=None, error_log=None):
 
 def run_fast_vision_ocr(pil_images, selected_engine):
     """
-    Focused, fast Vision OCR pass (1 call -> ~5-10s):
+    Focused, fast Vision OCR pass (1 call -> ~3-7s):
     Reads equipment maker, model, serial numbers, and spare part numbers from
     scanned PDFs / JPEGs so BOTH the fast JSON parser AND local regex see them.
     """
@@ -2020,7 +2084,7 @@ Return ONLY valid JSON:
 
 
 def parse_model_json(content):
-    text = (content or "").strip()
+    text = _strip_think_tags(content)
     text = re.sub(r"^`{3}(?:json)?|`{3}$", "", text, flags=re.MULTILINE).strip()
     try:
         return normalize_result(json.loads(text))
@@ -2035,24 +2099,42 @@ def parse_model_json(content):
 
 
 def call_groq_text_json(prompt, preferred_model=None):
-    """Fast ~1-2s text-only JSON extraction on Groq."""
+    """Fast ~1-2s text-only JSON extraction on Groq (with native JSON mode & safe 400 fallback)."""
     if not client_groq:
         return None, None
     active_models = get_active_groq_models()
     candidates = ([preferred_model] if preferred_model in active_models else []) + [
         m for m in active_models if m != preferred_model
     ]
+    t_start = time.perf_counter()
     for model_name in candidates[:3]:
+        if (time.perf_counter() - t_start) >= 20.0:
+            break
+        ml = model_name.lower()
+        base_kwargs = {
+            "model": model_name,
+            "messages": [
+                {"role": "system", "content": "You are a precise maritime RFQ extraction engine. Output strictly valid JSON."},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.1,
+            "max_tokens": 2048,
+        }
+        opt_kwargs = dict(base_kwargs, response_format={"type": "json_object"})
+        if "gpt-oss" in ml:
+            opt_kwargs["reasoning_effort"] = "low"
+        elif "qwen3.8" in ml:
+            opt_kwargs["reasoning_effort"] = "none"
+
         try:
-            resp = client_groq.chat.completions.create(
-                model=model_name,
-                messages=[
-                    {"role": "system", "content": "You are a precise maritime RFQ extraction engine. Output strictly valid JSON."},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.1,
-                max_tokens=1800,
-            )
+            try:
+                resp = client_groq.chat.completions.create(**opt_kwargs)
+            except Exception as first_exc:
+                err_s = str(first_exc)
+                if any(k in err_s for k in ("400", "json_object", "reasoning_effort", "response_format")):
+                    resp = client_groq.chat.completions.create(**base_kwargs)
+                else:
+                    raise
             parsed = parse_model_json(resp.choices[0].message.content)
             if parsed:
                 return parsed, f"Groq ({model_name})"
@@ -2062,7 +2144,13 @@ def call_groq_text_json(prompt, preferred_model=None):
 
 
 def call_gemini_text_json(prompt, preferred_model=None):
-    raw_txt, eng = _gemini_raw_text(prompt, pil_images=None, preferred_model=preferred_model)
+    raw_txt, eng = _gemini_raw_text(
+        prompt,
+        pil_images=None,
+        preferred_model=preferred_model,
+        expect_json=True,
+        fast_thinking=True,
+    )
     if raw_txt:
         parsed = parse_model_json(raw_txt)
         if parsed:
@@ -2111,9 +2199,9 @@ def reconcile_results(ai_result, local_result, manual_override_text, source_text
 
 def analyze_inquiry(manual_override_text, cleaned_files, pil_images, selected_engine):
     """
-    Fast Hybrid Pipeline (~5-10s total):
-      1. If scanned PDF / images exist -> Fast Vision OCR (1 call to Gemini REST or Groq Vision)
-      2. Fast JSON extraction on combined text (Groq ~1s, or Gemini if selected)
+    Fast Hybrid Pipeline (~2-7s total):
+      1. If scanned PDF / images exist -> Fast Vision OCR (Gemini 4/3.8 [LOW] or Groq Qwen 3.8 Vision)
+      2. Fast JSON extraction on combined text (Groq GPT-OSS 120B / Qwen 3.8 ~1-2s, or Gemini 4 Hydrogen for long docs / Max Accuracy mode)
       3. Reconcile + Canonicalize makers (zero alias duplicates!)
     """
     enriched_text = cleaned_files or ""
@@ -2149,12 +2237,25 @@ def analyze_inquiry(manual_override_text, cleaned_files, pil_images, selected_en
         ai_res, used_engine = call_groq_text_json(prompt, preferred_model=pref)
         if not ai_res and gemini_api_key:
             ai_res, used_engine = call_gemini_text_json(prompt)
-    else:
-        # Auto mode: Groq parses the combined text (+ Vision OCR) in ~1 second!
-        if client_groq:
-            ai_res, used_engine = call_groq_text_json(prompt)
-        if not ai_res and gemini_api_key:
+    elif "Gemini 4 First" in selected_engine or "Max Accuracy" in selected_engine:
+        if gemini_api_key:
             ai_res, used_engine = call_gemini_text_json(prompt)
+        if not ai_res and client_groq:
+            ai_res, used_engine = call_groq_text_json(prompt)
+    else:
+        # Auto (Fast & Reliable):
+        # - Very large inquiries (>14K chars) go to Gemini (1M context) first to avoid Groq free TPM limits.
+        # - Standard RFQs go to Groq GPT-OSS 120B / Qwen 3.8 (~1-2s, ~1,000 req/day) with instant Gemini failover.
+        prefer_gemini_for_size = bool(gemini_api_key and len(enriched_text) > 14000)
+        if prefer_gemini_for_size:
+            ai_res, used_engine = call_gemini_text_json(prompt)
+            if not ai_res and client_groq:
+                ai_res, used_engine = call_groq_text_json(prompt)
+        else:
+            if client_groq:
+                ai_res, used_engine = call_groq_text_json(prompt)
+            if not ai_res and gemini_api_key:
+                ai_res, used_engine = call_gemini_text_json(prompt)
 
     if not used_engine:
         used_engine = "Smart Local Parser"
@@ -2408,33 +2509,46 @@ CURRENT PARSED BRIEF:
     gemini_full_prompt = f"{sys_context}{history_block}\n\nUSER QUESTION:\n{user_query}"
     groq_messages = [{"role": "system", "content": sys_context}] + recent_history + [{"role": "user", "content": user_query}]
 
-    if selected_engine.startswith("Gemini ::") and gemini_api_key:
-        pref = selected_engine.split("::", 1)[1].strip()
-        txt, _ = _gemini_raw_text(gemini_full_prompt, preferred_model=pref)
+    if (selected_engine.startswith("Gemini ::") or "Gemini 4 First" in selected_engine or "Max Accuracy" in selected_engine) and gemini_api_key:
+        pref = selected_engine.split("::", 1)[1].strip() if selected_engine.startswith("Gemini ::") else None
+        txt, _ = _gemini_raw_text(gemini_full_prompt, preferred_model=pref, fast_thinking=True)
         if txt:
-            return txt
+            return _strip_think_tags(txt)
 
     if client_groq:
         active_groq = get_active_groq_models()
         pref = selected_engine.split("::", 1)[1].strip() if selected_engine.startswith("Groq ::") else active_groq[0]
         for m in ([pref] + [x for x in active_groq if x != pref])[:3]:
+            ml = m.lower()
+            base_kwargs = {
+                "model": m,
+                "messages": groq_messages,
+                "temperature": 0.2,
+                "max_tokens": 1200,
+            }
+            call_kwargs = dict(base_kwargs)
+            if "gpt-oss" in ml:
+                call_kwargs["reasoning_effort"] = "low"
+            elif "qwen3.8" in ml:
+                call_kwargs["reasoning_effort"] = "none"
             try:
-                resp = client_groq.chat.completions.create(
-                    model=m,
-                    messages=groq_messages,
-                    temperature=0.2,
-                    max_tokens=1024,
-                )
-                txt = (resp.choices[0].message.content or "").strip()
+                try:
+                    resp = client_groq.chat.completions.create(**call_kwargs)
+                except Exception as first_exc:
+                    if "reasoning_effort" in call_kwargs and any(k in str(first_exc) for k in ("400", "reasoning_effort")):
+                        resp = client_groq.chat.completions.create(**base_kwargs)
+                    else:
+                        raise
+                txt = _strip_think_tags(resp.choices[0].message.content or "")
                 if txt:
                     return txt
             except Exception:
                 continue
 
     if gemini_api_key:
-        txt, _ = _gemini_raw_text(gemini_full_prompt)
+        txt, _ = _gemini_raw_text(gemini_full_prompt, fast_thinking=True)
         if txt:
-            return txt
+            return _strip_think_tags(txt)
 
     prim_names = [r.get("Service Station Name", "") for r in prim_records[:5]]
     return (
@@ -2879,7 +2993,10 @@ with st.sidebar:
         active_gemini_list = get_active_gemini_models()
         active_groq_list = get_active_groq_models()
         engine_options = (
-            ["Auto (Best Available)"]
+            [
+                "Auto (Fast & Reliable)",
+                "Auto (Max Accuracy — Gemini 4 First)",
+            ]
             + [f"Gemini :: {m}" for m in active_gemini_list]
             + [f"Groq :: {m}" for m in active_groq_list]
             + ["Local Deterministic Only"]
@@ -2888,7 +3005,10 @@ with st.sidebar:
             "Parser & Copilot Model",
             options=engine_options,
             index=0,
-            help="Auto uses Gemini/Groq Vision OCR for scanned PDFs/images and fast Groq/Gemini extraction for emails.",
+            help=(
+                "Fast & Reliable: Groq GPT-OSS 120B / Qwen 3.8 (~1-2s, ~1,000 req/day) with instant Gemini 4 Hydrogen / 3.8 Flash / 3.5 Flash-Lite failover (and Gemini first for Vision OCR & long docs). "
+                "Max Accuracy: Gemini 4 Hydrogen first with Groq failover."
+            ),
         )
         st.caption(
             f"{'● Gemini Connected' if gemini_api_key else '○ Gemini Key Missing'}  ·  "
