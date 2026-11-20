@@ -54,32 +54,47 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# EXECUTIVE MARITIME DESIGN SYSTEM (THEME-SAFE LIGHT & DARK)
+# NORDIC ICE (LIGHT) MARITIME DESIGN SYSTEM — EYE-COMFORT & EXECUTIVE CLARITY
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 :root {
-    --ot-navy-deep: #091729;
-    --ot-navy-mid: #102642;
-    --ot-ocean: #0284c7;
-    --ot-ocean-dark: #0369a1;
-    --ot-ocean-soft: rgba(2, 132, 199, 0.09);
-    --ot-border: rgba(148, 163, 184, 0.24);
-    --ot-border-strong: rgba(148, 163, 184, 0.38);
-    --ot-text-main: var(--text-color, #0f172a);
-    --ot-text-muted: #64748b;
-    --ot-surface: var(--secondary-background-color, #f8fafc);
-    --ot-bg: var(--background-color, #ffffff);
-    --ot-shadow-sm: 0 1px 2px rgba(9, 23, 41, 0.04);
-    --ot-shadow-md: 0 10px 30px -14px rgba(9, 23, 41, 0.14), 0 2px 6px -2px rgba(9, 23, 41, 0.05);
+    --ot-navy-deep: #13294b;
+    --ot-navy-mid: #1c3b6b;
+    --ot-accent: #1d4ed8;
+    --ot-accent-bright: #2563eb;
+    --ot-accent-soft: rgba(29, 78, 216, 0.08);
+    --ot-accent-ring: rgba(37, 99, 235, 0.16);
+    --ot-canvas: #f4f7fb;
+    --ot-canvas-end: #eef3fa;
+    --ot-sidebar-top: #e3edf9;
+    --ot-sidebar-bot: #dae7f6;
+    --ot-sidebar-ink: #0f2440;
+    --ot-sidebar-muted: #466182;
+    --ot-surface: #ffffff;
+    --ot-surface-subtle: #f8fbff;
+    --ot-border: rgba(19, 41, 75, 0.11);
+    --ot-border-strong: rgba(19, 41, 75, 0.20);
+    --ot-text-main: #132238;
+    --ot-text-muted: #526580;
+    --ot-shadow-sm: 0 1px 3px rgba(15, 36, 64, 0.05);
+    --ot-shadow-md: 0 10px 28px -14px rgba(15, 36, 64, 0.13), 0 2px 6px -2px rgba(15, 36, 64, 0.05);
 }
 
 html, body, [class*="css"] {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ot-text-main);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* Soft glare-free Nordic mist canvas */
+[data-testid="stAppViewContainer"],
+section.stMain {
+    background: linear-gradient(180deg, var(--ot-canvas) 0%, var(--ot-canvas-end) 100%) !important;
+    color: var(--ot-text-main) !important;
 }
 
 header[data-testid="stHeader"] {
@@ -87,13 +102,103 @@ header[data-testid="stHeader"] {
 }
 footer { visibility: hidden; }
 
+/* Ensure clean light-mode typography across Streamlit markdown, labels & widgets */
+section.stMain p,
+section.stMain li,
+section.stMain label,
+section.stMain [data-testid="stWidgetLabel"] p,
+section.stMain [data-testid="stCheckbox"] label span,
+section.stMain [data-testid="stRadio"] label span,
+section.stMain h1, section.stMain h2, section.stMain h3,
+section.stMain h4, section.stMain h5, section.stMain h6 {
+    color: var(--ot-text-main);
+}
+section.stMain [data-testid="stCaptionContainer"] p,
+section.stMain small {
+    color: var(--ot-text-muted) !important;
+}
+
 .block-container {
     padding-top: 1.05rem !important;
     padding-bottom: 5.5rem !important;
     max-width: 1360px !important;
 }
 
-/* --- EXECUTIVE TOP NAVIGATION BAR --- */
+/* Slim Nordic scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: rgba(19, 41, 75, 0.18);
+    border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(19, 41, 75, 0.30); }
+
+/* --- NORDIC ICE SIDEBAR (DISTINCT GLACIER-BLUE SURFACE) --- */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, var(--ot-sidebar-top) 0%, var(--ot-sidebar-bot) 100%) !important;
+    border-right: 1px solid rgba(19, 41, 75, 0.13) !important;
+    color: var(--ot-sidebar-ink) !important;
+}
+section[data-testid="stSidebar"] > div:first-child {
+    background: transparent !important;
+}
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] h4,
+section[data-testid="stSidebar"] h5,
+section[data-testid="stSidebar"] h6 {
+    color: var(--ot-sidebar-ink);
+}
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+    color: var(--ot-sidebar-muted) !important;
+}
+section[data-testid="stSidebar"] hr {
+    border-color: rgba(19, 41, 75, 0.12) !important;
+}
+section[data-testid="stSidebar"] button[kind="secondary"] {
+    background: rgba(255, 255, 255, 0.80) !important;
+    color: var(--ot-sidebar-ink) !important;
+    border: 1px solid rgba(19, 41, 75, 0.16) !important;
+    box-shadow: 0 1px 2px rgba(15, 36, 64, 0.04) !important;
+}
+section[data-testid="stSidebar"] button[kind="secondary"]:hover {
+    background: #ffffff !important;
+    border-color: var(--ot-accent) !important;
+    color: var(--ot-accent) !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stExpander"] {
+    background: rgba(255, 255, 255, 0.72) !important;
+    border: 1px solid rgba(19, 41, 75, 0.12) !important;
+    backdrop-filter: blur(6px);
+}
+section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+section[data-testid="stSidebar"] div[data-baseweb="input"] > div {
+    background: #ffffff !important;
+}
+
+.ot-sidebar-brand {
+    display: flex; align-items: center; gap: 0.68rem; margin-bottom: 0.35rem;
+}
+.ot-sidebar-logo {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--ot-navy-deep) 0%, var(--ot-navy-mid) 100%);
+    display: flex; align-items: center; justify-content: center; color: #93c5fd;
+    box-shadow: 0 4px 10px -4px rgba(19, 41, 75, 0.45);
+}
+.ot-sidebar-card {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(19, 41, 75, 0.12);
+    border-radius: 11px; padding: 0.72rem 0.88rem; margin-bottom: 0.72rem;
+    font-size: 0.8rem; color: var(--ot-sidebar-ink);
+    box-shadow: 0 2px 8px -4px rgba(15, 36, 64, 0.10);
+    backdrop-filter: blur(8px);
+}
+
+/* --- EXECUTIVE NORDIC NAVY TOP NAVIGATION BAR --- */
 .ot-topbar {
     position: relative;
     overflow: hidden;
@@ -102,46 +207,46 @@ footer { visibility: hidden; }
     align-items: center;
     justify-content: space-between;
     gap: 0.85rem;
-    padding: 0.9rem 1.35rem;
-    margin-bottom: 1.1rem;
+    padding: 0.92rem 1.38rem;
+    margin-bottom: 1.15rem;
     border-radius: 14px;
     background:
-        radial-gradient(640px circle at 92% -10%, rgba(14, 165, 233, 0.22), transparent 58%),
+        radial-gradient(640px circle at 92% -12%, rgba(96, 165, 250, 0.24), transparent 58%),
         linear-gradient(135deg, var(--ot-navy-deep) 0%, var(--ot-navy-mid) 100%);
-    color: #f8fafc;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    box-shadow: 0 12px 28px -12px rgba(9, 23, 41, 0.42);
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 12px 26px -14px rgba(19, 41, 75, 0.44);
 }
 .ot-topbar-left { display: flex; align-items: center; gap: 0.85rem; }
 .ot-brand-mark {
     width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-    background: linear-gradient(145deg, rgba(14, 165, 233, 0.24), rgba(2, 132, 199, 0.12));
-    border: 1px solid rgba(125, 211, 252, 0.28);
+    background: linear-gradient(145deg, rgba(147, 197, 253, 0.22), rgba(59, 130, 246, 0.12));
+    border: 1px solid rgba(147, 197, 253, 0.30);
     display: flex; align-items: center; justify-content: center;
-    color: #7dd3fc;
+    color: #93c5fd;
 }
 .ot-brand-kicker {
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em;
-    text-transform: uppercase; color: #7dd3fc; line-height: 1;
+    text-transform: uppercase; color: #93c5fd !important; line-height: 1;
 }
 .ot-hero-title {
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em;
-    margin: 0.16rem 0 0 0; color: #ffffff; line-height: 1.18;
+    margin: 0.16rem 0 0 0; color: #ffffff !important; line-height: 1.18;
 }
 .ot-topbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .ot-pill {
     display: inline-flex; align-items: center; gap: 0.4rem;
-    padding: 0.3rem 0.72rem; border-radius: 999px;
+    padding: 0.3rem 0.75rem; border-radius: 999px;
     font-size: 0.73rem; font-weight: 500; letter-spacing: 0.01em;
-    background: rgba(255, 255, 255, 0.07); color: #e2e8f0;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.09); color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     backdrop-filter: blur(6px);
 }
 .ot-pill-live {
-    background: rgba(16, 185, 129, 0.14); color: #a7f3d0;
-    border-color: rgba(16, 185, 129, 0.28);
+    background: rgba(16, 185, 129, 0.16); color: #a7f3d0 !important;
+    border-color: rgba(16, 185, 129, 0.32);
 }
 .ot-dot-live {
     width: 6px; height: 6px; border-radius: 50%; background: #34d399;
@@ -154,42 +259,44 @@ footer { visibility: hidden; }
 }
 .ot-welcome-title {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.42rem; font-weight: 700; color: var(--ot-text-main);
-    margin: 0 0 0.3rem 0; letter-spacing: -0.025em; line-height: 1.25;
+    font-size: 1.44rem; font-weight: 700; color: var(--ot-navy-deep) !important;
+    margin: 0 0 0.32rem 0; letter-spacing: -0.025em; line-height: 1.25;
 }
 .ot-welcome-sub {
-    font-size: 0.875rem; color: var(--ot-text-muted); margin: 0; line-height: 1.5;
+    font-size: 0.88rem; color: var(--ot-text-muted) !important; margin: 0; line-height: 1.55;
 }
 .ot-cap-strip {
     display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
     gap: 0.75rem 1.25rem;
-    margin-top: 1rem; padding-top: 0.85rem;
+    margin-top: 1.05rem; padding-top: 0.88rem;
     border-top: 1px solid var(--ot-border);
-    font-size: 0.76rem; color: var(--ot-text-muted);
+    font-size: 0.77rem; color: var(--ot-text-muted);
 }
 .ot-cap-item {
     display: inline-flex; align-items: center; gap: 0.42rem; font-weight: 500;
+    color: var(--ot-text-muted);
 }
-.ot-cap-item svg { color: var(--ot-ocean); flex-shrink: 0; }
+.ot-cap-item svg { color: var(--ot-accent); flex-shrink: 0; }
 
-/* --- UNIFIED ARCHITECTURAL BRIEF PANEL (NO OVER-NESTED BOXES) --- */
+/* --- UNIFIED ARCHITECTURAL BRIEF PANEL (CRISP ELEVATED WHITE) --- */
 .ot-brief-shell {
     border: 1px solid var(--ot-border);
-    border-radius: 12px;
+    border-radius: 13px;
     background: var(--ot-surface);
     overflow: hidden;
-    margin-bottom: 0.75rem;
-    box-shadow: var(--ot-shadow-sm);
+    margin-bottom: 0.8rem;
+    box-shadow: var(--ot-shadow-md);
 }
 .ot-brief-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
+    background: var(--ot-surface);
 }
 @media (max-width: 1024px) { .ot-brief-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 576px) { .ot-brief-grid { grid-template-columns: 1fr; } }
 
 .ot-brief-cell {
-    padding: 0.85rem 1.05rem;
+    padding: 0.88rem 1.08rem;
     border-right: 1px solid var(--ot-border);
     border-bottom: 1px solid var(--ot-border);
     min-width: 0;
@@ -204,12 +311,12 @@ footer { visibility: hidden; }
 .ot-cell-head {
     display: flex; align-items: center; gap: 0.38rem;
     font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.07em; color: var(--ot-text-muted); margin-bottom: 0.3rem;
+    letter-spacing: 0.07em; color: var(--ot-text-muted); margin-bottom: 0.32rem;
 }
-.ot-cell-head svg { color: var(--ot-ocean); opacity: 0.88; flex-shrink: 0; }
+.ot-cell-head svg { color: var(--ot-accent); opacity: 0.88; flex-shrink: 0; }
 .ot-cell-val {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1rem; font-weight: 700; color: var(--ot-text-main);
+    font-size: 1.02rem; font-weight: 700; color: var(--ot-navy-deep);
     letter-spacing: -0.015em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -217,18 +324,18 @@ footer { visibility: hidden; }
     font-size: 0.9rem; font-weight: 500; font-style: italic; color: var(--ot-text-muted);
 }
 .ot-cell-sub {
-    font-size: 0.73rem; color: var(--ot-text-muted); margin-top: 0.14rem;
+    font-size: 0.74rem; color: var(--ot-text-muted); margin-top: 0.14rem;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ot-brief-details {
     display: grid; grid-template-columns: 1fr 1fr;
-    background: var(--ot-bg);
+    background: var(--ot-surface-subtle);
 }
 @media (max-width: 768px) { .ot-brief-details { grid-template-columns: 1fr; } }
 .ot-detail-col {
-    padding: 0.72rem 1.05rem;
+    padding: 0.75rem 1.08rem;
     border-right: 1px solid var(--ot-border);
-    font-size: 0.81rem; color: var(--ot-text-main); line-height: 1.48;
+    font-size: 0.82rem; color: var(--ot-text-main); line-height: 1.55;
 }
 .ot-detail-col:last-child { border-right: none; }
 @media (max-width: 768px) {
@@ -238,160 +345,208 @@ footer { visibility: hidden; }
 .ot-detail-lbl {
     font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.07em; color: var(--ot-text-muted);
-    display: block; margin-bottom: 0.18rem;
+    display: block; margin-bottom: 0.2rem;
 }
 
 /* --- REFINED ALERTS, TAGS & SELECTION BAR --- */
 .ot-alert-box {
-    display: flex; align-items: flex-start; gap: 0.6rem;
-    border-radius: 10px; padding: 0.7rem 0.95rem; margin-bottom: 0.65rem;
-    font-size: 0.82rem; line-height: 1.48; color: var(--ot-text-main);
+    display: flex; align-items: flex-start; gap: 0.62rem;
+    border-radius: 11px; padding: 0.74rem 1rem; margin-bottom: 0.68rem;
+    font-size: 0.83rem; line-height: 1.52; color: var(--ot-text-main);
+    box-shadow: var(--ot-shadow-sm);
 }
 .ot-alert-warn {
-    background: rgba(217, 119, 6, 0.09);
+    background: #fffbeb;
     border: 1px solid rgba(217, 119, 6, 0.28);
 }
 .ot-alert-danger {
-    background: rgba(220, 38, 38, 0.08);
-    border: 1px solid rgba(220, 38, 38, 0.28);
+    background: #fef2f2;
+    border: 1px solid rgba(220, 38, 38, 0.26);
 }
 .ot-alert-icon { flex-shrink: 0; margin-top: 0.1rem; }
 
 .ot-maker-chip {
     display: inline-flex; align-items: center;
-    padding: 0.18rem 0.6rem; border-radius: 6px;
+    padding: 0.2rem 0.62rem; border-radius: 6px;
     font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
     margin-right: 0.35rem; margin-bottom: 0.25rem;
-    background: var(--ot-ocean-soft); color: var(--ot-ocean-dark);
-    border: 1px solid rgba(2, 132, 199, 0.22);
+    background: #eff6ff; color: #1e40af;
+    border: 1px solid rgba(29, 78, 216, 0.20);
 }
 
 .ot-selection-bar {
     display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem;
-    padding: 0.55rem 0.9rem; border-radius: 10px; margin-top: 0.45rem; margin-bottom: 0.55rem;
+    padding: 0.6rem 0.95rem; border-radius: 11px; margin-top: 0.45rem; margin-bottom: 0.6rem;
     background: var(--ot-surface); border: 1px solid var(--ot-border);
-    font-size: 0.8rem; color: var(--ot-text-main);
+    box-shadow: var(--ot-shadow-sm);
+    font-size: 0.81rem; color: var(--ot-text-main);
 }
 .ot-section-label {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em;
-    color: var(--ot-text-main); margin: 0.1rem 0 0.45rem 0;
+    font-size: 0.93rem; font-weight: 700; letter-spacing: -0.01em;
+    color: var(--ot-navy-deep); margin: 0.12rem 0 0.45rem 0;
 }
 .ot-meta-note {
-    font-size: 0.78rem; color: var(--ot-text-muted); margin-bottom: 0.45rem;
+    font-size: 0.79rem; color: var(--ot-text-muted); margin-bottom: 0.48rem;
 }
 
-/* --- POLISHED STREAMLIT NATIVE WIDGETS --- */
+/* --- POLISHED STREAMLIT NATIVE WIDGETS (NORDIC ICE LIGHT) --- */
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius: 14px !important;
+    background: var(--ot-surface) !important;
+    border-radius: 15px !important;
     border: 1px solid var(--ot-border) !important;
     box-shadow: var(--ot-shadow-md) !important;
-    padding: 0.35rem !important;
+    padding: 0.45rem !important;
 }
 
 /* File Uploader Dropzone */
 section[data-testid="stFileUploaderDropzone"] {
     border-radius: 12px !important;
-    border: 1.5px dashed var(--ot-border-strong) !important;
-    background: var(--ot-surface) !important;
-    padding: 1.2rem 1rem !important;
+    border: 1.5px dashed rgba(29, 78, 216, 0.28) !important;
+    background: var(--ot-surface-subtle) !important;
+    color: var(--ot-text-main) !important;
+    padding: 1.25rem 1rem !important;
     transition: border-color 0.18s ease, background-color 0.18s ease !important;
 }
 section[data-testid="stFileUploaderDropzone"]:hover {
-    border-color: var(--ot-ocean) !important;
-    background: var(--ot-ocean-soft) !important;
+    border-color: var(--ot-accent) !important;
+    background: #eff6ff !important;
+}
+section[data-testid="stFileUploaderDropzone"] small,
+section[data-testid="stFileUploaderDropzone"] span {
+    color: var(--ot-text-muted) !important;
 }
 
 /* Primary & Secondary Buttons */
 button[kind="primary"],
 div[data-testid="stBaseButton-primary"] button {
-    background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%) !important;
+    background: linear-gradient(180deg, var(--ot-accent-bright) 0%, var(--ot-accent) 100%) !important;
     color: #ffffff !important;
-    border: 1px solid rgba(3, 105, 161, 0.8) !important;
+    border: 1px solid #1e40af !important;
     font-weight: 600 !important;
     border-radius: 9px !important;
     letter-spacing: -0.005em !important;
-    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    box-shadow: 0 3px 10px -2px rgba(29, 78, 216, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
     transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease !important;
+}
+button[kind="primary"] p,
+button[kind="primary"] span {
+    color: #ffffff !important;
 }
 button[kind="primary"]:hover {
     transform: translateY(-1px) !important;
     filter: brightness(1.05) !important;
-    box-shadow: 0 6px 16px -4px rgba(2, 132, 199, 0.36) !important;
+    box-shadow: 0 8px 18px -5px rgba(29, 78, 216, 0.40) !important;
 }
 button[kind="secondary"],
 a[data-testid="stLinkButton"] {
+    background: var(--ot-surface) !important;
+    color: var(--ot-text-main) !important;
     border-radius: 9px !important;
     border: 1px solid var(--ot-border-strong) !important;
     font-weight: 500 !important;
-    transition: border-color 0.14s ease, background-color 0.14s ease, transform 0.14s ease !important;
+    box-shadow: var(--ot-shadow-sm) !important;
+    transition: border-color 0.14s ease, background-color 0.14s ease, color 0.14s ease !important;
 }
 button[kind="secondary"]:hover,
 a[data-testid="stLinkButton"]:hover {
-    border-color: var(--ot-ocean) !important;
-    background: var(--ot-ocean-soft) !important;
+    border-color: var(--ot-accent) !important;
+    background: #eff6ff !important;
+    color: var(--ot-accent) !important;
 }
 
-/* Clean Maritime Tabs (replaces default red-orange highlight) */
+/* Clean Maritime Tabs (Nordic Blue highlight) */
 div[data-testid="stTabs"] [role="tablist"] {
-    gap: 0.35rem !important;
+    gap: 0.4rem !important;
     border-bottom: 1px solid var(--ot-border) !important;
     padding-bottom: 0 !important;
 }
 div[data-testid="stTabs"] button[role="tab"] {
     font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
-    font-size: 0.87rem !important;
+    font-size: 0.88rem !important;
     font-weight: 600 !important;
-    padding: 0.55rem 1rem !important;
-    border-radius: 8px 8px 0 0 !important;
+    padding: 0.56rem 1.05rem !important;
+    border-radius: 9px 9px 0 0 !important;
     color: var(--ot-text-muted) !important;
     transition: color 0.15s ease, background-color 0.15s ease !important;
 }
 div[data-testid="stTabs"] button[role="tab"]:hover {
-    color: var(--ot-text-main) !important;
-    background: var(--ot-ocean-soft) !important;
+    color: var(--ot-navy-deep) !important;
+    background: var(--ot-accent-soft) !important;
 }
 div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-    color: var(--ot-ocean) !important;
-    background: transparent !important;
+    color: var(--ot-accent) !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+}
+div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p {
+    color: var(--ot-accent) !important;
 }
 div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
-    background-color: var(--ot-ocean) !important;
+    background-color: var(--ot-accent) !important;
     height: 2.5px !important;
     border-radius: 2px !important;
 }
 
-/* Inputs, Textareas & Expanders */
+/* Inputs, Textareas, Selectboxes, Popovers & Expanders */
 div[data-baseweb="input"] > div,
 div[data-baseweb="textarea"] > div,
 div[data-baseweb="select"] > div {
+    background: var(--ot-surface) !important;
+    color: var(--ot-text-main) !important;
     border-radius: 9px !important;
     border-color: var(--ot-border-strong) !important;
     transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
+div[data-baseweb="input"] input,
+div[data-baseweb="textarea"] textarea,
+div[data-baseweb="select"] span {
+    color: var(--ot-text-main) !important;
+}
 div[data-baseweb="input"] > div:focus-within,
 div[data-baseweb="textarea"] > div:focus-within,
 div[data-baseweb="select"] > div:focus-within {
-    border-color: var(--ot-ocean) !important;
-    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.14) !important;
+    border-color: var(--ot-accent) !important;
+    box-shadow: 0 0 0 3px var(--ot-accent-ring) !important;
+}
+div[data-baseweb="popover"] ul[role="listbox"] {
+    background: #ffffff !important;
+    color: var(--ot-text-main) !important;
+    border: 1px solid var(--ot-border) !important;
+}
+div[data-baseweb="popover"] li[role="option"]:hover {
+    background: #eff6ff !important;
 }
 div[data-testid="stExpander"] {
-    border-radius: 10px !important;
+    background: var(--ot-surface) !important;
+    border-radius: 11px !important;
     border: 1px solid var(--ot-border) !important;
+    box-shadow: var(--ot-shadow-sm) !important;
     overflow: hidden;
 }
 div[data-testid="stExpander"] summary {
     font-weight: 600 !important;
     font-size: 0.84rem !important;
+    color: var(--ot-navy-deep) !important;
 }
-div[data-testid="stCode"] pre,
-div[data-testid="stDataFrame"] {
-    border-radius: 10px !important;
+div[data-testid="stCode"] pre {
+    background: var(--ot-surface-subtle) !important;
+    color: var(--ot-text-main) !important;
+    border-radius: 11px !important;
     border: 1px solid var(--ot-border) !important;
+}
+div[data-testid="stDataFrame"] {
+    border-radius: 11px !important;
+    border: 1px solid var(--ot-border) !important;
+    background: var(--ot-surface) !important;
+    box-shadow: var(--ot-shadow-sm) !important;
 }
 div[data-testid="stCode"] code {
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 0.8rem !important;
+    color: var(--ot-text-main) !important;
+}
+input[type="checkbox"], input[type="radio"] {
+    accent-color: var(--ot-accent) !important;
 }
 
 /* --- FLOATING COPILOT PILL & STICKY PANEL --- */
@@ -404,19 +559,23 @@ div.st-key-floating_copilot_btn {
 }
 div.st-key-floating_copilot_btn button {
     border-radius: 999px !important;
-    padding: 0.62rem 1.3rem !important;
+    padding: 0.62rem 1.32rem !important;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 600 !important;
     font-size: 0.86rem !important;
     background: linear-gradient(135deg, var(--ot-navy-deep) 0%, var(--ot-navy-mid) 100%) !important;
-    color: #f8fafc !important;
-    box-shadow: 0 10px 26px -6px rgba(9, 23, 41, 0.42) !important;
-    border: 1px solid rgba(125, 211, 252, 0.32) !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 26px -6px rgba(19, 41, 75, 0.40) !important;
+    border: 1px solid rgba(147, 197, 253, 0.36) !important;
     transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+div.st-key-floating_copilot_btn button p,
+div.st-key-floating_copilot_btn button span {
+    color: #ffffff !important;
 }
 div.st-key-floating_copilot_btn button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 14px 30px -6px rgba(9, 23, 41, 0.52) !important;
+    box-shadow: 0 14px 30px -6px rgba(19, 41, 75, 0.50) !important;
 }
 
 div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2):has(.copilot-panel-marker),
@@ -431,36 +590,23 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2):
 .ot-copilot-header {
     display: flex; align-items: center; gap: 0.65rem;
     background:
-        radial-gradient(280px circle at 95% 0%, rgba(14, 165, 233, 0.22), transparent 65%),
+        radial-gradient(280px circle at 95% 0%, rgba(96, 165, 250, 0.24), transparent 65%),
         linear-gradient(135deg, var(--ot-navy-deep) 0%, var(--ot-navy-mid) 100%);
-    color: #ffffff; padding: 0.72rem 0.9rem; border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    margin-bottom: 0.5rem;
+    color: #ffffff !important; padding: 0.74rem 0.92rem; border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    margin-bottom: 0.55rem;
 }
 .ot-copilot-icon {
     width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
-    background: rgba(125, 211, 252, 0.14); border: 1px solid rgba(125, 211, 252, 0.28);
-    display: flex; align-items: center; justify-content: center; color: #7dd3fc;
+    background: rgba(147, 197, 253, 0.16); border: 1px solid rgba(147, 197, 253, 0.32);
+    display: flex; align-items: center; justify-content: center; color: #93c5fd;
 }
 .ot-copilot-title {
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 0.9rem; font-weight: 700; margin: 0; line-height: 1.2;
+    color: #ffffff !important;
 }
-.ot-copilot-sub { font-size: 0.71rem; color: #94a3b8; margin-top: 0.08rem; }
-
-.ot-sidebar-brand {
-    display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;
-}
-.ot-sidebar-logo {
-    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--ot-navy-deep), var(--ot-ocean-dark));
-    display: flex; align-items: center; justify-content: center; color: #7dd3fc;
-}
-.ot-sidebar-card {
-    background: var(--ot-surface); border: 1px solid var(--ot-border);
-    border-radius: 10px; padding: 0.7rem 0.85rem; margin-bottom: 0.7rem;
-    font-size: 0.8rem; color: var(--ot-text-main);
-}
+.ot-copilot-sub { font-size: 0.71rem; color: #bfdbfe !important; margin-top: 0.08rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -2946,8 +3092,8 @@ with st.sidebar:
     <div class="ot-sidebar-brand">
         <div class="ot-sidebar-logo">{_SVG_ANCHOR}</div>
         <div>
-            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:0.92rem;color:var(--text-color, #0f172a);line-height:1.15;">Onetech Settings</div>
-            <div style="font-size:0.72rem;color:#64748b;">Directory &amp; Engine Controls</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:0.93rem;color:#0f2440;line-height:1.15;">Onetech Settings</div>
+            <div style="font-size:0.72rem;color:#466182;">Directory &amp; Engine Controls</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -2955,10 +3101,10 @@ with st.sidebar:
 
     st.markdown(f"""
     <div class="ot-sidebar-card">
-        <div style="display:flex;align-items:center;gap:0.4rem;font-weight:600;margin-bottom:0.2rem;">
+        <div style="display:flex;align-items:center;gap:0.4rem;font-weight:600;color:#0f2440;margin-bottom:0.2rem;">
             <span class="ot-dot-live"></span> {html.escape(directory_source)}
         </div>
-        <div style="color:#64748b;font-size:0.76rem;"><strong>{total_stations_count}</strong> Stations across <strong>{unique_countries_count}</strong> Countries</div>
+        <div style="color:#466182;font-size:0.76rem;"><strong style="color:#0f2440;">{total_stations_count}</strong> Stations across <strong style="color:#0f2440;">{unique_countries_count}</strong> Countries</div>
     </div>
     """, unsafe_allow_html=True)
 
