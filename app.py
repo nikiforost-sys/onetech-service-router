@@ -54,142 +54,369 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# CLEAN, CALM, THEME-SAFE UI STYLESHEET
+# EXECUTIVE MARITIME DESIGN SYSTEM (THEME-SAFE LIGHT & DARK)
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 :root {
-    --ot-primary: #0284c7;
-    --ot-accent: #2563eb;
-    --ot-border: rgba(148, 163, 184, 0.26);
+    --ot-navy-deep: #091729;
+    --ot-navy-mid: #102642;
+    --ot-ocean: #0284c7;
+    --ot-ocean-dark: #0369a1;
+    --ot-ocean-soft: rgba(2, 132, 199, 0.09);
+    --ot-border: rgba(148, 163, 184, 0.24);
+    --ot-border-strong: rgba(148, 163, 184, 0.38);
     --ot-text-main: var(--text-color, #0f172a);
     --ot-text-muted: #64748b;
-    --ot-card-bg: var(--secondary-background-color, #f8fafc);
+    --ot-surface: var(--secondary-background-color, #f8fafc);
+    --ot-bg: var(--background-color, #ffffff);
+    --ot-shadow-sm: 0 1px 2px rgba(9, 23, 41, 0.04);
+    --ot-shadow-md: 0 10px 30px -14px rgba(9, 23, 41, 0.14), 0 2px 6px -2px rgba(9, 23, 41, 0.05);
 }
 
 html, body, [class*="css"] {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
+
+header[data-testid="stHeader"] {
+    background: transparent !important;
+}
+footer { visibility: hidden; }
 
 .block-container {
-    padding-top: 1.15rem !important;
-    padding-bottom: 5rem !important;
-    max-width: 1380px !important;
+    padding-top: 1.05rem !important;
+    padding-bottom: 5.5rem !important;
+    max-width: 1360px !important;
 }
 
+/* --- EXECUTIVE TOP NAVIGATION BAR --- */
 .ot-topbar {
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.75rem 1.15rem;
-    margin-bottom: 0.9rem;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 65%, #0c4a6e 100%);
-    color: #ffffff;
-    box-shadow: 0 6px 18px -6px rgba(15, 23, 42, 0.22);
+    gap: 0.85rem;
+    padding: 0.9rem 1.35rem;
+    margin-bottom: 1.1rem;
+    border-radius: 14px;
+    background:
+        radial-gradient(640px circle at 92% -10%, rgba(14, 165, 233, 0.22), transparent 58%),
+        linear-gradient(135deg, var(--ot-navy-deep) 0%, var(--ot-navy-mid) 100%);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 12px 28px -12px rgba(9, 23, 41, 0.42);
 }
-.ot-topbar-left { display: flex; align-items: center; gap: 0.75rem; }
-.ot-brand-logo {
-    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-    background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+.ot-topbar-left { display: flex; align-items: center; gap: 0.85rem; }
+.ot-brand-mark {
+    width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(145deg, rgba(14, 165, 233, 0.24), rgba(2, 132, 199, 0.12));
+    border: 1px solid rgba(125, 211, 252, 0.28);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.2rem;
+    color: #7dd3fc;
 }
-.ot-hero-title { font-size: 1.12rem; font-weight: 700; letter-spacing: -0.015em; margin: 0; color: #ffffff; line-height: 1.2; }
-.ot-hero-subtitle { font-size: 0.78rem; color: #cbd5e1; margin: 0.1rem 0 0 0; }
-.ot-topbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
+.ot-brand-kicker {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #7dd3fc; line-height: 1;
+}
+.ot-hero-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em;
+    margin: 0.16rem 0 0 0; color: #ffffff; line-height: 1.18;
+}
+.ot-topbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .ot-pill {
-    display: inline-flex; align-items: center; gap: 0.35rem;
-    padding: 0.26rem 0.65rem; border-radius: 999px; font-size: 0.73rem; font-weight: 600;
-    background: rgba(255, 255, 255, 0.1); color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.16);
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.3rem 0.72rem; border-radius: 999px;
+    font-size: 0.73rem; font-weight: 500; letter-spacing: 0.01em;
+    background: rgba(255, 255, 255, 0.07); color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(6px);
 }
-.ot-pill-live { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); }
-.ot-dot-live { width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block; }
+.ot-pill-live {
+    background: rgba(16, 185, 129, 0.14); color: #a7f3d0;
+    border-color: rgba(16, 185, 129, 0.28);
+}
+.ot-dot-live {
+    width: 6px; height: 6px; border-radius: 50%; background: #34d399;
+    display: inline-block; flex-shrink: 0;
+}
 
+/* --- START SCREEN EDITORIAL HEADER --- */
+.ot-start-head {
+    margin-bottom: 1.05rem;
+}
 .ot-welcome-title {
-    font-size: 1.25rem; font-weight: 700; color: var(--ot-text-main);
-    margin: 0 0 0.25rem 0; letter-spacing: -0.02em;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.42rem; font-weight: 700; color: var(--ot-text-main);
+    margin: 0 0 0.3rem 0; letter-spacing: -0.025em; line-height: 1.25;
 }
 .ot-welcome-sub {
-    font-size: 0.85rem; color: var(--ot-text-muted); margin: 0 0 0.9rem 0;
+    font-size: 0.875rem; color: var(--ot-text-muted); margin: 0; line-height: 1.5;
+}
+.ot-cap-strip {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    margin-top: 1rem; padding-top: 0.85rem;
+    border-top: 1px solid var(--ot-border);
+    font-size: 0.76rem; color: var(--ot-text-muted);
+}
+.ot-cap-item {
+    display: inline-flex; align-items: center; gap: 0.42rem; font-weight: 500;
+}
+.ot-cap-item svg { color: var(--ot-ocean); flex-shrink: 0; }
+
+/* --- UNIFIED ARCHITECTURAL BRIEF PANEL (NO OVER-NESTED BOXES) --- */
+.ot-brief-shell {
+    border: 1px solid var(--ot-border);
+    border-radius: 12px;
+    background: var(--ot-surface);
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+    box-shadow: var(--ot-shadow-sm);
+}
+.ot-brief-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+}
+@media (max-width: 1024px) { .ot-brief-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 576px) { .ot-brief-grid { grid-template-columns: 1fr; } }
+
+.ot-brief-cell {
+    padding: 0.85rem 1.05rem;
+    border-right: 1px solid var(--ot-border);
+    border-bottom: 1px solid var(--ot-border);
+    min-width: 0;
+}
+.ot-brief-cell:nth-child(4n) { border-right: none; }
+@media (max-width: 1024px) {
+    .ot-brief-cell:nth-child(2n) { border-right: none; }
+}
+@media (max-width: 576px) {
+    .ot-brief-cell { border-right: none; }
+}
+.ot-cell-head {
+    display: flex; align-items: center; gap: 0.38rem;
+    font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--ot-text-muted); margin-bottom: 0.3rem;
+}
+.ot-cell-head svg { color: var(--ot-ocean); opacity: 0.88; flex-shrink: 0; }
+.ot-cell-val {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1rem; font-weight: 700; color: var(--ot-text-main);
+    letter-spacing: -0.015em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ot-cell-val-muted {
+    font-size: 0.9rem; font-weight: 500; font-style: italic; color: var(--ot-text-muted);
+}
+.ot-cell-sub {
+    font-size: 0.73rem; color: var(--ot-text-muted); margin-top: 0.14rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ot-brief-details {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--ot-bg);
+}
+@media (max-width: 768px) { .ot-brief-details { grid-template-columns: 1fr; } }
+.ot-detail-col {
+    padding: 0.72rem 1.05rem;
+    border-right: 1px solid var(--ot-border);
+    font-size: 0.81rem; color: var(--ot-text-main); line-height: 1.48;
+}
+.ot-detail-col:last-child { border-right: none; }
+@media (max-width: 768px) {
+    .ot-detail-col { border-right: none; border-bottom: 1px solid var(--ot-border); }
+    .ot-detail-col:last-child { border-bottom: none; }
+}
+.ot-detail-lbl {
+    font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--ot-text-muted);
+    display: block; margin-bottom: 0.18rem;
 }
 
-.ot-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin-bottom: 0.7rem; }
-@media (max-width: 1024px) { .ot-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 576px) { .ot-kpi-grid { grid-template-columns: 1fr; } }
+/* --- REFINED ALERTS, TAGS & SELECTION BAR --- */
+.ot-alert-box {
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    border-radius: 10px; padding: 0.7rem 0.95rem; margin-bottom: 0.65rem;
+    font-size: 0.82rem; line-height: 1.48; color: var(--ot-text-main);
+}
+.ot-alert-warn {
+    background: rgba(217, 119, 6, 0.09);
+    border: 1px solid rgba(217, 119, 6, 0.28);
+}
+.ot-alert-danger {
+    background: rgba(220, 38, 38, 0.08);
+    border: 1px solid rgba(220, 38, 38, 0.28);
+}
+.ot-alert-icon { flex-shrink: 0; margin-top: 0.1rem; }
 
-.ot-kpi-card {
-    background: var(--ot-card-bg);
-    border: 1px solid var(--ot-border); border-left: 3px solid var(--ot-primary);
-    border-radius: 10px; padding: 0.65rem 0.85rem;
+.ot-maker-chip {
+    display: inline-flex; align-items: center;
+    padding: 0.18rem 0.6rem; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
+    margin-right: 0.35rem; margin-bottom: 0.25rem;
+    background: var(--ot-ocean-soft); color: var(--ot-ocean-dark);
+    border: 1px solid rgba(2, 132, 199, 0.22);
 }
-.ot-kpi-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ot-text-muted); margin-bottom: 0.18rem; }
-.ot-kpi-value { font-size: 0.95rem; font-weight: 700; color: var(--ot-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ot-kpi-value-muted { font-size: 0.88rem; font-weight: 500; font-style: italic; color: var(--ot-text-muted); }
-.ot-kpi-sub { font-size: 0.72rem; color: var(--ot-text-muted); margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.ot-scope-strip {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.65rem;
-}
-@media (max-width: 768px) { .ot-scope-strip { grid-template-columns: 1fr; } }
-.ot-scope-item {
-    background: var(--ot-card-bg); border: 1px solid var(--ot-border);
-    border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.8rem; color: var(--ot-text-main);
-    line-height: 1.4;
-}
-.ot-scope-lbl {
-    font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--ot-text-muted); display: block; margin-bottom: 0.12rem;
-}
-
-.ot-alert-box { border-radius: 9px; padding: 0.6rem 0.85rem; margin-bottom: 0.65rem; font-size: 0.81rem; line-height: 1.45; }
-.ot-alert-warn { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 3px solid #f59e0b; color: var(--ot-text-main); }
-.ot-alert-danger { background: rgba(239, 68, 68, 0.09); border: 1px solid rgba(239, 68, 68, 0.35); border-left: 3px solid #ef4444; color: var(--ot-text-main); }
 
 .ot-selection-bar {
     display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem;
-    padding: 0.45rem 0.8rem; border-radius: 8px; margin-top: 0.35rem; margin-bottom: 0.45rem;
-    background: var(--ot-card-bg); border: 1px solid var(--ot-border);
-    font-size: 0.79rem; color: var(--ot-text-main);
+    padding: 0.55rem 0.9rem; border-radius: 10px; margin-top: 0.45rem; margin-bottom: 0.55rem;
+    background: var(--ot-surface); border: 1px solid var(--ot-border);
+    font-size: 0.8rem; color: var(--ot-text-main);
+}
+.ot-section-label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em;
+    color: var(--ot-text-main); margin: 0.1rem 0 0.45rem 0;
+}
+.ot-meta-note {
+    font-size: 0.78rem; color: var(--ot-text-muted); margin-bottom: 0.45rem;
 }
 
-.ot-maker-chip {
-    display: inline-flex; align-items: center; padding: 0.16rem 0.55rem; border-radius: 999px;
-    font-size: 0.72rem; font-weight: 600; margin-right: 0.3rem; margin-bottom: 0.2rem;
-    background: rgba(124, 58, 237, 0.12); color: #7c3aed; border: 1px solid rgba(124, 58, 237, 0.25);
-}
-
+/* --- POLISHED STREAMLIT NATIVE WIDGETS --- */
 div[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius: 14px !important;
+    border: 1px solid var(--ot-border) !important;
+    box-shadow: var(--ot-shadow-md) !important;
+    padding: 0.35rem !important;
+}
+
+/* File Uploader Dropzone */
+section[data-testid="stFileUploaderDropzone"] {
     border-radius: 12px !important;
-    border-color: var(--ot-border) !important;
+    border: 1.5px dashed var(--ot-border-strong) !important;
+    background: var(--ot-surface) !important;
+    padding: 1.2rem 1rem !important;
+    transition: border-color 0.18s ease, background-color 0.18s ease !important;
+}
+section[data-testid="stFileUploaderDropzone"]:hover {
+    border-color: var(--ot-ocean) !important;
+    background: var(--ot-ocean-soft) !important;
 }
 
-button[kind="primary"] {
-    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
-    border: none !important; font-weight: 600 !important; border-radius: 8px !important;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2) !important;
+/* Primary & Secondary Buttons */
+button[kind="primary"],
+div[data-testid="stBaseButton-primary"] button {
+    background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(3, 105, 161, 0.8) !important;
+    font-weight: 600 !important;
+    border-radius: 9px !important;
+    letter-spacing: -0.005em !important;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease !important;
+}
+button[kind="primary"]:hover {
+    transform: translateY(-1px) !important;
+    filter: brightness(1.05) !important;
+    box-shadow: 0 6px 16px -4px rgba(2, 132, 199, 0.36) !important;
+}
+button[kind="secondary"],
+a[data-testid="stLinkButton"] {
+    border-radius: 9px !important;
+    border: 1px solid var(--ot-border-strong) !important;
+    font-weight: 500 !important;
+    transition: border-color 0.14s ease, background-color 0.14s ease, transform 0.14s ease !important;
+}
+button[kind="secondary"]:hover,
+a[data-testid="stLinkButton"]:hover {
+    border-color: var(--ot-ocean) !important;
+    background: var(--ot-ocean-soft) !important;
 }
 
+/* Clean Maritime Tabs (replaces default red-orange highlight) */
+div[data-testid="stTabs"] [role="tablist"] {
+    gap: 0.35rem !important;
+    border-bottom: 1px solid var(--ot-border) !important;
+    padding-bottom: 0 !important;
+}
+div[data-testid="stTabs"] button[role="tab"] {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
+    font-size: 0.87rem !important;
+    font-weight: 600 !important;
+    padding: 0.55rem 1rem !important;
+    border-radius: 8px 8px 0 0 !important;
+    color: var(--ot-text-muted) !important;
+    transition: color 0.15s ease, background-color 0.15s ease !important;
+}
+div[data-testid="stTabs"] button[role="tab"]:hover {
+    color: var(--ot-text-main) !important;
+    background: var(--ot-ocean-soft) !important;
+}
+div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+    color: var(--ot-ocean) !important;
+    background: transparent !important;
+}
+div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+    background-color: var(--ot-ocean) !important;
+    height: 2.5px !important;
+    border-radius: 2px !important;
+}
+
+/* Inputs, Textareas & Expanders */
+div[data-baseweb="input"] > div,
+div[data-baseweb="textarea"] > div,
+div[data-baseweb="select"] > div {
+    border-radius: 9px !important;
+    border-color: var(--ot-border-strong) !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+div[data-baseweb="input"] > div:focus-within,
+div[data-baseweb="textarea"] > div:focus-within,
+div[data-baseweb="select"] > div:focus-within {
+    border-color: var(--ot-ocean) !important;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.14) !important;
+}
+div[data-testid="stExpander"] {
+    border-radius: 10px !important;
+    border: 1px solid var(--ot-border) !important;
+    overflow: hidden;
+}
+div[data-testid="stExpander"] summary {
+    font-weight: 600 !important;
+    font-size: 0.84rem !important;
+}
+div[data-testid="stCode"] pre,
+div[data-testid="stDataFrame"] {
+    border-radius: 10px !important;
+    border: 1px solid var(--ot-border) !important;
+}
+div[data-testid="stCode"] code {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.8rem !important;
+}
+
+/* --- FLOATING COPILOT PILL & STICKY PANEL --- */
 div.st-key-floating_copilot_btn {
     position: fixed !important;
-    bottom: 22px !important;
-    right: 22px !important;
+    bottom: 24px !important;
+    right: 24px !important;
     z-index: 999999 !important;
     width: auto !important;
 }
 div.st-key-floating_copilot_btn button {
     border-radius: 999px !important;
-    padding: 0.6rem 1.25rem !important;
+    padding: 0.62rem 1.3rem !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 600 !important;
-    font-size: 0.88rem !important;
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
-    color: #ffffff !important;
-    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.32) !important;
-    border: 1px solid rgba(56, 189, 248, 0.45) !important;
+    font-size: 0.86rem !important;
+    background: linear-gradient(135deg, var(--ot-navy-deep) 0%, var(--ot-navy-mid) 100%) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 10px 26px -6px rgba(9, 23, 41, 0.42) !important;
+    border: 1px solid rgba(125, 211, 252, 0.32) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+div.st-key-floating_copilot_btn button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 14px 30px -6px rgba(9, 23, 41, 0.52) !important;
 }
 
 div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2):has(.copilot-panel-marker),
@@ -202,14 +429,36 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2):
 }
 
 .ot-copilot-header {
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-    color: #ffffff; padding: 0.7rem 0.9rem; border-radius: 10px; margin-bottom: 0.55rem;
+    display: flex; align-items: center; gap: 0.65rem;
+    background:
+        radial-gradient(280px circle at 95% 0%, rgba(14, 165, 233, 0.22), transparent 65%),
+        linear-gradient(135deg, var(--ot-navy-deep) 0%, var(--ot-navy-mid) 100%);
+    color: #ffffff; padding: 0.72rem 0.9rem; border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.5rem;
 }
-.ot-copilot-title { font-size: 0.92rem; font-weight: 700; margin: 0; }
-.ot-copilot-sub { font-size: 0.72rem; color: #93c5fd; margin-top: 0.08rem; }
+.ot-copilot-icon {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(125, 211, 252, 0.14); border: 1px solid rgba(125, 211, 252, 0.28);
+    display: flex; align-items: center; justify-content: center; color: #7dd3fc;
+}
+.ot-copilot-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 700; margin: 0; line-height: 1.2;
+}
+.ot-copilot-sub { font-size: 0.71rem; color: #94a3b8; margin-top: 0.08rem; }
+
+.ot-sidebar-brand {
+    display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.35rem;
+}
+.ot-sidebar-logo {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--ot-navy-deep), var(--ot-ocean-dark));
+    display: flex; align-items: center; justify-content: center; color: #7dd3fc;
+}
 .ot-sidebar-card {
-    background: var(--ot-card-bg); border: 1px solid var(--ot-border);
-    border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.65rem;
+    background: var(--ot-surface); border: 1px solid var(--ot-border);
+    border-radius: 10px; padding: 0.7rem 0.85rem; margin-bottom: 0.7rem;
     font-size: 0.8rem; color: var(--ot-text-main);
 }
 </style>
@@ -2462,10 +2711,23 @@ def _run_sample_rfq(selected_engine):
     st.rerun()
 
 
+_SVG_ANCHOR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>'
+_SVG_SHIP = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/></svg>'
+_SVG_PIN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>'
+_SVG_CAL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>'
+_SVG_TOOL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
+_SVG_FILE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>'
+_SVG_EYE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'
+_SVG_SHIELD = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>'
+_SVG_WARN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+_SVG_ERR = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+_SVG_COMPASS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>'
+
+
 def _render_intake_form(selected_engine, rc, is_compact=False):
     """Shared clean RFQ uploader / paste / optional manual override form."""
     uploaded_files = st.file_uploader(
-        "Drop client emails, PDFs, Excel/Word/ZIP files, or photos",
+        "Upload client emails, PDFs, spreadsheets, Word files, ZIPs, or photos",
         type=[
             "pdf", "eml", "msg", "txt", "xlsx", "xls", "csv",
             "docx", "zip", "html", "htm", "png", "jpg", "jpeg", "webp", "tif", "tiff"
@@ -2475,32 +2737,32 @@ def _render_intake_form(selected_engine, rc, is_compact=False):
         help="Supports MSG/EML emails (with attachments), text & scanned PDFs, Excel, CSV, Word, ZIP archives, and equipment photos.",
     )
     pasted_inquiry = st.text_area(
-        "Or paste email thread / inquiry text",
-        height=95 if is_compact else 115,
-        placeholder="Paste the client email thread here (the top message is treated as the latest update)...",
+        "Or paste raw email thread / inquiry text",
+        height=95 if is_compact else 118,
+        placeholder="Paste the client email thread here (the top-most message is treated as the latest instruction)...",
         key=f"pasted_inquiry_box_{rc}",
     )
 
-    with st.expander("🎯 Manual Override (Optional — force Vessel, Port, Country, ETA, or Makers)", expanded=False):
+    with st.expander("Manual Override (Optional — force Vessel, Port, Country, ETA, or Makers)", expanded=False):
         manual_override_input = st.text_area(
             "Manual Ground-Truth Override",
-            height=115,
+            height=112,
             label_visibility="collapsed",
-            placeholder="Optional — values entered here override AI & email text:\nVessel: MV Seaduty\nPort: Taicang\nCountry: China\nETA: 22-24 Nov 2026\nMaker: Furuno, JRC",
+            placeholder="Optional — values entered here override AI extraction & email text:\nVessel: MV Seaduty\nPort: Taicang\nCountry: China\nETA: 22-24 Nov 2026\nMaker: Furuno, JRC",
             key=f"manual_override_box_{rc}",
         )
 
     if is_compact:
-        run_btn = st.button("⚡ Re-analyze & Update Stations", type="primary", use_container_width=True, key=f"btn_reanalyze_{rc}")
+        run_btn = st.button("Re-analyze & Update Stations", type="primary", use_container_width=True, key=f"btn_reanalyze_{rc}")
         sample_btn = False
     else:
         b1, b2, b3 = st.columns([2.2, 1.0, 1.0], gap="small")
         with b1:
-            run_btn = st.button("⚡ Analyze & Find Stations", type="primary", use_container_width=True, key=f"btn_analyze_{rc}")
+            run_btn = st.button("Analyze & Find Stations", type="primary", use_container_width=True, key=f"btn_analyze_{rc}")
         with b2:
-            sample_btn = st.button("🧪 Try Sample", use_container_width=True, key=f"btn_sample_{rc}", help="Test with a realistic multi-maker RFQ")
+            sample_btn = st.button("Load Sample RFQ", use_container_width=True, key=f"btn_sample_{rc}", help="Test with a realistic multi-maker maritime RFQ")
         with b3:
-            st.button("✏️ Enter Manually", on_click=_start_manual_entry, use_container_width=True, key=f"btn_manual_{rc}", help="Skip upload and search stations by port & maker directly")
+            st.button("Enter Manually", on_click=_start_manual_entry, use_container_width=True, key=f"btn_manual_{rc}", help="Skip upload and search stations by port & maker directly")
 
     if sample_btn:
         _run_sample_rfq(selected_engine)
@@ -2552,7 +2814,7 @@ def _render_intake_form(selected_engine, rc, is_compact=False):
 
 
 if st.session_state._pending_toast:
-    st.toast(st.session_state._pending_toast, icon="⚓")
+    st.toast(st.session_state._pending_toast)
     st.session_state._pending_toast = ""
 
 rc = st.session_state.reset_count
@@ -2566,11 +2828,11 @@ unique_countries_count = df_directory["Country"].nunique() if df_directory is no
 # SIDEBAR: SETTINGS & FULL DIRECTORY (CLEAN & COLLAPSED BY DEFAULT)
 # ---------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("""
-    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.35rem;">
-        <div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#0284c7,#2563eb);display:flex;align-items:center;justify-content:center;color:white;font-size:1.1rem;flex-shrink:0;">⚓</div>
+    st.markdown(f"""
+    <div class="ot-sidebar-brand">
+        <div class="ot-sidebar-logo">{_SVG_ANCHOR}</div>
         <div>
-            <div style="font-weight:800;font-size:0.95rem;color:var(--text-color, #0f172a);line-height:1.15;">ONETECH SETTINGS</div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:0.92rem;color:var(--text-color, #0f172a);line-height:1.15;">Onetech Settings</div>
             <div style="font-size:0.72rem;color:#64748b;">Directory &amp; Engine Controls</div>
         </div>
     </div>
@@ -2579,19 +2841,21 @@ with st.sidebar:
 
     st.markdown(f"""
     <div class="ot-sidebar-card">
-        <div style="font-weight:700;margin-bottom:0.15rem;">🟢 {html.escape(directory_source)}</div>
-        <div style="color:#64748b;"><strong>{total_stations_count}</strong> Stations • <strong>{unique_countries_count}</strong> Countries</div>
+        <div style="display:flex;align-items:center;gap:0.4rem;font-weight:600;margin-bottom:0.2rem;">
+            <span class="ot-dot-live"></span> {html.escape(directory_source)}
+        </div>
+        <div style="color:#64748b;font-size:0.76rem;"><strong>{total_stations_count}</strong> Stations across <strong>{unique_countries_count}</strong> Countries</div>
     </div>
     """, unsafe_allow_html=True)
 
     sb_c1, sb_c2 = st.columns(2)
     with sb_c1:
-        if st.button("🔄 Sync Sheet", use_container_width=True, help="Reload latest stations from Google Sheets"):
+        if st.button("Sync Sheet", use_container_width=True, help="Reload latest stations from Google Sheets"):
             load_directory.clear()
             st.session_state._pending_toast = "Directory synced from live source."
             st.rerun()
     with sb_c2:
-        st.button("🗑️ Reset", on_click=_reset_all_fields, use_container_width=True, help="Clear current inquiry")
+        st.button("Reset", on_click=_reset_all_fields, use_container_width=True, help="Clear current inquiry")
 
     st.markdown("###### Routing Defaults")
     st.checkbox(
@@ -2611,7 +2875,7 @@ with st.sidebar:
 
     st.divider()
 
-    with st.expander("🤖 AI Engine Settings", expanded=False):
+    with st.expander("AI Engine Settings", expanded=False):
         active_gemini_list = get_active_gemini_models()
         active_groq_list = get_active_groq_models()
         engine_options = (
@@ -2627,11 +2891,11 @@ with st.sidebar:
             help="Auto uses Gemini/Groq Vision OCR for scanned PDFs/images and fast Groq/Gemini extraction for emails.",
         )
         st.caption(
-            f"{'🟢 Gemini API' if gemini_api_key else '⚪ Gemini Key Missing'}  •  "
-            f"{'🟢 Groq API' if (groq_api_key and HAS_GROQ) else '⚪ Groq Unavailable'}"
+            f"{'● Gemini Connected' if gemini_api_key else '○ Gemini Key Missing'}  ·  "
+            f"{'● Groq Connected' if (groq_api_key and HAS_GROQ) else '○ Groq Unavailable'}"
         )
 
-    with st.expander("🔎 Browse Full Directory", expanded=False):
+    with st.expander("Browse Full Directory", expanded=False):
         if df_directory is not None and not df_directory.empty:
             dir_countries = ["All Countries"] + sorted(df_directory["Country"].dropna().astype(str).unique().tolist())
             sel_dir_country = st.selectbox("Country", options=dir_countries, index=0, key="sb_dir_country")
@@ -2645,7 +2909,7 @@ with st.sidebar:
             st.caption(f"Showing **{len(view_dir)}** of {len(df_directory)} stations")
             st.dataframe(view_dir, use_container_width=True, hide_index=True, height=230)
             st.download_button(
-                "⬇️ Export CSV",
+                "Export CSV",
                 data=view_dir.to_csv(index=False).encode("utf-8-sig"),
                 file_name="onetech_station_directory.csv",
                 mime="text/csv",
@@ -2654,17 +2918,17 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------------------
-# COMPACT TOP BAR & FLOATING COPILOT TRIGGER
+# EXECUTIVE TOP BAR & FLOATING COPILOT TRIGGER
 # ---------------------------------------------------------------------------
 if not st.session_state.show_copilot:
     st.button(
-        "💬 AI Copilot",
+        "AI Copilot",
         key="floating_copilot_btn",
         on_click=_toggle_copilot,
     )
 
 timing_pill = (
-    f'<span class="ot-pill">⚡ {html.escape(st.session_state.last_used_engine)} ({st.session_state.last_analysis_sec:.1f}s)</span>'
+    f'<span class="ot-pill">{html.escape(st.session_state.last_used_engine)} · {st.session_state.last_analysis_sec:.1f}s</span>'
     if st.session_state.last_analysis_sec is not None
     else ""
 )
@@ -2672,14 +2936,14 @@ timing_pill = (
 st.markdown(f"""
 <div class="ot-topbar">
     <div class="ot-topbar-left">
-        <div class="ot-brand-logo">⚓</div>
+        <div class="ot-brand-mark">{_SVG_ANCHOR}</div>
         <div>
-            <h1 class="ot-hero-title">Onetech Service Router</h1>
-            <p class="ot-hero-subtitle">Upload RFQ → Match Approved (*) Stations → Dispatch</p>
+            <div class="ot-brand-kicker">ONETECH GLOBAL MARITIME</div>
+            <h1 class="ot-hero-title">Service Router &amp; Dispatch</h1>
         </div>
     </div>
     <div class="ot-topbar-right">
-        <span class="ot-pill ot-pill-live"><span class="ot-dot-live"></span> {html.escape(directory_source)} • {total_stations_count} Stations</span>
+        <span class="ot-pill ot-pill-live"><span class="ot-dot-live"></span> {html.escape(directory_source)} · {total_stations_count} Stations</span>
         {timing_pill}
     </div>
 </div>
@@ -2718,20 +2982,35 @@ else:
 
 
 # ---------------------------------------------------------------------------
-# MAIN WORKSPACE: PROGRESSIVE DISCLOSURE (CLEAN START -> FOCUSED RESULTS)
+# MAIN WORKSPACE: PROGRESSIVE DISCLOSURE (CENTERED START -> FOCUSED RESULTS)
 # ---------------------------------------------------------------------------
 with col_main:
     if not st.session_state.has_active_inquiry:
-        # CLEAN, CALM START SCREEN
-        with st.container(border=True):
-            st.markdown("""
-            <div class="ot-welcome-title">Start a Service Routing Inquiry</div>
-            <div class="ot-welcome-sub">Drop client emails, PDFs, spreadsheets, ZIPs, or photos — or paste text below. Open the sidebar (top-left) anytime for AI model settings or the full station directory.</div>
-            """, unsafe_allow_html=True)
-            _render_intake_form(selected_engine, rc, is_compact=False)
+        # CENTERED, BALANCED START STUDIO
+        if st.session_state.show_copilot:
+            intake_host = st.container()
+        else:
+            _, intake_host, _ = st.columns([0.11, 1.0, 0.11])
+
+        with intake_host:
+            with st.container(border=True):
+                st.markdown("""
+                <div class="ot-start-head">
+                    <div class="ot-welcome-title">Maritime Service Routing</div>
+                    <p class="ot-welcome-sub">Upload a client RFQ email or technical attachment to identify OEM-approved (*) service stations and generate ready-to-send vendor dispatch.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                _render_intake_form(selected_engine, rc, is_compact=False)
+                st.markdown(f"""
+                <div class="ot-cap-strip">
+                    <span class="ot-cap-item">{_SVG_FILE} MSG, EML, PDF, Excel, Word &amp; ZIP</span>
+                    <span class="ot-cap-item">{_SVG_EYE} Vision OCR for Scanned Reports</span>
+                    <span class="ot-cap-item">{_SVG_SHIELD} Strict (*) OEM &amp; One-Stop Ranking</span>
+                </div>
+                """, unsafe_allow_html=True)
     else:
-        # QUICK ACTION BAR FOR ACTIVE INQUIRY
-        qa_left, qa_btn1, qa_btn2 = st.columns([3.2, 1.0, 1.0], gap="small")
+        # CLEAN ACTION BAR FOR ACTIVE INQUIRY
+        qa_left, qa_btn1, qa_btn2 = st.columns([3.3, 0.95, 0.95], gap="small")
         with qa_left:
             if st.session_state.vision_status:
                 if st.session_state.vision_status.startswith("⚠️"):
@@ -2739,20 +3018,20 @@ with col_main:
                 else:
                     st.caption(st.session_state.vision_status)
             elif st.session_state.extraction_notes:
-                st.caption("📎 " + " • ".join(st.session_state.extraction_notes[:3]))
+                st.caption(" · ".join(st.session_state.extraction_notes[:3]))
             else:
-                st.caption("Review the summary below, select stations, then copy emails & RFQ from **Dispatch & Emails**.")
+                st.caption("Verify the inquiry summary, select service stations, then open **Dispatch & Emails**.")
         with qa_btn1:
             st.button(
-                "✖ Hide Copilot" if st.session_state.show_copilot else "💬 AI Copilot",
+                "Hide Copilot" if st.session_state.show_copilot else "AI Copilot",
                 key="topbar_copilot_btn",
                 on_click=_toggle_copilot,
                 use_container_width=True,
             )
         with qa_btn2:
-            st.button("➕ New Inquiry", key="topbar_new_inquiry_btn", on_click=_reset_all_fields, use_container_width=True)
+            st.button("+ New Inquiry", key="topbar_new_inquiry_btn", on_click=_reset_all_fields, use_container_width=True)
 
-        # COMPACT SUMMARY CARD
+        # UNIFIED EXECUTIVE BRIEF PANEL (ARCHITECTURAL HAIRLINE GRID)
         cur = st.session_state.parsed_data
         v_disp = _as_clean_str(cur.get("vessel_name"), "Not specified")
         p_disp = _as_clean_str(cur.get("port"), "Not specified")
@@ -2770,106 +3049,115 @@ with col_main:
             v_disp if re.match(r"(?i)^m/[vt]\s+", v_disp) else f"M/V {v_disp}"
         ) if v_is_set else "Not specified"
 
-        with st.container(border=True):
-            st.markdown(f"""
-            <div class="ot-kpi-grid">
-                <div class="ot-kpi-card">
-                    <div class="ot-kpi-label">🚢 Vessel</div>
-                    <div class="{'ot-kpi-value' if v_is_set else 'ot-kpi-value-muted'}" title="{html.escape(v_kpi_label)}">{html.escape(v_kpi_label)}</div>
+        st.markdown(f"""
+        <div class="ot-brief-shell">
+            <div class="ot-brief-grid">
+                <div class="ot-brief-cell">
+                    <div class="ot-cell-head">{_SVG_SHIP} Vessel</div>
+                    <div class="{'ot-cell-val' if v_is_set else 'ot-cell-val-muted'}" title="{html.escape(v_kpi_label)}">{html.escape(v_kpi_label)}</div>
                 </div>
-                <div class="ot-kpi-card" style="border-left-color:#2563eb;">
-                    <div class="ot-kpi-label">📍 Port &amp; Country</div>
-                    <div class="{'ot-kpi-value' if p_is_set else 'ot-kpi-value-muted'}" title="{html.escape(p_disp)}, {html.escape(c_disp)}">{html.escape(p_disp)}</div>
-                    <div class="ot-kpi-sub">{html.escape(c_disp)}</div>
+                <div class="ot-brief-cell">
+                    <div class="ot-cell-head">{_SVG_PIN} Port &amp; Country</div>
+                    <div class="{'ot-cell-val' if p_is_set else 'ot-cell-val-muted'}" title="{html.escape(p_disp)}, {html.escape(c_disp)}">{html.escape(p_disp)}</div>
+                    <div class="ot-cell-sub">{html.escape(c_disp)}</div>
                 </div>
-                <div class="ot-kpi-card" style="border-left-color:#0d9488;">
-                    <div class="ot-kpi-label">🗓️ ETA</div>
-                    <div class="{'ot-kpi-value' if e_is_set else 'ot-kpi-value-muted'}" title="{html.escape(e_disp)}">{html.escape(e_disp)}</div>
+                <div class="ot-brief-cell">
+                    <div class="ot-cell-head">{_SVG_CAL} Schedule / ETA</div>
+                    <div class="{'ot-cell-val' if e_is_set else 'ot-cell-val-muted'}" title="{html.escape(e_disp)}">{html.escape(e_disp)}</div>
                 </div>
-                <div class="ot-kpi-card" style="border-left-color:#7c3aed;">
-                    <div class="ot-kpi-label">🛠️ Makers ({len(m_list)})</div>
-                    <div class="{'ot-kpi-value' if m_list else 'ot-kpi-value-muted'}" title="{html.escape(m_disp)}">{html.escape(m_disp)}</div>
+                <div class="ot-brief-cell">
+                    <div class="ot-cell-head">{_SVG_TOOL} OEM Makers ({len(m_list)})</div>
+                    <div class="{'ot-cell-val' if m_list else 'ot-cell-val-muted'}" title="{html.escape(m_disp)}">{html.escape(m_disp)}</div>
                 </div>
             </div>
-            <div class="ot-scope-strip">
-                <div class="ot-scope-item"><span class="ot-scope-lbl">Scope of Work</span>{html.escape(sc_disp)}</div>
-                <div class="ot-scope-item"><span class="ot-scope-lbl">Spares / Parts Requested</span>{html.escape(sp_disp)}</div>
+            <div class="ot-brief-details">
+                <div class="ot-detail-col"><span class="ot-detail-lbl">Scope of Work</span>{html.escape(sc_disp)}</div>
+                <div class="ot-detail-col"><span class="ot-detail-lbl">Spares / Parts Requested</span>{html.escape(sp_disp)}</div>
             </div>
-            """, unsafe_allow_html=True)
+        </div>
+        """, unsafe_allow_html=True)
 
-            discrep_list = cur.get("discrepancies") or []
-            missing_list = cur.get("missing_critical_data") or []
-            if discrep_list:
-                items_html = "<br>".join(f"• {html.escape(str(x))}" for x in discrep_list)
-                st.markdown(f'<div class="ot-alert-box ot-alert-warn"><strong>⚠️ Thread / Port Discrepancy:</strong><br>{items_html}</div>', unsafe_allow_html=True)
-            if missing_list:
-                items_html = "<br>".join(f"• {html.escape(str(x))}" for x in missing_list)
-                st.markdown(f'<div class="ot-alert-box ot-alert-danger"><strong>🚨 Missing Details (edit below):</strong><br>{items_html}</div>', unsafe_allow_html=True)
+        discrep_list = cur.get("discrepancies") or []
+        missing_list = cur.get("missing_critical_data") or []
+        if discrep_list:
+            items_html = "<br>".join(f"• {html.escape(str(x))}" for x in discrep_list)
+            st.markdown(
+                f'<div class="ot-alert-box ot-alert-warn"><span class="ot-alert-icon">{_SVG_WARN}</span>'
+                f'<div><strong>Thread / Port Discrepancy</strong><br>{items_html}</div></div>',
+                unsafe_allow_html=True,
+            )
+        if missing_list:
+            items_html = "<br>".join(f"• {html.escape(str(x))}" for x in missing_list)
+            st.markdown(
+                f'<div class="ot-alert-box ot-alert-danger"><span class="ot-alert-icon">{_SVG_ERR}</span>'
+                f'<div><strong>Missing Details — Update Below</strong><br>{items_html}</div></div>',
+                unsafe_allow_html=True,
+            )
 
-            auto_expand_edit = bool(st.session_state.manual_entry_mode or missing_list)
-            with st.expander("✏️ Edit Inquiry Details (live-updates Stations & RFQ)", expanded=auto_expand_edit):
-                if st.session_state.show_copilot:
-                    e1, e2 = st.columns(2, gap="small")
-                    with e1:
-                        st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
-                    with e2:
-                        st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
-                    e3, e4 = st.columns(2, gap="small")
-                    with e3:
-                        st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change, help="Known ports auto-fill Service Country.")
-                    with e4:
-                        st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
-                else:
-                    e1, e2, e3, e4 = st.columns([1.1, 1.0, 1.0, 1.1], gap="small")
-                    with e1:
-                        st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
-                    with e2:
-                        st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change, help="Known ports auto-fill Service Country.")
-                    with e3:
-                        st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
-                    with e4:
-                        st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
+        auto_expand_edit = bool(st.session_state.manual_entry_mode or missing_list)
+        with st.expander("Edit Inquiry Details (live-updates Stations & RFQ)", expanded=auto_expand_edit):
+            if st.session_state.show_copilot:
+                e1, e2 = st.columns(2, gap="small")
+                with e1:
+                    st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
+                with e2:
+                    st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
+                e3, e4 = st.columns(2, gap="small")
+                with e3:
+                    st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change, help="Known ports auto-fill Service Country.")
+                with e4:
+                    st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
+            else:
+                e1, e2, e3, e4 = st.columns([1.1, 1.0, 1.0, 1.1], gap="small")
+                with e1:
+                    st.text_input("Vessel Name", key="eb_vessel", on_change=_sync_brief_from_widgets)
+                with e2:
+                    st.text_input("Service Port", key="eb_port", on_change=_on_port_widget_change, help="Known ports auto-fill Service Country.")
+                with e3:
+                    st.text_input("Service Country", key="eb_country", on_change=_sync_brief_from_widgets)
+                with e4:
+                    st.text_input("ETA / Schedule", key="eb_eta", on_change=_sync_brief_from_widgets)
 
-                st.text_input(
-                    "Target Makers (comma-separated)",
-                    key="eb_makers",
-                    on_change=_sync_brief_from_widgets,
-                    placeholder="e.g. Furuno, JRC, Sperry Marine",
-                    help="Aliases like Sperry / YDK / Sailor / Alphatron are automatically matched.",
-                )
-                if m_list:
-                    chips_html = "".join(f'<span class="ot-maker-chip">🛠️ {html.escape(mk)}</span>' for mk in m_list)
-                    st.markdown(f'<div style="margin:-0.25rem 0 0.5rem 0;">{chips_html}</div>', unsafe_allow_html=True)
+            st.text_input(
+                "Target Makers (comma-separated)",
+                key="eb_makers",
+                on_change=_sync_brief_from_widgets,
+                placeholder="e.g. Furuno, JRC, Sperry Marine",
+                help="Aliases like Sperry / YDK / Sailor / Alphatron are automatically normalized and matched.",
+            )
+            if m_list:
+                chips_html = "".join(f'<span class="ot-maker-chip">{html.escape(mk)}</span>' for mk in m_list)
+                st.markdown(f'<div style="margin:-0.25rem 0 0.5rem 0;">{chips_html}</div>', unsafe_allow_html=True)
 
-                sc_c1, sc_c2 = st.columns(2, gap="small")
-                with sc_c1:
-                    st.text_area("Scope of Work", key="eb_scope", height=78, on_change=_sync_brief_from_widgets)
-                with sc_c2:
-                    st.text_area("Spares / Parts Requested", key="eb_spares", height=78, on_change=_sync_brief_from_widgets)
+            sc_c1, sc_c2 = st.columns(2, gap="small")
+            with sc_c1:
+                st.text_area("Scope of Work", key="eb_scope", height=78, on_change=_sync_brief_from_widgets)
+            with sc_c2:
+                st.text_area("Spares / Parts Requested", key="eb_spares", height=78, on_change=_sync_brief_from_widgets)
 
-            source_badges = []
+        source_badges = []
+        if st.session_state.vision_preview_images:
+            source_badges.append(f"{len(st.session_state.vision_preview_images)} image(s)")
+        if st.session_state.extraction_notes:
+            source_badges.append(f"{len(st.session_state.extraction_notes)} note(s)")
+        src_suffix = f" ({' · '.join(source_badges)})" if source_badges else ""
+
+        with st.expander(f"Source Files, Manual Override & OCR Text{src_suffix}", expanded=False):
+            _render_intake_form(selected_engine, rc, is_compact=True)
             if st.session_state.vision_preview_images:
-                source_badges.append(f"{len(st.session_state.vision_preview_images)} image(s)")
-            if st.session_state.extraction_notes:
-                source_badges.append(f"{len(st.session_state.extraction_notes)} note(s)")
-            src_suffix = f" ({' • '.join(source_badges)})" if source_badges else ""
-
-            with st.expander(f"📥 Source Files, Manual Override & OCR Text{src_suffix}", expanded=False):
-                _render_intake_form(selected_engine, rc, is_compact=True)
-                if st.session_state.vision_preview_images:
-                    st.markdown("**🖼️ Pages / Photos Sent to AI Vision**")
-                    img_cols = st.columns(min(3, len(st.session_state.vision_preview_images)))
-                    for idx, (lbl, pil_im) in enumerate(st.session_state.vision_preview_images):
-                        with img_cols[idx % len(img_cols)]:
-                            st.image(pil_im, caption=lbl, use_container_width=True)
-                if st.session_state.raw_inquiry_text:
-                    st.markdown("**📄 Extracted Inquiry & OCR Text**")
-                    st.code(st.session_state.raw_inquiry_text[:12000], language="text")
+                st.markdown('<div class="ot-section-label">Pages &amp; Photos Sent to AI Vision</div>', unsafe_allow_html=True)
+                img_cols = st.columns(min(3, len(st.session_state.vision_preview_images)))
+                for idx, (lbl, pil_im) in enumerate(st.session_state.vision_preview_images):
+                    with img_cols[idx % len(img_cols)]:
+                        st.image(pil_im, caption=lbl, use_container_width=True)
+            if st.session_state.raw_inquiry_text:
+                st.markdown('<div class="ot-section-label">Extracted Inquiry &amp; OCR Text</div>', unsafe_allow_html=True)
+                st.code(st.session_state.raw_inquiry_text[:12000], language="text")
 
         # FOCUSED 2-TAB WORKSPACE: STATIONS & DISPATCH
         tab_stations, tab_dispatch = st.tabs([
-            f"🏢 Service Stations ({len(primary_df)} matched)",
-            "📤 Dispatch & Emails",
+            f"Service Stations ({len(primary_df)})",
+            "Dispatch & Emails",
         ])
 
         with tab_stations:
@@ -2904,25 +3192,25 @@ with col_main:
                     )
 
             if not canonical_country(active_country):
-                st.info("Enter a **Service Port** or **Service Country** in **✏️ Edit Inquiry Details** above to see matching stations.")
+                st.info("Enter a **Service Port** or **Service Country** in **Edit Inquiry Details** above to view matching stations.")
             elif not primary_df.empty:
-                s_col, b_all, b_none, b_smart = st.columns([2.3, 0.75, 0.8, 1.05], gap="small")
+                s_col, b_all, b_none, b_smart = st.columns([2.35, 0.72, 0.78, 1.05], gap="small")
                 with s_col:
                     primary_search_q = st.text_input(
                         "Filter stations",
-                        placeholder="🔎 Filter by port, city, or station name...",
+                        placeholder="Filter by port, city, or station name...",
                         label_visibility="collapsed",
                         key=f"st_search_primary_{rc}",
                     )
                 with b_all:
-                    st.button("☑️ All", key="btn_prim_sel_all", on_click=_set_primary_sel_mode, args=("all",), use_container_width=True)
+                    st.button("Select All", key="btn_prim_sel_all", on_click=_set_primary_sel_mode, args=("all",), use_container_width=True)
                 with b_none:
-                    st.button("☐ None", key="btn_prim_sel_none", on_click=_set_primary_sel_mode, args=("none",), use_container_width=True)
+                    st.button("Clear", key="btn_prim_sel_none", on_click=_set_primary_sel_mode, args=("none",), use_container_width=True)
                 with b_smart:
                     if is_multi_maker and tier_counts["one_stop"] > 0:
-                        st.button("🏆 One-Stop", key="btn_prim_sel_os", on_click=_set_primary_sel_mode, args=("onestop",), use_container_width=True)
+                        st.button("One-Stop Only", key="btn_prim_sel_os", on_click=_set_primary_sel_mode, args=("onestop",), use_container_width=True)
                     else:
-                        st.button("⭐ Approved", key="btn_prim_sel_app", on_click=_set_primary_sel_mode, args=("approved",), use_container_width=True)
+                        st.button("Approved (*)", key="btn_prim_sel_app", on_click=_set_primary_sel_mode, args=("approved",), use_container_width=True)
 
                 primary_view = primary_df.copy()
                 q_clean = (primary_search_q or "").strip()
@@ -2931,7 +3219,7 @@ with col_main:
                     primary_view = primary_view[p_mask].reset_index(drop=True)
 
                 if primary_view.empty:
-                    st.info(f"No matched stations contain **'{q_clean}'**. Clear the search box to see all {len(primary_df)} matched station(s).")
+                    st.info(f"No matched stations contain **'{q_clean}'**. Clear the filter to view all {len(primary_df)} matched station(s).")
                 else:
                     sel_mode = st.session_state.primary_sel_mode
                     if sel_mode == "none":
@@ -2969,9 +3257,9 @@ with col_main:
 
                     st.markdown(
                         f'<div class="ot-selection-bar">'
-                        f'<span>✅ <strong>{len(selected_primary_df)}</strong> of <strong>{len(primary_view)}</strong> station(s) selected'
-                        f' • Approved (*): <strong>{tier_counts["approved"]}</strong></span>'
-                        f'<span style="color:var(--ot-text-muted);">Ready → Open <strong>📤 Dispatch &amp; Emails</strong></span>'
+                        f'<span><strong>{len(selected_primary_df)}</strong> of <strong>{len(primary_view)}</strong> station(s) selected'
+                        f' · Maker Approved (*): <strong>{tier_counts["approved"]}</strong></span>'
+                        f'<span style="color:var(--ot-text-muted);">Next: open <strong>Dispatch &amp; Emails</strong></span>'
                         f'</div>',
                         unsafe_allow_html=True,
                     )
@@ -2984,11 +3272,11 @@ with col_main:
                 )
                 qa_buttons = []
                 if not include_unstarred and tier_counts["unstarred"] > 0:
-                    qa_buttons.append(("unstarred", f"🟡 Show {tier_counts['unstarred']} Unstarred Station(s)", _enable_unstarred_only))
+                    qa_buttons.append(("unstarred", f"Show {tier_counts['unstarred']} Unstarred Station(s)", _enable_unstarred_only))
                 if not include_other and tier_counts["other"] > 0:
-                    qa_buttons.append(("other", f"🔧 Show {tier_counts['other']} Other Station(s) in {active_country}", _enable_other_stations))
+                    qa_buttons.append(("other", f"Show {tier_counts['other']} Other Station(s) in {active_country}", _enable_other_stations))
                 if one_stop_only:
-                    qa_buttons.append(("disable_os", "🏆 Show Partial-Coverage Stations Too", _disable_one_stop_only))
+                    qa_buttons.append(("disable_os", "Show Partial-Coverage Stations Too", _disable_one_stop_only))
                 if qa_buttons:
                     qa_cols = st.columns(len(qa_buttons))
                     for col_box, (b_key, b_lbl, b_cb) in zip(qa_cols, qa_buttons):
@@ -2996,15 +3284,15 @@ with col_main:
                             st.button(b_lbl, key=f"empty_qa_{b_key}", on_click=b_cb, use_container_width=True)
 
             if not neighbor_df.empty:
-                neighbor_label = f"🌍 Regional Backup Hubs ({len(neighbor_df)} in {', '.join(c.upper() for c in neighbor_country_list[:5])})"
+                neighbor_label = f"Regional Backup Hubs ({len(neighbor_df)} in {', '.join(c.upper() for c in neighbor_country_list[:5])})"
                 with st.expander(neighbor_label, expanded=primary_df.empty):
-                    nb_c1, nb_c2, nb_c3 = st.columns([2.8, 0.85, 0.9], gap="small")
+                    nb_c1, nb_c2, nb_c3 = st.columns([2.8, 0.85, 0.85], gap="small")
                     with nb_c1:
-                        st.caption("Backup stations in neighboring countries.")
+                        st.caption("Backup stations in neighboring maritime hubs.")
                     with nb_c2:
-                        st.button("☑️ All", key="btn_nb_sel_all", on_click=_set_neighbor_sel_mode, args=("all",), use_container_width=True)
+                        st.button("Select All", key="btn_nb_sel_all", on_click=_set_neighbor_sel_mode, args=("all",), use_container_width=True)
                     with nb_c3:
-                        st.button("☐ None", key="btn_nb_sel_none", on_click=_set_neighbor_sel_mode, args=("none",), use_container_width=True)
+                        st.button("Clear", key="btn_nb_sel_none", on_click=_set_neighbor_sel_mode, args=("none",), use_container_width=True)
 
                     nb_default = [False] * len(neighbor_df) if st.session_state.neighbor_sel_mode == "none" else [True] * len(neighbor_df)
                     neighbor_for_editor = neighbor_df.copy()
@@ -3042,7 +3330,7 @@ with col_main:
 
         with tab_dispatch:
             # 1) OUTLOOK RECIPIENTS BLOCK
-            st.markdown("##### 📧 1. Outlook Recipients (`To / Bcc`)")
+            st.markdown('<div class="ot-section-label">1. Outlook Recipients (To / Bcc)</div>', unsafe_allow_html=True)
             if not neighbor_df.empty:
                 default_scope_idx = 1 if (selected_primary_df.empty and not selected_neighbor_df.empty) else 0
                 scope_choice = st.radio(
@@ -3068,8 +3356,8 @@ with col_main:
             missing_email_count = sum(1 for r in station_email_rows if r.get("Extracted Emails") == "No email in directory row")
 
             st.caption(
-                f"**{len(pool_df)}** selected station(s) • **{len(extracted_emails)}** unique email(s) ready"
-                + (f" • ⚠️ **{missing_email_count}** missing email in sheet" if missing_email_count > 0 else "")
+                f"**{len(pool_df)}** selected station(s) · **{len(extracted_emails)}** unique email(s) ready"
+                + (f" · **{missing_email_count}** missing email in sheet" if missing_email_count > 0 else "")
             )
 
             if extracted_emails:
@@ -3078,7 +3366,7 @@ with col_main:
                 st.info("No `@` email addresses found in the currently selected rows.")
 
             if station_email_rows:
-                with st.expander(f"📋 Station Email Roster & Gmail Format ({len(station_email_rows)} stations)", expanded=missing_email_count > 0 and not extracted_emails):
+                with st.expander(f"Station Email Roster & Gmail Format ({len(station_email_rows)} stations)", expanded=missing_email_count > 0 and not extracted_emails):
                     if extracted_emails:
                         st.caption("Comma-separated (Gmail / Webmail):")
                         st.code(", ".join(extracted_emails), language="text")
@@ -3086,7 +3374,7 @@ with col_main:
                     st.dataframe(roster_df, use_container_width=True, hide_index=True)
                     clean_v_fn = re.sub(r"[^A-Za-z0-9]+", "_", v_disp).strip("_") or "Vessel"
                     st.download_button(
-                        "⬇️ Download Roster (.csv)",
+                        "Download Roster (.csv)",
                         data=roster_df.to_csv(index=False).encode("utf-8-sig"),
                         file_name=f"Stations_{clean_v_fn}.csv",
                         mime="text/csv",
@@ -3094,20 +3382,20 @@ with col_main:
 
             st.divider()
 
-            # 2) OUTBOUND RFQ TEMPLATE (CLEAN COPY vs EDIT TOGGLE — NO DUPLICATE BOXES)
+            # 2) OUTBOUND RFQ TEMPLATE (CLEAN COPY vs EDIT TOGGLE)
             hdr_l, hdr_r = st.columns([1.8, 1.2])
             with hdr_l:
-                st.markdown("##### 📝 2. Outbound RFQ Message")
+                st.markdown('<div class="ot-section-label">2. Outbound RFQ Message</div>', unsafe_allow_html=True)
             with hdr_r:
                 rfq_view_mode = st.radio(
                     "RFQ mode",
-                    options=["📋 Copy Ready", "✏️ Edit Message"],
+                    options=["Copy Ready", "Edit Message"],
                     horizontal=True,
                     label_visibility="collapsed",
                     key=f"rfq_view_mode_{rc}",
                 )
 
-            if rfq_view_mode == "✏️ Edit Message":
+            if rfq_view_mode == "Edit Message":
                 if "rfq_editor_widget" not in st.session_state:
                     st.session_state.rfq_editor_widget = st.session_state.rfq_saved_text
                 st.text_area(
@@ -3121,9 +3409,9 @@ with col_main:
             else:
                 active_rfq_text = st.session_state.rfq_saved_text
                 rfq_subj, _ = _split_rfq_subject_body(active_rfq_text)
-                st.caption("Subject line (click copy icon on right):")
+                st.caption("Subject line")
                 st.code(rfq_subj, language="text")
-                st.caption("Full RFQ message (click copy icon on right):")
+                st.caption("Full RFQ message")
                 st.code(active_rfq_text, language="text")
 
             mailto_url, mailto_has_body = build_mailto_href(extracted_emails, active_rfq_text)
@@ -3134,14 +3422,14 @@ with col_main:
             act_a, act_b, act_c = st.columns([1.2, 1.1, 1.0], gap="small")
             with act_a:
                 st.link_button(
-                    "📬 Open in Email App",
+                    "Open in Email App",
                     url=mailto_url,
                     use_container_width=True,
-                    help="Opens Outlook / default email app with Bcc & Subject" + (" + Body" if mailto_has_body else " (paste body from above)"),
+                    help="Opens Outlook / default email client with Bcc & Subject" + (" + Body" if mailto_has_body else " (copy body above)"),
                 )
             with act_b:
                 st.download_button(
-                    "⬇️ Download (.txt)",
+                    "Download (.txt)",
                     data=active_rfq_text.encode("utf-8"),
                     file_name=f"RFQ_{clean_v_fn}_{clean_p_fn}.txt",
                     mime="text/plain",
@@ -3149,7 +3437,7 @@ with col_main:
                 )
             with act_c:
                 st.button(
-                    "↺ Reset Template",
+                    "Reset Template",
                     key="btn_reset_rfq_tpl",
                     on_click=_reset_rfq_editor,
                     args=(rfq_default_text, rfq_default_hash),
@@ -3165,34 +3453,37 @@ if st.session_state.show_copilot and col_copilot is not None:
     with col_copilot:
         st.markdown('<div class="copilot-panel-marker"></div>', unsafe_allow_html=True)
         with st.container(border=True):
-            top_c1, top_c2 = st.columns([3.0, 1.2])
+            top_c1, top_c2 = st.columns([3.0, 1.1])
             with top_c1:
-                st.markdown("""
-                <div class="ot-copilot-header" style="margin-bottom:0.35rem;">
-                    <div class="ot-copilot-title">🧭 Onetech AI Copilot</div>
-                    <div class="ot-copilot-sub">RFQ &amp; Maker-Approval Assistant</div>
+                st.markdown(f"""
+                <div class="ot-copilot-header">
+                    <div class="ot-copilot-icon">{_SVG_COMPASS}</div>
+                    <div>
+                        <div class="ot-copilot-title">Onetech AI Copilot</div>
+                        <div class="ot-copilot-sub">RFQ &amp; Maker-Approval Assistant</div>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
             with top_c2:
                 st.button(
-                    "✖ Close",
+                    "Close",
                     on_click=_close_copilot,
                     key="close_copilot_header_btn",
                     help="Hide panel (chat history is kept)",
                     use_container_width=True,
                 )
 
-            qp_c1, qp_c2 = st.columns(2)
+            qp_c1, qp_c2 = st.columns(2, gap="small")
             quick_prompt = None
             with qp_c1:
-                if st.button("🔍 Audit RFQ", use_container_width=True, help="Audit missing details, port discrepancies, and survey risks"):
+                if st.button("Audit RFQ", use_container_width=True, help="Audit missing details, port discrepancies, and survey risks"):
                     quick_prompt = "Audit this RFQ for missing technical particulars, port discrepancies, and survey risks."
-                if st.button("⭐ Verify * Makers", use_container_width=True, help="Verify strict '*' Maker Approval and One-Stop-Shop coverage"):
+                if st.button("Verify * Makers", use_container_width=True, help="Verify strict '*' Maker Approval and One-Stop-Shop coverage"):
                     quick_prompt = "Which matched stations hold strict '*' Maker Approval or One-Stop-Shop coverage for the requested equipment?"
             with qp_c2:
-                if st.button("✉️ Urgent Chaser", use_container_width=True, help="Draft a short follow-up chaser email"):
+                if st.button("Urgent Chaser", use_container_width=True, help="Draft a short follow-up chaser email"):
                     quick_prompt = "Draft a short, urgent follow-up chaser email with bracketed [...] placeholders to the matched stations."
-                if st.button("🧹 Clear Chat", use_container_width=True):
+                if st.button("Clear Chat", use_container_width=True):
                     st.session_state.copilot_messages = [
                         {"role": "assistant", "content": "Chat history cleared. How can I help with this attendance?"}
                     ]
